@@ -1,0 +1,45 @@
+==================================================
+Mundo RPG Procedural 2D Infinito
+==================================================
+
+COMO EXECUTAR:
+- Abra o arquivo 'index.html' com duplo clique em qualquer navegador (Chrome, Edge, Firefox).
+- Funciona 100% offline, protocolo file://, sem necessidade de internet, servidor, npm ou compilação.
+
+ESTRUTURA DE PASTAS E ARQUIVOS:
+- index.html: Ponto de entrada. Carrega os scripts em ordem (a ordem importa).
+- js/ e assets/vendor/: motor do RPG dividido em arquivos por assunto (mundo, desenho, áudio, itens, receitas, interface). Veja ARQUITETURA.md.
+- legacy/: bundle original (app.original.js) e código antigo não usado, guardados só como referência.
+- server.js / package.json: Servidor estático opcional para ambiente web e comandos dev/build.
+- LEIA-ME.txt: Instruções e documentação do projeto.
+
+MELHORIAS NO SISTEMA DE CAVERNAS:
+1. Paredões e Túneis Realistas:
+   - As cavernas agora possuem maciços rochosos intransponíveis (paredões de pedra escura) que delimitam os caminhos subterrâneos.
+   - O interior é formado por túneis sinuosos esculpidos na rocha viva e amplos salões naturais (câmara de cristais, lago subterrâneo e gruta de fungos bioluminescentes).
+   - Acabou a sensação de 'mundo aberto' plano no subsolo: agora o jogador explora verdadeiros labirintos com paredes rochosas de ambos os lados e pontos de mineração e exploração.
+
+2. Saída da Caverna Arquitetônica & Iluminação Balanceada:
+   - A saída da caverna possui a mesma arquitetura majestosa e porte da entrada da superfície.
+   - Iluminação natural suave e equilibrada nas saídas subterrâneas, eliminando ofuscamentos e superexposição de luz.
+
+3. Entrada Automática & Colisor Físico nas Cavernas:
+   - Ao caminhar diretamente de encontro à entrada da caverna, o personagem entra automaticamente no labirinto subterrâneo (assim como na saída de volta à superfície).
+   - Colisor maciço traseiro e lateral: o personagem não atravessa nem passa por cima da estrutura rochosa da caverna, sendo obrigado a contorná-la para acessar a entrada frontal.
+   - Perseguição dinâmica de criaturas: se monstros, slimes ou predadores estiverem perseguindo o aventureiro quando ele cruzar a entrada ou saída da caverna, eles atravessam juntos, mantendo a tensão do combate.
+
+4. Rede Subterrânea Contínua & Viagem Entre Cavernas:
+   - Cada caverna encontrada no mundo superior (superfície) possui uma saída correspondente no mundo subterrâneo nas mesmas coordenadas globais.
+   - Você pode entrar por uma caverna na superfície, viajar pelos túneis subterrâneos e sair por outro portal de caverna em uma região diferente do mundo superior!
+   - Nem todas as cavernas são conectadas entre si: maciços rochosos intransponíveis (paredões) separam diferentes setores subterrâneos, criando atalhos secretos entre algumas regiões enquanto outras cavernas formam redes locais independentes.
+
+CONTROLES:
+- W, A, S, D ou Setas: Movimentação do personagem
+- E ou Botão de Interagir: Entrar/Sair de cavernas, abrir baús, minerar veios, acender fogueira, descansar
+- Espaço / Botão ATK: Atacar corpo a corpo com a arma equipada
+- Shift / Botão SEIXO (Inferior Esquerdo): Mirar e arremessar seixos (segure para mirar com a mira guia e solte para arremessar; toque rápido mira no monstro mais próximo)
+- 2x Toque na direção: Correr (consome Stamina)
+- I: Abrir/Fechar Inventário e Mesa de Forja/Fusão
+- L: Ligar/Desligar Tocha
+- U: Coletar água na margem de lagos
+- P: Pesca com lança na margem da água

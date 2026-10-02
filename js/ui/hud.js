@@ -1,0 +1,1834 @@
+/* js/ui/hud.js
+ * HUD (Hud): minimapa, botoes de toque, barras de vida/stamina.
+ * Trecho de legacy/app.original.js (linhas 36560-38419); unica mudanca: nomes renomeados (ver RENOMEADOS.md).
+ * Escopo global compartilhado entre os <script>: a ORDEM em index.html importa.
+ */
+"use strict";
+  const Hud = ({
+    currentBiome: e,
+    coords: t,
+    seed: l,
+    timeOfDay: o,
+    setTimeOfDay: u,
+    soundEnabled: m,
+    setSoundEnabled: c,
+    lanternActive: f,
+    setLanternActive: g,
+    zoom: y,
+    setZoom: w,
+    showGrid: v,
+    setShowGrid: T,
+    onRerollSeed: S,
+    onTeleportToBiome: p,
+    onInteract: j,
+    onAttack: P,
+    onThrowPebble: R = () => {},
+    onPebbleAimStart: Qi,
+    onPebbleAimEnd: Xi,
+    onPebbleAimUpdate: Zi,
+    toastMessage: A,
+    minimapRef: x,
+    onMobileDirection: M,
+    isCameraOffset: $ = !1,
+    onRecenterCamera: z,
+    onToggleTorch: K,
+    onOpenInventory: V,
+    inventoryItemCount: O = 0,
+    equipment: _,
+    backpack: se,
+    gold: ue,
+    playerHp: N = 100,
+    playerMaxHp: Ee = 100,
+    isDead: ne = !1,
+    onRespawn: ke,
+    playerStamina: G = 100,
+    playerMaxStamina: de = 100,
+    isExhausted: W = !1,
+    isSprinting: le = !1,
+    isFireProtected: te = !1,
+    nearbyCampfire: oe = null,
+    onFeedCampfire: Ne,
+    onRoastFish: X,
+    savedCampfire: C = null,
+    onUseBeltSlot: I,
+  }) => {
+    var So;
+    const [be, Me] = J.useState(!1),
+      [Te, Fe] = J.useState(() => window.innerWidth > 768),
+      [_e, xe] = J.useState(() => window.innerWidth > 1024),
+      [Ue, $a] = J.useState(!0),
+      [Ie, ee] = J.useState(!1),
+      [He, Sa] = J.useState(!1),
+      oa = !!(oe && oe.prop.lit !== !1),
+      ga = !!(C && oe && C.tx === oe.tx && C.ty === oe.ty),
+      we = _ ? ot(_.mochila) : 6,
+      je = se ? se.length : O,
+      Be = _ ? Zs(_.mochila) : "none",
+      Se = J.useMemo(
+        () =>
+          se
+            ? se.reduce(
+                (We, Aa) =>
+                  Aa.name.toLowerCase().includes("galho") ||
+                  Aa.id.includes("galho")
+                    ? We + (Aa.stackCount || 1)
+                    : We,
+                0,
+              )
+            : 0,
+        [se],
+      ),
+      Ae = J.useMemo(
+        () =>
+          se
+            ? se.reduce((We, Aa) => {
+                const ma = (Aa.id || "").toLowerCase(),
+                  Ya = (Aa.name || "").toLowerCase();
+                return (ma.includes("fish") ||
+                  Ya.includes("peixe") ||
+                  Ya.includes("lambari") ||
+                  Ya.includes("tilapia") ||
+                  Ya.includes("tilápia") ||
+                  Ya.includes("cascudo") ||
+                  Ya.includes("truta")) &&
+                  !Ya.includes("assado") &&
+                  !Ya.includes("espeto")
+                  ? We + (Aa.stackCount || 1)
+                  : We;
+              }, 0)
+            : 0,
+        [se],
+      ),
+      fa =
+        (So = oe == null ? void 0 : oe.prop) == null ? void 0 : So.roastingFish,
+      [Oe, Wa] = J.useState(0),
+      [isPebbleAiming, setIsPebbleAiming] = J.useState(!1);
+    const pebbleAimTouchStart = J.useRef(null);
+    const pebbleAimStartTime = J.useRef(0);
+    const pebbleAimHasDragged = J.useRef(!1);
+    const pebbleAimTimer = J.useRef(null);
+    const isPebbleItem = (item) => {
+      if (!item) return !1;
+      const name = (item.name || "").toLowerCase();
+      const id = (item.id || "").toLowerCase();
+      return name.includes("seixo") || id.includes("seixo") || id.includes("pebble");
+    };
+    const hasPebbleEquipped = _ ? (isPebbleItem(_.mao_direita) || isPebbleItem(_.mao_esquerda)) : !1;
+    const pebbleCount = J.useMemo(() => {
+      const inHands = (_ && isPebbleItem(_.mao_direita) ? (_.mao_direita.stackCount || 1) : 0) +
+                      (_ && isPebbleItem(_.mao_esquerda) ? (_.mao_esquerda.stackCount || 1) : 0);
+      const inPack = se ? se.reduce((acc, it) => isPebbleItem(it) ? acc + (it.stackCount || 1) : acc, 0) : 0;
+      return inHands + inPack;
+    }, [_, se]);
+
+    const handlePebbleAimDown = (e) => {
+      if (e && e.preventDefault && e.type && e.type.startsWith("touch")) e.preventDefault();
+      pebbleAimStartTime.current = performance.now();
+      pebbleAimHasDragged.current = !1;
+      if (e && e.touches && e.touches[0]) {
+        pebbleAimTouchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      } else if (e && e.clientX !== void 0) {
+        pebbleAimTouchStart.current = { x: e.clientX, y: e.clientY };
+      }
+      if (pebbleAimTimer.current) clearTimeout(pebbleAimTimer.current);
+      pebbleAimTimer.current = setTimeout(() => {
+        if (pebbleAimStartTime.current > 0) {
+          setIsPebbleAiming(!0);
+        }
+      }, 200);
+      if (Qi) Qi();
+    };
+    const handleCombatClick = (e) => {
+      if (pebbleAimTimer.current) clearTimeout(pebbleAimTimer.current);
+      setIsPebbleAiming(!1);
+      pebbleAimTouchStart.current = null;
+      pebbleAimStartTime.current = 0;
+      pebbleAimHasDragged.current = !1;
+      P(e);
+    };
+    const handlePebbleAimMove = (e) => {
+      if (!pebbleAimTouchStart.current) return;
+      let cx, cy;
+      if (e && e.touches && e.touches[0]) {
+        cx = e.touches[0].clientX;
+        cy = e.touches[0].clientY;
+      } else if (e && e.clientX !== void 0) {
+        cx = e.clientX;
+        cy = e.clientY;
+      }
+      if (cx !== void 0 && cy !== void 0) {
+        const dx = cx - pebbleAimTouchStart.current.x;
+        const dy = cy - pebbleAimTouchStart.current.y;
+        const dragDist = Math.hypot(dx, dy);
+        if (dragDist > 10) {
+          pebbleAimHasDragged.current = !0;
+          setIsPebbleAiming(!0);
+          const angle = Math.atan2(dy, dx);
+          const distance = Math.max(35, Math.min(330, 45 + (dragDist / 70) * 285));
+          if (Zi) Zi(angle, distance);
+        }
+      }
+    };
+    const handlePebbleAimUp = (e) => {
+      if (e && e.preventDefault && e.type && e.type.startsWith("touch")) e.preventDefault();
+      if (pebbleAimTimer.current) clearTimeout(pebbleAimTimer.current);
+      const heldMs = pebbleAimStartTime.current ? performance.now() - pebbleAimStartTime.current : 0;
+      const isManual = pebbleAimHasDragged.current || heldMs >= 200;
+      setIsPebbleAiming(!1);
+      let finalAngle, finalDist;
+      if (isManual && pebbleAimTouchStart.current && e) {
+        let cx, cy;
+        if (e.changedTouches && e.changedTouches[0]) {
+          cx = e.changedTouches[0].clientX;
+          cy = e.changedTouches[0].clientY;
+        } else if (e.clientX !== void 0) {
+          cx = e.clientX;
+          cy = e.clientY;
+        }
+        if (cx !== void 0 && cy !== void 0) {
+          const dx = cx - pebbleAimTouchStart.current.x;
+          const dy = cy - pebbleAimTouchStart.current.y;
+          const dragDist = Math.hypot(dx, dy);
+          if (dragDist > 8) {
+            finalAngle = Math.atan2(dy, dx);
+            finalDist = Math.max(35, Math.min(330, 45 + (dragDist / 70) * 285));
+          }
+        }
+      }
+      pebbleAimTouchStart.current = null;
+      pebbleAimStartTime.current = 0;
+      pebbleAimHasDragged.current = !1;
+      if (Xi) Xi(isManual ? finalAngle : void 0, isManual ? finalDist : void 0);
+      else if (R) R(isManual ? finalAngle : void 0, isManual ? finalDist : void 0);
+    };
+    J.useEffect(() => {
+      if (!fa) {
+        Wa(0);
+        return;
+      }
+      const We = () => {
+        const ma = Date.now() - fa.startTime,
+          Ya = Math.max(0, Math.ceil((fa.durationMs - ma) / 1e3));
+        Wa(Ya);
+      };
+      We();
+      const Aa = setInterval(We, 500);
+      return () => clearInterval(Aa);
+    }, [fa]);
+    const Ve = J.useMemo(
+        () =>
+          _ != null && _.cinto_slot1
+            ? To(_.cinto_slot1).category === "flask"
+            : !1,
+        [_ == null ? void 0 : _.cinto_slot1],
+      ),
+      ra = J.useMemo(
+        () =>
+          _ != null && _.cinto_slot2
+            ? To(_.cinto_slot2).category === "flask"
+            : !1,
+        [_ == null ? void 0 : _.cinto_slot2],
+      ),
+      ct = J.useMemo(() => {
+        var ma;
+        if (!(_ != null && _.mao_esquerda)) return !1;
+        const We = To(_.mao_esquerda),
+          Aa = _.mao_esquerda.stackCount || 1;
+        return Ve &&
+          (((ma = _ == null ? void 0 : _.cinto_slot1) == null
+            ? void 0
+            : ma.stackCount) || 1) > 1
+          ? !0
+          : !We.allowed || Aa > We.maxCapacity;
+      }, [
+        _ == null ? void 0 : _.mao_esquerda,
+        _ == null ? void 0 : _.cinto_slot1,
+        Ve,
+      ]),
+      _t = J.useMemo(() => {
+        var ma;
+        if (!(_ != null && _.mao_direita)) return !1;
+        const We = To(_.mao_direita),
+          Aa = _.mao_direita.stackCount || 1;
+        return ra &&
+          (((ma = _ == null ? void 0 : _.cinto_slot2) == null
+            ? void 0
+            : ma.stackCount) || 1) > 1
+          ? !0
+          : !We.allowed || Aa > We.maxCapacity;
+      }, [
+        _ == null ? void 0 : _.mao_direita,
+        _ == null ? void 0 : _.cinto_slot2,
+        ra,
+      ]),
+      qr = J.useMemo(() => {
+        const We = _ == null ? void 0 : _.mao_esquerda,
+          Aa = _ == null ? void 0 : _.cinto_slot1;
+        let ma = `Troca Rápida [1]: Mão Esquerda ⇄ Bolso 1
+• Mão Esquerda: ${We ? `${We.name} (${We.stackCount || 1}x)` : "Vazia"}
+• Bolso 1: ${Aa ? `${Aa.name} (${Aa.stackCount || 1}x)` : "Vazio"}`;
+        return (
+          Aa &&
+            Ve &&
+            (Aa.stackCount || 1) > 1 &&
+            (ma += `
+🧪 Frascos: Retira 1 por vez para a mão (restam ${(Aa.stackCount || 1) - 1}x no cinto).`),
+          ct &&
+            We &&
+            (ma += `
+📦 "${We.name}" na mão irá para o inventário (ou chão se cheio).`),
+          ma
+        );
+      }, [
+        _ == null ? void 0 : _.mao_esquerda,
+        _ == null ? void 0 : _.cinto_slot1,
+        Ve,
+        ct,
+      ]),
+      zo = J.useMemo(() => {
+        const We = _ == null ? void 0 : _.mao_direita,
+          Aa = _ == null ? void 0 : _.cinto_slot2;
+        let ma = `Troca Rápida [2]: Mão Direita ⇄ Bolso 2
+• Mão Direita: ${We ? `${We.name} (${We.stackCount || 1}x)` : "Vazia"}
+• Bolso 2: ${Aa ? `${Aa.name} (${Aa.stackCount || 1}x)` : "Vazio"}`;
+        return (
+          Aa &&
+            ra &&
+            (Aa.stackCount || 1) > 1 &&
+            (ma += `
+🧪 Frascos: Retira 1 por vez para a mão (restam ${(Aa.stackCount || 1) - 1}x no cinto).`),
+          _t &&
+            We &&
+            (ma += `
+📦 "${We.name}" na mão irá para o inventário (ou chão se cheio).`),
+          ma
+        );
+      }, [
+        _ == null ? void 0 : _.mao_direita,
+        _ == null ? void 0 : _.cinto_slot2,
+        ra,
+        _t,
+      ]);
+    J.useEffect(() => {
+      const We = () => {
+        window.innerWidth < 768 && (Fe(!1), xe(!1));
+      };
+      return (
+        window.addEventListener("resize", We),
+        () => window.removeEventListener("resize", We)
+      );
+    }, []);
+    const tr = () =>
+        o >= 0.2 && o < 0.35
+          ? "Amanhecer"
+          : o >= 0.35 && o < 0.65
+            ? "Meio-dia"
+            : o >= 0.65 && o < 0.8
+              ? "Pôr do Sol"
+              : "Noite";
+    return h.jsxs("div", {
+      className:
+        "pointer-events-none absolute inset-0 z-20 overflow-hidden select-none",
+      children: [
+        h.jsxs("div", {
+          className:
+            "pointer-events-auto absolute top-2.5 sm:top-3.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-30",
+          children: [
+            h.jsxs("button", {
+              id: "hud-toggle-visibility-btn",
+              onClick: () => ee(!Ie),
+              className: `flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium transition-all shadow-md backdrop-blur-md border ${Ie ? "bg-sky-600/90 hover:bg-sky-500 text-white border-sky-400/50 shadow-sky-900/40" : "bg-slate-900/60 hover:bg-slate-900/90 text-slate-300 hover:text-white border-white/10"}`,
+              title: Ie
+                ? "Restaurar Interface (UI)"
+                : "Ocultar Interface para Visão Limpa",
+              children: [
+                Ie
+                  ? h.jsx(xp, { className: "h-3.5 w-3.5 text-sky-200" })
+                  : h.jsx(jp, { className: "h-3.5 w-3.5 text-slate-400" }),
+                h.jsx("span", {
+                  className: "hidden sm:inline",
+                  children: Ie ? "Exibir Interface" : "Modo Imersivo",
+                }),
+              ],
+            }),
+            Ie &&
+              h.jsxs("div", {
+                className: "flex items-center gap-1.5",
+                children: [
+                  h.jsxs("button", {
+                    id: "hud-floating-combat-btn",
+                    onClick: P,
+                    className:
+                      "flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-600/90 hover:bg-rose-500 active:scale-95 text-white text-[11px] font-semibold shadow-lg backdrop-blur-md border border-rose-400/50 transition",
+                    title: "Golpe de Combate / Atacar (Espaço ou F)",
+                    children: [
+                      h.jsx(Xs, { className: "h-3.5 w-3.5 text-rose-200" }),
+                      h.jsx("span", { children: "Combate" }),
+                    ],
+                  }),
+                  h.jsxs("button", {
+                    id: "hud-floating-inventory-btn",
+                    onClick: V,
+                    className:
+                      "flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-600/90 hover:bg-amber-500 text-white text-[11px] font-semibold shadow-lg backdrop-blur-md border border-amber-400/40",
+                    title: `Abrir Inventário (Tecla I ou B) - ${je}/${we}`,
+                    children: [
+                      h.jsx(uo, { className: "h-3.5 w-3.5" }),
+                      h.jsx("span", { children: "Inventário" }),
+                      h.jsxs("span", {
+                        className: `text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full border ${Be === "mochila" ? "bg-indigo-950/90 border-indigo-400/60 text-indigo-200" : Be === "bolsa" ? "bg-emerald-950/90 border-emerald-400/60 text-emerald-200" : "bg-black/50 border-white/20 text-amber-200"}`,
+                        children: [je, "/", we],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+          ],
+        }),
+        !Ie &&
+          h.jsxs(h.Fragment, {
+            children: [
+              h.jsxs("div", {
+                className:
+                  "pointer-events-auto absolute top-2 sm:top-3 left-2 sm:left-3 flex flex-col gap-1.5 rounded-xl border border-white/10 bg-slate-900/75 hover:bg-slate-900/90 p-2 sm:p-2.5 shadow-xl backdrop-blur-md max-w-[200px] sm:max-w-xs transition-all",
+                children: [
+                  h.jsxs("div", {
+                    className: "flex items-center justify-between gap-2",
+                    children: [
+                      h.jsxs("span", {
+                        className:
+                          "inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-sky-400 uppercase truncate",
+                        children: [
+                          h.jsx("span", {
+                            className:
+                              "inline-block h-2 w-2 rounded-full shrink-0",
+                            style: { backgroundColor: e.groundColor },
+                          }),
+                          h.jsx("span", {
+                            className: "truncate",
+                            children: e.namePt,
+                          }),
+                        ],
+                      }),
+                      h.jsx("button", {
+                        id: "hud-collapse-biome-btn",
+                        onClick: () => Fe(!Te),
+                        className:
+                          "p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition shrink-0",
+                        title: Te ? "Minimizar Painel" : "Expandir Detalhes",
+                        children: Te
+                          ? h.jsx(Cp, { className: "h-3 w-3" })
+                          : h.jsx(xu, { className: "h-3 w-3" }),
+                      }),
+                    ],
+                  }),
+                  h.jsxs("div", {
+                    className:
+                      "flex items-center justify-between text-[11px] font-mono text-slate-300",
+                    children: [
+                      h.jsxs("div", {
+                        className:
+                          "flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded border border-white/5",
+                        children: [
+                          h.jsx(Ap, {
+                            className: "h-3 w-3 text-amber-400 shrink-0",
+                          }),
+                          h.jsxs("span", { children: [t.tx, ",", t.ty] }),
+                        ],
+                      }),
+                      h.jsxs("span", {
+                        className:
+                          "text-[10px] text-slate-500 font-mono hidden sm:inline",
+                        children: ["#", l],
+                      }),
+                    ],
+                  }),
+                  h.jsxs("div", {
+                    className:
+                      "flex flex-col gap-1 bg-black/40 px-2 py-1.5 rounded border border-white/5",
+                    children: [
+                      h.jsxs("div", {
+                        className:
+                          "flex items-center justify-between text-[11px] font-semibold",
+                        children: [
+                          h.jsxs("span", {
+                            className: "flex items-center gap-1 text-rose-400",
+                            children: [
+                              h.jsx(Op, {
+                                className:
+                                  "h-3 w-3 fill-rose-500 text-rose-500 shrink-0",
+                              }),
+                              h.jsx("span", { children: "Vida" }),
+                            ],
+                          }),
+                          h.jsxs("span", {
+                            className: `font-mono text-[10px] ${ne ? "text-rose-500 font-bold" : (N ?? 100) < 30 ? "text-rose-400" : "text-slate-300"}`,
+                            children: [
+                              ne ? "0" : Math.round(N ?? 100),
+                              " / ",
+                              Ee ?? 100,
+                            ],
+                          }),
+                        ],
+                      }),
+                      h.jsx("div", {
+                        className:
+                          "h-1.5 w-full bg-slate-800 rounded-full overflow-hidden border border-white/10",
+                        children: h.jsx("div", {
+                          className: `h-full transition-all duration-200 ${ne ? "w-0 bg-slate-700" : (N ?? 100) > 50 ? "bg-gradient-to-r from-emerald-500 to-green-400" : (N ?? 100) > 25 ? "bg-gradient-to-r from-amber-500 to-yellow-400" : "bg-gradient-to-r from-rose-600 to-red-500 animate-pulse"}`,
+                          style: {
+                            width: `${Math.max(0, Math.min(100, ((N ?? 100) / (Ee ?? 100)) * 100))}%`,
+                          },
+                        }),
+                      }),
+                    ],
+                  }),
+                  h.jsxs("div", {
+                    className:
+                      "flex flex-col gap-1 bg-black/40 px-2 py-1.5 rounded border border-white/5",
+                    children: [
+                      h.jsxs("div", {
+                        className:
+                          "flex items-center justify-between text-[11px] font-semibold",
+                        children: [
+                          h.jsxs("span", {
+                            className: `flex items-center gap-1.5 ${W ? "text-rose-400" : le ? "text-emerald-300" : "text-amber-300"}`,
+                            children: [
+                              h.jsx(Yu, {
+                                className: `h-3 w-3 shrink-0 ${le ? "fill-emerald-400 text-emerald-400 animate-pulse" : W ? "text-rose-400 fill-rose-400" : "fill-amber-400 text-amber-400"}`,
+                              }),
+                              h.jsx("span", { children: "Cansaço / Vigor" }),
+                              le &&
+                                h.jsx("span", {
+                                  className:
+                                    "text-[9px] px-1 py-0.5 bg-emerald-500/20 text-emerald-300 rounded font-mono font-bold leading-none tracking-tight",
+                                  children: "CORRENDO",
+                                }),
+                              W &&
+                                h.jsx("span", {
+                                  className:
+                                    "text-[9px] px-1 py-0.5 bg-rose-500/30 text-rose-300 rounded font-mono font-bold leading-none tracking-tight animate-pulse",
+                                  children: "EXAUSTO",
+                                }),
+                            ],
+                          }),
+                          h.jsxs("span", {
+                            className: `font-mono text-[10px] ${W ? "text-rose-400 font-bold" : (G ?? 100) < 30 ? "text-amber-400" : "text-slate-300"}`,
+                            children: [Math.round(G ?? 100), " / ", de ?? 100],
+                          }),
+                        ],
+                      }),
+                      h.jsx("div", {
+                        className:
+                          "h-1.5 w-full bg-slate-800 rounded-full overflow-hidden border border-white/10",
+                        children: h.jsx("div", {
+                          className: `h-full transition-all duration-100 ${W ? "bg-gradient-to-r from-rose-600 to-amber-500 animate-pulse" : le ? "bg-gradient-to-r from-emerald-400 to-teal-300" : (G ?? 100) > 40 ? "bg-gradient-to-r from-amber-400 to-yellow-300" : "bg-gradient-to-r from-rose-500 to-amber-400"}`,
+                          style: {
+                            width: `${Math.max(0, Math.min(100, ((G ?? 100) / (de ?? 100)) * 100))}%`,
+                          },
+                        }),
+                      }),
+                    ],
+                  }),
+                  Te &&
+                    h.jsxs("div", {
+                      className:
+                        "flex flex-col gap-1.5 pt-1.5 border-t border-white/10 text-xs animate-in fade-in duration-150",
+                      children: [
+                        h.jsx("p", {
+                          className:
+                            "text-[11px] text-slate-300 leading-snug line-clamp-2",
+                          children: e.descriptionPt,
+                        }),
+                        h.jsxs("button", {
+                          id: "hud-teleport-toggle",
+                          onClick: () => Me(!be),
+                          className:
+                            "flex items-center justify-between px-2 py-1 rounded bg-slate-800/90 hover:bg-slate-700 text-sky-300 hover:text-sky-200 transition text-[11px] w-full",
+                          title: "Explorar outros biomas",
+                          children: [
+                            h.jsxs("div", {
+                              className: "flex items-center gap-1.5",
+                              children: [
+                                h.jsx(Vp, {
+                                  className: "h-3 w-3 text-sky-400",
+                                }),
+                                h.jsx("span", { children: "Explorar Biomas" }),
+                              ],
+                            }),
+                            h.jsx(xu, {
+                              className: `h-3 w-3 transition-transform ${be ? "rotate-180" : ""}`,
+                            }),
+                          ],
+                        }),
+                        be &&
+                          h.jsx("div", {
+                            className:
+                              "mt-1 flex flex-col gap-0.5 border-t border-white/10 pt-1.5 max-h-40 overflow-y-auto pr-1",
+                            children: Object.values(BIOMES).map((We) =>
+                              h.jsx(
+                                "button",
+                                {
+                                  onClick: () => {
+                                    (p(We.id), Me(!1));
+                                  },
+                                  className:
+                                    "flex items-center justify-between text-left px-1.5 py-1 rounded text-[11px] text-slate-200 hover:bg-slate-800 hover:text-white transition",
+                                  children: h.jsxs("div", {
+                                    className:
+                                      "flex items-center gap-1.5 truncate",
+                                    children: [
+                                      h.jsx("span", {
+                                        className:
+                                          "h-1.5 w-1.5 rounded-full shrink-0",
+                                        style: {
+                                          backgroundColor: We.groundColor,
+                                        },
+                                      }),
+                                      h.jsx("span", {
+                                        className: "truncate",
+                                        children: We.namePt,
+                                      }),
+                                    ],
+                                  }),
+                                },
+                                We.id,
+                              ),
+                            ),
+                          }),
+                      ],
+                    }),
+                ],
+              }),
+              h.jsxs("div", {
+                className:
+                  "pointer-events-auto absolute top-2 sm:top-3 right-2 sm:right-3 flex flex-col items-end gap-1.5 sm:gap-2",
+                children: [
+                  h.jsxs("div", {
+                    className: "flex flex-col items-end",
+                    children: [
+                      h.jsx("div", {
+                        className: "flex items-center gap-1 mb-1",
+                        children: h.jsx("button", {
+                          id: "hud-toggle-minimap-btn",
+                          onClick: () => $a(!Ue),
+                          className:
+                            "px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-400 hover:text-white bg-slate-900/60 hover:bg-slate-900/90 border border-white/10 transition",
+                          title: Ue ? "Ocultar Radar" : "Mostrar Radar",
+                          children: Ue ? "Radar ▼" : "Radar ▲",
+                        }),
+                      }),
+                      Ue &&
+                        h.jsxs("div", {
+                          className:
+                            "relative rounded-xl border border-white/15 bg-slate-900/80 p-1 shadow-2xl backdrop-blur-md",
+                          children: [
+                            h.jsx("canvas", {
+                              ref: x,
+                              width: 90,
+                              height: 90,
+                              className:
+                                "block rounded-lg w-[80px] h-[80px] sm:w-[100px] sm:h-[100px]",
+                            }),
+                            h.jsx("div", {
+                              className:
+                                "pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+                              children: h.jsxs("div", {
+                                className:
+                                  "relative flex h-2.5 w-2.5 items-center justify-center",
+                                children: [
+                                  h.jsx("span", {
+                                    className:
+                                      "absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75",
+                                  }),
+                                  h.jsx("span", {
+                                    className:
+                                      "relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500 border border-white shadow",
+                                  }),
+                                ],
+                              }),
+                            }),
+                          ],
+                        }),
+                    ],
+                  }),
+                  h.jsxs("div", {
+                    className:
+                      "flex items-center gap-1 bg-slate-900/75 hover:bg-slate-900/90 p-1 rounded-xl border border-white/10 shadow-lg backdrop-blur-md transition-all",
+                    children: [
+                      h.jsx("button", {
+                        id: "hud-sound-btn",
+                        onClick: () => c(!m),
+                        className: `p-1.5 rounded-lg text-xs transition ${m ? "bg-sky-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"}`,
+                        title: m ? "Silenciar Áudio" : "Ativar Efeitos Sonoros",
+                        children: m
+                          ? h.jsx(Hp, { className: "h-3.5 w-3.5" })
+                          : h.jsx(Wp, { className: "h-3.5 w-3.5" }),
+                      }),
+                      h.jsxs("button", {
+                        id: "hud-combat-btn",
+                        onClick: handleCombatClick,
+                        className:
+                          "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-700 hover:bg-rose-600 active:scale-95 text-white text-xs font-semibold shadow-md transition border border-rose-500/50",
+                        title: "Golpe de Combate / Atacar (Tecla Espaço ou F)",
+                        children: [
+                          h.jsx(Xs, { className: "h-3.5 w-3.5 text-rose-200" }),
+                          h.jsx("span", {
+                            className: "text-[11px]",
+                            children: "Combate",
+                          }),
+                          h.jsx("span", {
+                            className:
+                              "hidden xl:inline text-[9px] bg-rose-950/80 px-1 py-0.5 rounded text-rose-300 font-mono",
+                            children: "Espaço",
+                          }),
+                        ],
+                      }),
+                      h.jsxs("button", {
+                        id: "hud-pebble-btn",
+                        onMouseDown: handlePebbleAimDown,
+                        onMouseUp: handlePebbleAimUp,
+                        onTouchStart: handlePebbleAimDown,
+                        onTouchEnd: handlePebbleAimUp,
+                        onClick: () => { if (!isPebbleAiming && R) R(); },
+                        className: `flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-white text-xs font-semibold shadow-md transition border active:scale-95 ${
+                          isPebbleAiming
+                            ? "bg-amber-600 border-amber-300 ring-2 ring-amber-400 animate-pulse"
+                            : "bg-slate-700 hover:bg-slate-600 border-slate-500/50"
+                        }`,
+                        title: "Arremessar Seixo (toque rápido / segure Shift para mirar)",
+                        children: [
+                          h.jsx("span", { className: "text-[13px]", children: "⚪" }),
+                          h.jsx("span", { className: "text-[11px]", children: isPebbleAiming ? "Mirando..." : "Seixo" }),
+                          h.jsx("span", { className: "hidden xl:inline text-[9px] bg-black/40 px-1 py-0.5 rounded text-slate-200 font-mono", children: "Shift" })
+                        ],
+                      }),
+                      h.jsxs("button", {
+                        id: "hud-interact-btn",
+                        onClick: j,
+                        className: `flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold shadow-md transition border active:scale-95 ${oa ? "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-400/60 ring-1 ring-emerald-400/50" : "bg-blue-700 hover:bg-blue-600 text-white border-blue-500/50"}`,
+                        title: oa
+                          ? "Descansar & Salvar Jogo (Tecla E)"
+                          : "Interagir / Coletar / Usar (Tecla E)",
+                        children: [
+                          oa
+                            ? h.jsx(Bu, {
+                                className: "h-3.5 w-3.5 text-emerald-200",
+                              })
+                            : h.jsx(Lp, {
+                                className: "h-3.5 w-3.5 text-blue-200",
+                              }),
+                          h.jsx("span", {
+                            className: "text-[11px] whitespace-nowrap",
+                            children: oa
+                              ? ga
+                                ? "Salvar Novamente"
+                                : "Descansar & Salvar"
+                              : "Interagir",
+                          }),
+                          h.jsx("span", {
+                            className:
+                              "hidden xl:inline text-[9px] bg-black/40 px-1 py-0.5 rounded text-slate-200 font-mono",
+                            children: "E",
+                          }),
+                        ],
+                      }),
+                      oa &&
+                        (fa
+                          ? h.jsxs("button", {
+                              id: "hud-roasting-status-btn",
+                              onClick: Oe === 0 ? j : X,
+                              className: `flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold shadow-md transition border active:scale-95 ${Oe === 0 ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-300 shadow-emerald-950/50 animate-bounce" : "bg-amber-950/90 text-amber-200 border-amber-500/50"}`,
+                              title:
+                                Oe === 0
+                                  ? "🍢 Peixe assado e pronto para saborear! Pressione [E] para coletar"
+                                  : `⏳ Assando nas brasas da fogueira... Faltam ${Oe} segundos.`,
+                              children: [
+                                h.jsx("span", {
+                                  className: "text-xs",
+                                  children: "🍢",
+                                }),
+                                h.jsx("span", {
+                                  className:
+                                    "text-[11px] whitespace-nowrap font-mono",
+                                  children:
+                                    Oe === 0
+                                      ? "Coletar Peixe!"
+                                      : `Assando (${Oe}s)`,
+                                }),
+                                Oe === 0 &&
+                                  h.jsx("span", {
+                                    className:
+                                      "hidden xl:inline text-[9px] bg-black/40 px-1 py-0.5 rounded text-emerald-200 font-mono",
+                                    children: "E",
+                                  }),
+                              ],
+                            })
+                          : h.jsxs("button", {
+                              id: "hud-roast-fish-btn",
+                              onClick: X,
+                              className: `flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold shadow-md transition border active:scale-95 ${Ae > 0 && Se >= 1 ? "bg-amber-600 hover:bg-amber-500 text-white border-amber-300/80 shadow-amber-950/40 animate-pulse" : "bg-slate-800/80 text-slate-400 border-slate-700/60"}`,
+                              title:
+                                Ae > 0 && Se >= 1
+                                  ? "Deixar peixe assando no espeto de galho (1 minuto) - Tecla T"
+                                  : "Requer 1 Peixe Cru e 1 Galho no inventário para assar no espeto",
+                              children: [
+                                h.jsx("span", {
+                                  className: "text-xs",
+                                  children: "🍢",
+                                }),
+                                h.jsx("span", {
+                                  className: "text-[11px] whitespace-nowrap",
+                                  children: "Assar Peixe",
+                                }),
+                                h.jsx("span", {
+                                  className:
+                                    "hidden xl:inline text-[9px] bg-black/40 px-1 py-0.5 rounded text-amber-200 font-mono",
+                                  children: "T",
+                                }),
+                              ],
+                            })),
+                      h.jsxs("button", {
+                        id: "hud-torch-btn",
+                        onClick: K || (() => g(!f)),
+                        className: `flex items-center gap-1 p-1.5 sm:px-2.5 sm:py-1 rounded-lg text-xs font-semibold transition ${f ? "bg-amber-500 text-slate-950 shadow-md border border-amber-300/40" : "text-slate-300 hover:text-white hover:bg-slate-800"}`,
+                        title: "Tocha das Cavernas (Tecla L)",
+                        children: [
+                          h.jsx(Lr, {
+                            className: `h-3.5 w-3.5 ${f ? "fill-amber-300" : "text-amber-400"}`,
+                          }),
+                          h.jsx("span", {
+                            className: "hidden md:inline text-[11px]",
+                            children: "Tocha",
+                          }),
+                        ],
+                      }),
+                      (_ == null ? void 0 : _.cinto) &&
+                        h.jsxs("div", {
+                          className:
+                            "flex items-center gap-1 bg-black/45 p-0.5 rounded-lg border border-amber-500/40",
+                          children: [
+                            h.jsxs("button", {
+                              id: "hud-belt-slot-1-btn",
+                              onClick: () => I && I("cinto_slot1"),
+                              className: `relative flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded bg-slate-900/90 border hover:border-amber-400 active:scale-95 transition cursor-pointer ${ct ? "border-sky-500/60" : "border-amber-500/40"}`,
+                              title: qr,
+                              children: [
+                                _.cinto_slot1
+                                  ? h.jsx(ItemIcon, { item: _.cinto_slot1, size: 20 })
+                                  : h.jsx("span", {
+                                      className:
+                                        "text-[9px] font-mono text-amber-500/40 font-bold",
+                                      children: "1",
+                                    }),
+                                _.cinto_slot1 &&
+                                  (_.cinto_slot1.stackCount || 1) > 1 &&
+                                  h.jsx("span", {
+                                    className:
+                                      "absolute -bottom-1 -right-1 px-1 rounded-full bg-amber-500 text-black text-[7px] font-mono font-bold leading-tight shadow",
+                                    children: _.cinto_slot1.stackCount,
+                                  }),
+                                h.jsx("span", {
+                                  className:
+                                    "absolute -top-1 -left-1 px-0.5 rounded bg-black/80 text-[7px] font-mono text-amber-300 font-bold border border-amber-500/40",
+                                  children: "1",
+                                }),
+                              ],
+                            }),
+                            h.jsxs("button", {
+                              id: "hud-belt-slot-2-btn",
+                              onClick: () => I && I("cinto_slot2"),
+                              className: `relative flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded bg-slate-900/90 border hover:border-amber-400 active:scale-95 transition cursor-pointer ${_t ? "border-sky-500/60" : "border-amber-500/40"}`,
+                              title: zo,
+                              children: [
+                                _.cinto_slot2
+                                  ? h.jsx(ItemIcon, { item: _.cinto_slot2, size: 20 })
+                                  : h.jsx("span", {
+                                      className:
+                                        "text-[9px] font-mono text-amber-500/40 font-bold",
+                                      children: "2",
+                                    }),
+                                _.cinto_slot2 &&
+                                  (_.cinto_slot2.stackCount || 1) > 1 &&
+                                  h.jsx("span", {
+                                    className:
+                                      "absolute -bottom-1 -right-1 px-1 rounded-full bg-amber-500 text-black text-[7px] font-mono font-bold leading-tight shadow",
+                                    children: _.cinto_slot2.stackCount,
+                                  }),
+                                h.jsx("span", {
+                                  className:
+                                    "absolute -top-1 -left-1 px-0.5 rounded bg-black/80 text-[7px] font-mono text-amber-300 font-bold border border-amber-500/40",
+                                  children: "2",
+                                }),
+                              ],
+                            }),
+                          ],
+                        }),
+                      h.jsxs("button", {
+                        id: "hud-inventory-btn",
+                        onClick: V,
+                        className:
+                          "flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold shadow-md transition border border-amber-400/40",
+                        title: `Abrir Inventário e Equipamentos (Tecla I ou B) - ${je}/${we} slots`,
+                        children: [
+                          h.jsx(uo, { className: "h-3.5 w-3.5" }),
+                          h.jsx("span", {
+                            className: "hidden sm:inline text-[11px]",
+                            children: "Inventário",
+                          }),
+                          h.jsxs("span", {
+                            className: `text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full border ${Be === "mochila" ? "bg-indigo-950/90 border-indigo-400/60 text-indigo-200" : Be === "bolsa" ? "bg-emerald-950/90 border-emerald-400/60 text-emerald-200" : "bg-black/50 border-white/20 text-amber-200"}`,
+                            children: [je, "/", we],
+                          }),
+                        ],
+                      }),
+                      h.jsx("button", {
+                        id: "hud-toggle-more-tools-btn",
+                        onClick: () => xe(!_e),
+                        className: `p-1.5 rounded-lg text-xs transition ${_e ? "bg-slate-700 text-sky-300" : "text-slate-400 hover:text-white hover:bg-slate-800"}`,
+                        title: _e
+                          ? "Recolher ferramentas extras"
+                          : "Mais ferramentas (Zoom, Hora, Seed)",
+                        children: h.jsx(Lu, { className: "h-3.5 w-3.5" }),
+                      }),
+                    ],
+                  }),
+                  _e &&
+                    h.jsxs("div", {
+                      className:
+                        "flex flex-col items-end gap-1.5 bg-slate-900/80 p-1.5 rounded-xl border border-white/10 shadow-xl backdrop-blur-md animate-in fade-in duration-150",
+                      children: [
+                        h.jsxs("div", {
+                          className:
+                            "flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded-lg border border-white/10",
+                          children: [
+                            h.jsx("button", {
+                              id: "hud-zoom-out-btn",
+                              onClick: () =>
+                                w((We) =>
+                                  Math.max(0.25, +(We - 0.15).toFixed(2)),
+                                ),
+                              className:
+                                "p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 text-xs transition",
+                              title: "Afastar Zoom",
+                              children: h.jsx(Qp, { className: "h-3 w-3" }),
+                            }),
+                            h.jsxs("span", {
+                              className:
+                                "text-[10px] font-mono text-sky-300 min-w-[32px] text-center font-semibold",
+                              children: [Math.round(y * 100), "%"],
+                            }),
+                            h.jsx("button", {
+                              id: "hud-zoom-in-btn",
+                              onClick: () =>
+                                w((We) =>
+                                  Math.min(2.5, +(We + 0.15).toFixed(2)),
+                                ),
+                              className:
+                                "p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 text-xs transition",
+                              title: "Aproximar Zoom",
+                              children: h.jsx(Zp, { className: "h-3 w-3" }),
+                            }),
+                            h.jsx("button", {
+                              id: "hud-grid-btn",
+                              onClick: () => T(!v),
+                              className: `p-1 rounded text-xs transition ml-1 ${v ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"}`,
+                              title: "Alternar Grade de Tiles",
+                              children: h.jsx(zp, { className: "h-3 w-3" }),
+                            }),
+                          ],
+                        }),
+                        h.jsxs("div", {
+                          className:
+                            "flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-lg border border-white/10",
+                          children: [
+                            h.jsx(Fp, {
+                              className: "h-3 w-3 text-amber-400 shrink-0",
+                            }),
+                            h.jsx("input", {
+                              id: "hud-time-slider",
+                              type: "range",
+                              min: "0",
+                              max: "1",
+                              step: "0.01",
+                              value: o,
+                              onChange: (We) => u(parseFloat(We.target.value)),
+                              className:
+                                "w-20 accent-amber-400 cursor-pointer h-1 bg-slate-700 rounded",
+                              title: "Ciclo Dia/Noite",
+                            }),
+                            h.jsx(Bp, {
+                              className: "h-3 w-3 text-indigo-400 shrink-0",
+                            }),
+                            h.jsx("span", {
+                              className:
+                                "text-[9px] font-mono text-slate-300 w-12 text-right truncate",
+                              children: tr(),
+                            }),
+                          ],
+                        }),
+                        h.jsxs("div", {
+                          className:
+                            "flex items-center gap-1 w-full justify-end",
+                          children: [
+                            h.jsxs("button", {
+                              id: "hud-reroll-seed-btn",
+                              onClick: S,
+                              className:
+                                "flex items-center gap-1 px-2 py-1 rounded bg-emerald-700/80 hover:bg-emerald-600 text-white text-[10px] font-medium transition shadow-sm",
+                              title: "Gerar Novo Mundo Aleatório",
+                              children: [
+                                h.jsx(Gp, { className: "h-3 w-3" }),
+                                h.jsx("span", { children: "Seed" }),
+                              ],
+                            }),
+                          ],
+                        }),
+                      ],
+                    }),
+                  $ &&
+                    z &&
+                    h.jsxs("button", {
+                      id: "hud-recenter-camera-btn",
+                      onClick: z,
+                      className:
+                        "flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-semibold shadow-xl border border-sky-300/40 backdrop-blur-md transition-all animate-pulse",
+                      title: "Recentralizar no Personagem (Tecla C)",
+                      children: [
+                        h.jsx(Ou, { className: "h-3 w-3" }),
+                        h.jsx("span", { children: "Recentralizar" }),
+                      ],
+                    }),
+                ],
+              }),
+            ],
+          }),
+        A &&
+          h.jsx("div", {
+            className:
+              "pointer-events-none absolute bottom-24 sm:bottom-16 left-1/2 -translate-x-1/2 z-30 transition-all animate-bounce",
+            children: h.jsxs("div", {
+              className:
+                "flex items-center gap-2 rounded-full border border-sky-400/80 bg-slate-950/95 px-4 py-2 text-xs sm:text-sm font-semibold text-sky-200 shadow-2xl backdrop-blur-md",
+              children: [
+                h.jsx(Or, { className: "h-4 w-4 text-amber-400" }),
+                h.jsx("span", { children: A }),
+              ],
+            }),
+          }),
+        !Ie &&
+          h.jsxs("div", {
+            className:
+              "pointer-events-auto hidden md:flex items-center gap-1 absolute bottom-28 left-4 z-20",
+            children: [
+              h.jsxs("button", {
+                id: "hud-toggle-help-legend-btn",
+                onClick: () => Sa(!He),
+                className:
+                  "flex items-center gap-1 bg-slate-900/60 hover:bg-slate-900/90 px-2.5 py-1 rounded-lg border border-white/10 text-[11px] text-slate-400 hover:text-slate-200 backdrop-blur-md transition",
+                title: "Ver controles do teclado",
+                children: [
+                  h.jsx(Du, { className: "h-3 w-3 text-sky-400" }),
+                  h.jsx("span", { children: "Controles" }),
+                ],
+              }),
+              He &&
+                h.jsxs("div", {
+                  className:
+                    "flex items-center gap-2 bg-slate-900/85 px-3 py-1.5 rounded-xl border border-white/10 text-[11px] text-slate-300 backdrop-blur-md shadow-lg animate-in fade-in duration-150",
+                  children: [
+                    h.jsxs("div", {
+                      className: "flex items-center gap-1",
+                      children: [
+                        h.jsx("span", {
+                          className:
+                            "font-mono bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-[10px] text-white",
+                          children: "WASD",
+                        }),
+                        h.jsx("span", {
+                          className: "text-slate-400",
+                          children: "Mover",
+                        }),
+                      ],
+                    }),
+                    h.jsx("span", {
+                      className: "text-slate-600",
+                      children: "•",
+                    }),
+                    h.jsxs("div", {
+                      className: "flex items-center gap-1 text-emerald-300",
+                      children: [
+                        h.jsx("span", {
+                          className:
+                            "font-mono bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-[10px] text-emerald-300",
+                          children: "2x Toque / Shift",
+                        }),
+                        h.jsx("span", { children: "Correr" }),
+                      ],
+                    }),
+                    h.jsx("span", {
+                      className: "text-slate-600",
+                      children: "•",
+                    }),
+                    h.jsxs("div", {
+                      className: "flex items-center gap-1 text-amber-200",
+                      children: [
+                        h.jsx("span", {
+                          className:
+                            "font-mono bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-[10px] text-white",
+                          children: "E",
+                        }),
+                        h.jsx("span", { children: "Coletar / Usar" }),
+                      ],
+                    }),
+                    h.jsx("span", {
+                      className: "text-slate-600",
+                      children: "•",
+                    }),
+                    h.jsxs("div", {
+                      className: "flex items-center gap-1 text-rose-300",
+                      children: [
+                        h.jsx("span", {
+                          className:
+                            "font-mono bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-[10px] text-white",
+                          children: "Espaço / F",
+                        }),
+                        h.jsx("span", { children: "Combate" }),
+                      ],
+                    }),
+                    h.jsx("span", {
+                      className: "text-slate-600",
+                      children: "•",
+                    }),
+                    h.jsxs("div", {
+                      className: "flex items-center gap-1 text-amber-300",
+                      children: [
+                        h.jsx("span", {
+                          className:
+                            "font-mono bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-[10px] text-white",
+                          children: "I",
+                        }),
+                        h.jsx("span", { children: "Inventário" }),
+                      ],
+                    }),
+                    h.jsx("span", {
+                      className: "text-slate-600",
+                      children: "•",
+                    }),
+                    h.jsxs("div", {
+                      className: "flex items-center gap-1 text-sky-300",
+                      children: [
+                        h.jsx("span", {
+                          className:
+                            "font-mono bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-[10px] text-white",
+                          children: "C",
+                        }),
+                        h.jsx("span", { children: "Câmera" }),
+                      ],
+                    }),
+                    (_ == null ? void 0 : _.cinto) &&
+                      h.jsxs(h.Fragment, {
+                        children: [
+                          h.jsx("span", {
+                            className: "text-slate-600",
+                            children: "•",
+                          }),
+                          h.jsxs("div", {
+                            className: "flex items-center gap-1 text-amber-300",
+                            children: [
+                              h.jsx("span", {
+                                className:
+                                  "font-mono bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-[10px] text-amber-300 font-bold",
+                                children: "1",
+                              }),
+                              h.jsx("span", { children: "Mão Esq ⇄ Bolso 1" }),
+                            ],
+                          }),
+                          h.jsx("span", {
+                            className: "text-slate-600",
+                            children: "•",
+                          }),
+                          h.jsxs("div", {
+                            className: "flex items-center gap-1 text-amber-300",
+                            children: [
+                              h.jsx("span", {
+                                className:
+                                  "font-mono bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-[10px] text-amber-300 font-bold",
+                                children: "2",
+                              }),
+                              h.jsx("span", { children: "Mão Dir ⇄ Bolso 2" }),
+                            ],
+                          }),
+                        ],
+                      }),
+                  ],
+                }),
+            ],
+          }),
+        !Ie &&
+          (_ == null ? void 0 : _.cinto) &&
+          h.jsxs("div", {
+            id: "hud-belt-quickswap-bar",
+            className:
+              "pointer-events-auto hidden md:flex items-center gap-2.5 absolute bottom-3 left-1/2 -translate-x-1/2 z-20 bg-slate-950/92 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-amber-500/50 shadow-2xl shadow-black/80 select-none animate-in fade-in slide-in-from-bottom-2 duration-200",
+            children: [
+              h.jsxs("div", {
+                className:
+                  "flex items-center gap-1.5 text-[11px] font-bold text-amber-400 uppercase tracking-wider pr-2 border-r border-amber-500/30",
+                children: [
+                  h.jsx("span", { className: "text-base", children: "🥋" }),
+                  h.jsx("span", {
+                    className:
+                      "hidden xl:inline text-[10px] tracking-widest text-amber-300",
+                    children: "Cinto",
+                  }),
+                ],
+              }),
+              h.jsxs("button", {
+                id: "hud-quickswap-btn-slot1",
+                onClick: () => I && I("cinto_slot1"),
+                className: `group relative flex items-center gap-2 px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer active:scale-95 shadow-md ${ct ? "bg-slate-900/90 border-sky-500/50 hover:border-sky-400 hover:bg-slate-800/90 hover:shadow-sky-500/20" : "bg-slate-900/90 border-amber-500/40 hover:border-amber-400 hover:bg-slate-800/90 hover:shadow-amber-500/20"}`,
+                title: qr,
+                children: [
+                  h.jsx("span", {
+                    className:
+                      "font-mono text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 shadow",
+                    children: "1",
+                  }),
+                  h.jsxs("div", {
+                    className: "flex items-center gap-1.5",
+                    children: [
+                      _.mao_esquerda
+                        ? h.jsxs("div", {
+                            className:
+                              "relative flex items-center justify-center w-7 h-7 rounded-lg bg-slate-950 border border-amber-500/30 shadow-inner",
+                            children: [
+                              h.jsx(ItemIcon, { item: _.mao_esquerda, size: 18 }),
+                              (_.mao_esquerda.stackCount || 1) > 1 &&
+                                h.jsx("span", {
+                                  className:
+                                    "absolute -bottom-1 -right-1 text-[7px] font-mono font-bold px-1 bg-amber-500 text-black rounded-full leading-tight shadow",
+                                  children: _.mao_esquerda.stackCount,
+                                }),
+                            ],
+                          })
+                        : h.jsx("div", {
+                            className:
+                              "flex items-center justify-center w-7 h-7 rounded-lg bg-slate-950/80 border border-dashed border-white/20 text-slate-500 text-xs",
+                            title: "Mão Esquerda Vazia",
+                            children: "✋",
+                          }),
+                      h.jsxs("div", {
+                        className: "flex flex-col text-left",
+                        children: [
+                          h.jsx("span", {
+                            className:
+                              "text-[9px] text-slate-400 font-medium leading-none",
+                            children: "Mão Esq",
+                          }),
+                          h.jsx("span", {
+                            className:
+                              "text-[11px] font-bold text-slate-200 truncate max-w-[65px] leading-tight",
+                            children: _.mao_esquerda
+                              ? _.mao_esquerda.name
+                              : "Vazia",
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  h.jsx("div", {
+                    className:
+                      "p-1 rounded-full bg-black/40 border border-amber-500/30 text-amber-400 group-hover:text-amber-300 group-hover:scale-110 group-hover:rotate-180 transition-all duration-300",
+                    children: h.jsx(di, { className: "h-3.5 w-3.5" }),
+                  }),
+                  h.jsxs("div", {
+                    className: "flex items-center gap-1.5",
+                    children: [
+                      h.jsxs("div", {
+                        className: "flex flex-col text-right",
+                        children: [
+                          h.jsx("span", {
+                            className:
+                              "text-[9px] text-amber-400/80 font-medium leading-none",
+                            children: "Bolso 1",
+                          }),
+                          h.jsx("span", {
+                            className:
+                              "text-[11px] font-bold text-amber-200 truncate max-w-[65px] leading-tight",
+                            children: _.cinto_slot1
+                              ? _.cinto_slot1.name
+                              : "Vazio",
+                          }),
+                        ],
+                      }),
+                      _.cinto_slot1
+                        ? h.jsxs("div", {
+                            className:
+                              "relative flex items-center justify-center w-7 h-7 rounded-lg bg-slate-950 border border-amber-500/40 shadow-inner",
+                            children: [
+                              h.jsx(ItemIcon, { item: _.cinto_slot1, size: 18 }),
+                              (_.cinto_slot1.stackCount || 1) > 1 &&
+                                h.jsx("span", {
+                                  className:
+                                    "absolute -bottom-1 -right-1 text-[7px] font-mono font-bold px-1 bg-amber-500 text-black rounded-full leading-tight shadow",
+                                  children: _.cinto_slot1.stackCount,
+                                }),
+                            ],
+                          })
+                        : h.jsx("div", {
+                            className:
+                              "flex items-center justify-center w-7 h-7 rounded-lg bg-slate-950/80 border border-dashed border-amber-500/30 text-amber-500/50 text-[10px] font-mono font-bold",
+                            title: "Bolso 1 Vazio",
+                            children: "1",
+                          }),
+                    ],
+                  }),
+                  ct &&
+                    h.jsx("span", {
+                      className:
+                        "text-[8px] font-bold px-1 rounded bg-sky-950/90 text-sky-200 border border-sky-500/40",
+                      children: "→ Mochila",
+                    }),
+                ],
+              }),
+              h.jsxs("button", {
+                id: "hud-quickswap-btn-slot2",
+                onClick: () => I && I("cinto_slot2"),
+                className: `group relative flex items-center gap-2 px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer active:scale-95 shadow-md ${_t ? "bg-slate-900/90 border-sky-500/50 hover:border-sky-400 hover:bg-slate-800/90 hover:shadow-sky-500/20" : "bg-slate-900/90 border-amber-500/40 hover:border-amber-400 hover:bg-slate-800/90 hover:shadow-amber-500/20"}`,
+                title: zo,
+                children: [
+                  h.jsx("span", {
+                    className:
+                      "font-mono text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 shadow",
+                    children: "2",
+                  }),
+                  h.jsxs("div", {
+                    className: "flex items-center gap-1.5",
+                    children: [
+                      _.mao_direita
+                        ? h.jsxs("div", {
+                            className:
+                              "relative flex items-center justify-center w-7 h-7 rounded-lg bg-slate-950 border border-amber-500/30 shadow-inner",
+                            children: [
+                              h.jsx(ItemIcon, { item: _.mao_direita, size: 18 }),
+                              (_.mao_direita.stackCount || 1) > 1 &&
+                                h.jsx("span", {
+                                  className:
+                                    "absolute -bottom-1 -right-1 text-[7px] font-mono font-bold px-1 bg-amber-500 text-black rounded-full leading-tight shadow",
+                                  children: _.mao_direita.stackCount,
+                                }),
+                            ],
+                          })
+                        : h.jsx("div", {
+                            className:
+                              "flex items-center justify-center w-7 h-7 rounded-lg bg-slate-950/80 border border-dashed border-white/20 text-slate-500 text-xs",
+                            title: "Mão Direita Vazia",
+                            children: "✋",
+                          }),
+                      h.jsxs("div", {
+                        className: "flex flex-col text-left",
+                        children: [
+                          h.jsx("span", {
+                            className:
+                              "text-[9px] text-slate-400 font-medium leading-none",
+                            children: "Mão Dir",
+                          }),
+                          h.jsx("span", {
+                            className:
+                              "text-[11px] font-bold text-slate-200 truncate max-w-[65px] leading-tight",
+                            children: _.mao_direita
+                              ? _.mao_direita.name
+                              : "Vazia",
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  h.jsx("div", {
+                    className:
+                      "p-1 rounded-full bg-black/40 border border-amber-500/30 text-amber-400 group-hover:text-amber-300 group-hover:scale-110 group-hover:rotate-180 transition-all duration-300",
+                    children: h.jsx(di, { className: "h-3.5 w-3.5" }),
+                  }),
+                  h.jsxs("div", {
+                    className: "flex items-center gap-1.5",
+                    children: [
+                      h.jsxs("div", {
+                        className: "flex flex-col text-right",
+                        children: [
+                          h.jsx("span", {
+                            className:
+                              "text-[9px] text-amber-400/80 font-medium leading-none",
+                            children: "Bolso 2",
+                          }),
+                          h.jsx("span", {
+                            className:
+                              "text-[11px] font-bold text-amber-200 truncate max-w-[65px] leading-tight",
+                            children: _.cinto_slot2
+                              ? _.cinto_slot2.name
+                              : "Vazio",
+                          }),
+                        ],
+                      }),
+                      _.cinto_slot2
+                        ? h.jsxs("div", {
+                            className:
+                              "relative flex items-center justify-center w-7 h-7 rounded-lg bg-slate-950 border border-amber-500/40 shadow-inner",
+                            children: [
+                              h.jsx(ItemIcon, { item: _.cinto_slot2, size: 18 }),
+                              (_.cinto_slot2.stackCount || 1) > 1 &&
+                                h.jsx("span", {
+                                  className:
+                                    "absolute -bottom-1 -right-1 text-[7px] font-mono font-bold px-1 bg-amber-500 text-black rounded-full leading-tight shadow",
+                                  children: _.cinto_slot2.stackCount,
+                                }),
+                            ],
+                          })
+                        : h.jsx("div", {
+                            className:
+                              "flex items-center justify-center w-7 h-7 rounded-lg bg-slate-950/80 border border-dashed border-amber-500/30 text-amber-500/50 text-[10px] font-mono font-bold",
+                            title: "Bolso 2 Vazio",
+                            children: "2",
+                          }),
+                    ],
+                  }),
+                  _t &&
+                    h.jsx("span", {
+                      className:
+                        "text-[8px] font-bold px-1 rounded bg-sky-950/90 text-sky-200 border border-sky-500/40",
+                      children: "→ Mochila",
+                    }),
+                ],
+              }),
+            ],
+          }),
+        $ &&
+          z &&
+          h.jsxs("button", {
+            id: "mobile-floating-recenter-btn",
+            onClick: z,
+            className:
+              "pointer-events-auto md:hidden absolute top-14 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-600 text-white text-xs font-semibold shadow-xl border border-sky-300/50 animate-pulse active:scale-95",
+            children: [
+              h.jsx(Ou, { className: "h-3.5 w-3.5" }),
+              h.jsx("span", { children: "Recentralizar Câmera" }),
+            ],
+          }),
+        h.jsxs("div", {
+          className:
+            "pointer-events-auto absolute bottom-4 left-4 z-30 flex flex-col items-start gap-2 select-none",
+          children: [
+            (_ == null ? void 0 : _.cinto) &&
+              h.jsxs("div", {
+                className: "flex items-center gap-1.5",
+                children: [
+                  h.jsxs("button", {
+                    id: "touch-belt-swap-1-btn",
+                    onClick: () => I && I("cinto_slot1"),
+                    className: `flex items-center gap-1.5 px-2 py-1.5 rounded-xl border backdrop-blur-md shadow-lg active:scale-90 transition-transform ${ct ? "bg-slate-900/95 border-sky-500/70 text-sky-100 shadow-sky-950/40" : "bg-slate-900/95 border-amber-500/70 text-amber-100 shadow-amber-950/40"}`,
+                    title: qr,
+                    children: [
+                      h.jsx("span", {
+                        className:
+                          "font-mono text-[9px] font-black px-1 py-0.2 rounded bg-amber-500 text-slate-950",
+                        children: "1",
+                      }),
+                      h.jsxs("div", {
+                        className: "flex items-center gap-1",
+                        children: [
+                          _.mao_esquerda
+                            ? h.jsx(ItemIcon, { item: _.mao_esquerda, size: 15 })
+                            : h.jsx("span", {
+                                className: "text-[10px]",
+                                children: "✋",
+                              }),
+                          h.jsx(di, { className: "h-3 w-3 text-amber-400" }),
+                          _.cinto_slot1
+                            ? h.jsxs("div", {
+                                className: "relative",
+                                children: [
+                                  h.jsx(ItemIcon, { item: _.cinto_slot1, size: 15 }),
+                                  (_.cinto_slot1.stackCount || 1) > 1 &&
+                                    h.jsx("span", {
+                                      className:
+                                        "absolute -bottom-1 -right-1 text-[7px] font-mono font-bold px-0.5 bg-amber-500 text-black rounded-full leading-none",
+                                      children: _.cinto_slot1.stackCount,
+                                    }),
+                                ],
+                              })
+                            : h.jsx("span", {
+                                className:
+                                  "text-[9px] font-mono text-amber-500/60 font-bold",
+                                children: "B1",
+                              }),
+                        ],
+                      }),
+                      h.jsx("span", {
+                        className:
+                          "text-[9px] font-bold text-amber-200 whitespace-nowrap",
+                        children: "Troca Esq",
+                      }),
+                    ],
+                  }),
+                  h.jsxs("button", {
+                    id: "touch-belt-swap-2-btn",
+                    onClick: () => I && I("cinto_slot2"),
+                    className: `flex items-center gap-1.5 px-2 py-1.5 rounded-xl border backdrop-blur-md shadow-lg active:scale-90 transition-transform ${_t ? "bg-slate-900/95 border-sky-500/70 text-sky-100 shadow-sky-950/40" : "bg-slate-900/95 border-amber-500/70 text-amber-100 shadow-amber-950/40"}`,
+                    title: zo,
+                    children: [
+                      h.jsx("span", {
+                        className:
+                          "font-mono text-[9px] font-black px-1 py-0.2 rounded bg-amber-500 text-slate-950",
+                        children: "2",
+                      }),
+                      h.jsxs("div", {
+                        className: "flex items-center gap-1",
+                        children: [
+                          _.mao_direita
+                            ? h.jsx(ItemIcon, { item: _.mao_direita, size: 15 })
+                            : h.jsx("span", {
+                                className: "text-[10px]",
+                                children: "✋",
+                              }),
+                          h.jsx(di, { className: "h-3 w-3 text-amber-400" }),
+                          _.cinto_slot2
+                            ? h.jsxs("div", {
+                                className: "relative",
+                                children: [
+                                  h.jsx(ItemIcon, { item: _.cinto_slot2, size: 15 }),
+                                  (_.cinto_slot2.stackCount || 1) > 1 &&
+                                    h.jsx("span", {
+                                      className:
+                                        "absolute -bottom-1 -right-1 text-[7px] font-mono font-bold px-0.5 bg-amber-500 text-black rounded-full leading-none",
+                                      children: _.cinto_slot2.stackCount,
+                                    }),
+                                ],
+                              })
+                            : h.jsx("span", {
+                                className:
+                                  "text-[9px] font-mono text-amber-500/60 font-bold",
+                                children: "B2",
+                              }),
+                        ],
+                      }),
+                      h.jsx("span", {
+                        className:
+                          "text-[9px] font-bold text-amber-200 whitespace-nowrap",
+                        children: "Troca Dir",
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            h.jsxs("div", {
+              className: "flex items-center gap-2",
+              children: [
+                h.jsx("button", {
+                  id: "touch-torch-btn",
+                  onClick: K || (() => g(!f)),
+                  className: `flex items-center justify-center w-11 h-11 rounded-xl border text-sm font-bold shadow-lg transition-all backdrop-blur-sm active:scale-90 ${f ? "bg-amber-500/90 border-amber-300 text-slate-950 shadow-amber-500/40" : "bg-slate-800/80 border-white/20 text-amber-400"}`,
+                  title: "Alternar Tocha (L)",
+                  children: h.jsx(Lr, { className: "h-4 w-4" }),
+                }),
+                h.jsxs("button", {
+                  id: "touch-inventory-btn",
+                  onClick: V,
+                  className:
+                    "relative flex items-center justify-center w-11 h-11 rounded-xl border border-amber-400/50 bg-amber-600/85 text-white text-sm font-bold shadow-lg active:scale-90 transition-all backdrop-blur-sm",
+                  title: `Abrir Itens e Forja (I) - ${je}/${we}`,
+                  children: [
+                    h.jsx(uo, { className: "h-4 w-4" }),
+                    h.jsxs("span", {
+                      className: `absolute -top-1.5 -right-1.5 text-[9px] font-mono font-bold px-1 rounded-full border ${Be === "mochila" ? "bg-indigo-950 text-indigo-300 border-indigo-400/70 shadow-sm" : Be === "bolsa" ? "bg-emerald-950 text-emerald-300 border-emerald-400/70 shadow-sm" : "bg-black/90 text-amber-300 border-amber-400/60"}`,
+                      children: [je, "/", we],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+            h.jsxs("div", {
+              className: "flex items-center gap-2.5",
+              children: [
+                h.jsxs("button", {
+                  id: "touch-combat-btn",
+                  onClick: handleCombatClick,
+                  className:
+                    "flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-600 to-rose-700 active:from-rose-700 active:to-rose-800 border-2 border-rose-400/80 text-white font-bold shadow-xl shadow-rose-950/60 backdrop-blur-sm active:scale-90 transition-transform",
+                  title: "Atacar / Combate (Espaço ou F)",
+                  children: [
+                    h.jsx(Xs, { className: "h-5 w-5 text-rose-100" }),
+                    h.jsx("span", {
+                      className:
+                        "text-[10px] font-black tracking-wider text-rose-100 uppercase",
+                      children: "ATK",
+                    }),
+                  ],
+                }),
+                h.jsxs("button", {
+                  id: "touch-pebble-btn",
+                  onMouseDown: handlePebbleAimDown,
+                  onMouseMove: handlePebbleAimMove,
+                  onMouseUp: handlePebbleAimUp,
+                  onTouchStart: handlePebbleAimDown,
+                  onTouchMove: handlePebbleAimMove,
+                  onTouchEnd: handlePebbleAimUp,
+                  onTouchCancel: () => {
+                    setIsPebbleAiming(!1);
+                    pebbleAimTouchStart.current = null;
+                    if (Xi) Xi();
+                  },
+                  onClick: () => {
+                    if (!isPebbleAiming && !pebbleAimTouchStart.current && R) R();
+                  },
+                  className: `relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl border-2 font-bold shadow-xl backdrop-blur-sm select-none touch-none active:scale-90 transition-transform ${
+                    isPebbleAiming
+                      ? "bg-gradient-to-br from-amber-500 to-amber-700 active:from-amber-600 border-amber-300 text-white shadow-amber-950/70 scale-105 animate-pulse ring-2 ring-amber-400/80"
+                      : hasPebbleEquipped
+                        ? "bg-gradient-to-br from-slate-700 to-slate-800 active:from-slate-800 border-sky-400/80 text-white shadow-slate-950/60"
+                        : "bg-gradient-to-br from-slate-800/90 to-slate-900/90 active:from-slate-900 border-slate-600/60 text-slate-300 shadow-slate-950/50"
+                  }`,
+                  title: "Arremessar Seixo / Mirar (Shift) - Toque rápido ou segure para mirar e arremessar",
+                  children: [
+                    h.jsx("span", {
+                      className: `text-lg leading-none transition-transform ${isPebbleAiming ? "scale-125" : ""}`,
+                      children: "⚪",
+                    }),
+                    h.jsx("span", {
+                      className:
+                        "text-[9px] font-black tracking-wider uppercase mt-0.5 text-slate-100",
+                      children: isPebbleAiming ? "MIRANDO" : "SEIXO",
+                    }),
+                    h.jsx("span", {
+                      className:
+                        "absolute -bottom-1 text-[7px] font-mono px-1 rounded bg-black/70 text-amber-300 border border-white/10 leading-none",
+                      children: "SHIFT",
+                    }),
+                    pebbleCount > 0 &&
+                      h.jsx("span", {
+                        className:
+                          "absolute -top-1 -right-1 text-[8px] font-mono font-bold px-1 rounded-full bg-amber-500 text-black border border-amber-300 shadow leading-tight",
+                        children: `${pebbleCount}x`,
+                      }),
+                  ],
+                }),
+                h.jsx("button", {
+                  id: "touch-interact-btn",
+                  onClick: j,
+                  className: `flex flex-col items-center justify-center w-14 h-14 rounded-2xl border-2 text-white font-bold shadow-xl backdrop-blur-sm active:scale-90 transition-transform ${oa ? "bg-gradient-to-br from-emerald-600 to-teal-700 border-emerald-400/90 shadow-emerald-950/70 animate-pulse" : "bg-gradient-to-br from-blue-600 to-blue-700 border-blue-400/80 shadow-blue-950/60"}`,
+                  title: oa
+                    ? "Descansar & Salvar Jogo"
+                    : "Interagir / Coletar Item / Minerador (Tecla E)",
+                  children: oa
+                    ? h.jsxs(h.Fragment, {
+                        children: [
+                          h.jsx(Bu, { className: "h-5 w-5 text-emerald-100" }),
+                          h.jsx("span", {
+                            className:
+                              "text-[9px] font-black tracking-wider text-emerald-100 uppercase mt-0.5",
+                            children: "SALVAR",
+                          }),
+                        ],
+                      })
+                    : h.jsxs(h.Fragment, {
+                        children: [
+                          h.jsx("span", {
+                            className:
+                              "text-base font-black leading-none text-white",
+                            children: "E",
+                          }),
+                          h.jsx("span", {
+                            className:
+                              "text-[9px] font-semibold tracking-wide text-blue-100 uppercase mt-0.5",
+                            children: "AÇÃO",
+                          }),
+                        ],
+                      }),
+                }),
+                oe &&
+                  h.jsxs("button", {
+                    id: "touch-feed-campfire-btn",
+                    onClick: () => (Ne == null ? void 0 : Ne(10)),
+                    disabled: Se < 10,
+                    className: `flex flex-col items-center justify-center w-14 h-14 rounded-2xl border-2 font-bold shadow-xl backdrop-blur-sm active:scale-90 transition-transform ${Se >= 10 ? "bg-gradient-to-br from-emerald-600 to-emerald-700 active:from-emerald-700 border-emerald-400/90 text-white shadow-emerald-950/60 animate-pulse" : "bg-slate-800/80 border-slate-700/60 text-slate-400 opacity-60"}`,
+                    title: "Alimentar Fogueira (+10 Galhos)",
+                    children: [
+                      h.jsx(Lr, { className: "h-5 w-5 text-emerald-100" }),
+                      h.jsx("span", {
+                        className:
+                          "text-[9px] font-black tracking-wider text-emerald-100 uppercase mt-0.5",
+                        children: "+10 G",
+                      }),
+                    ],
+                  }),
+                oe &&
+                  oa &&
+                  (fa
+                    ? h.jsxs("button", {
+                        id: "touch-roast-fish-btn",
+                        onClick: Oe === 0 ? j : X,
+                        className: `flex flex-col items-center justify-center w-14 h-14 rounded-2xl border-2 font-bold shadow-xl backdrop-blur-sm active:scale-90 transition-transform ${Oe === 0 ? "bg-gradient-to-br from-emerald-600 to-emerald-700 border-emerald-300 text-white shadow-emerald-950/60 animate-bounce" : "bg-amber-950/90 border-amber-500/80 text-amber-200"}`,
+                        title: "Status do Peixe Assando",
+                        children: [
+                          h.jsx("span", {
+                            className: "text-sm",
+                            children: "🍢",
+                          }),
+                          h.jsx("span", {
+                            className:
+                              "text-[8px] font-black tracking-wider uppercase mt-0.5 font-mono",
+                            children: Oe === 0 ? "COLETAR" : `${Oe}S`,
+                          }),
+                        ],
+                      })
+                    : h.jsxs("button", {
+                        id: "touch-roast-fish-btn",
+                        onClick: X,
+                        disabled: Ae === 0 || Se < 1,
+                        className: `flex flex-col items-center justify-center w-14 h-14 rounded-2xl border-2 font-bold shadow-xl backdrop-blur-sm active:scale-90 transition-transform ${Ae > 0 && Se >= 1 ? "bg-gradient-to-br from-amber-600 to-amber-700 border-amber-300/90 text-white shadow-amber-950/60 animate-pulse" : "bg-slate-800/80 border-slate-700/60 text-slate-400 opacity-60"}`,
+                        title: "Assar Peixe no Espeto (1 minuto)",
+                        children: [
+                          h.jsx("span", {
+                            className: "text-sm",
+                            children: "🍢",
+                          }),
+                          h.jsx("span", {
+                            className:
+                              "text-[8px] font-black tracking-wider uppercase mt-0.5",
+                            children: "ASSAR",
+                          }),
+                        ],
+                      })),
+              ],
+            }),
+          ],
+        }),
+        h.jsxs("div", {
+          className:
+            "pointer-events-auto md:hidden absolute bottom-4 right-4 z-30 grid grid-cols-3 grid-rows-3 gap-1.5 w-32 h-32 opacity-80 hover:opacity-100 active:opacity-100 transition-opacity select-none",
+          children: [
+            h.jsx("div", {}),
+            h.jsx("button", {
+              id: "touch-up-btn",
+              onMouseDown: () => M("up", !0),
+              onMouseUp: () => M("up", !1),
+              onTouchStart: (We) => {
+                (We.preventDefault(), M("up", !0));
+              },
+              onTouchEnd: (We) => {
+                (We.preventDefault(), M("up", !1));
+              },
+              className:
+                "flex items-center justify-center rounded-xl bg-slate-800/80 border border-white/20 text-white active:bg-sky-600 text-base shadow-lg backdrop-blur-sm active:scale-95 transition-transform",
+              title: "Mover para Cima",
+              children: "▲",
+            }),
+            h.jsx("div", {}),
+            h.jsx("button", {
+              id: "touch-left-btn",
+              onMouseDown: () => M("left", !0),
+              onMouseUp: () => M("left", !1),
+              onTouchStart: (We) => {
+                (We.preventDefault(), M("left", !0));
+              },
+              onTouchEnd: (We) => {
+                (We.preventDefault(), M("left", !1));
+              },
+              className:
+                "flex items-center justify-center rounded-xl bg-slate-800/80 border border-white/20 text-white active:bg-sky-600 text-base shadow-lg backdrop-blur-sm active:scale-95 transition-transform",
+              title: "Mover para a Esquerda",
+              children: "◀",
+            }),
+            h.jsx("div", {
+              className: `flex flex-col items-center justify-center rounded-xl border text-[9px] font-bold transition-all ${le ? "bg-emerald-600/80 border-emerald-400 text-white shadow-lg shadow-emerald-950/40 animate-pulse" : W ? "bg-rose-900/70 border-rose-500 text-rose-300" : "bg-slate-900/60 border-white/10 text-slate-400"}`,
+              title:
+                "Dica: dê 2 toques rápidos em qualquer direção para correr!",
+              children: le ? "⚡RUN" : W ? "EXAUSTO" : "2x",
+            }),
+            h.jsx("button", {
+              id: "touch-right-btn",
+              onMouseDown: () => M("right", !0),
+              onMouseUp: () => M("right", !1),
+              onTouchStart: (We) => {
+                (We.preventDefault(), M("right", !0));
+              },
+              onTouchEnd: (We) => {
+                (We.preventDefault(), M("right", !1));
+              },
+              className:
+                "flex items-center justify-center rounded-xl bg-slate-800/80 border border-white/20 text-white active:bg-sky-600 text-base shadow-lg backdrop-blur-sm active:scale-95 transition-transform",
+              title: "Mover para a Direita",
+              children: "▶",
+            }),
+            h.jsx("div", {}),
+            h.jsx("button", {
+              id: "touch-down-btn",
+              onMouseDown: () => M("down", !0),
+              onMouseUp: () => M("down", !1),
+              onTouchStart: (We) => {
+                (We.preventDefault(), M("down", !0));
+              },
+              onTouchEnd: (We) => {
+                (We.preventDefault(), M("down", !1));
+              },
+              className:
+                "flex items-center justify-center rounded-xl bg-slate-800/80 border border-white/20 text-white active:bg-sky-600 text-base shadow-lg backdrop-blur-sm active:scale-95 transition-transform",
+              title: "Mover para Baixo",
+              children: "▼",
+            }),
+            h.jsx("div", {}),
+          ],
+        }),
+        ne &&
+          h.jsx("div", {
+            className:
+              "pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300",
+            children: h.jsxs("div", {
+              className:
+                "flex flex-col items-center text-center max-w-sm w-full bg-slate-900/95 border border-rose-500/40 rounded-2xl p-6 shadow-2xl shadow-rose-950/60",
+              children: [
+                h.jsx("div", {
+                  className:
+                    "h-16 w-16 rounded-full bg-rose-950/80 border border-rose-500/60 flex items-center justify-center mb-3 shadow-inner",
+                  children: h.jsx(Xp, {
+                    className: "h-9 w-9 text-rose-400 animate-pulse",
+                  }),
+                }),
+                h.jsx("h2", {
+                  className:
+                    "text-xl font-bold text-white tracking-wide uppercase mb-1",
+                  children: "Você foi Derrotado!",
+                }),
+                h.jsx("p", {
+                  className: "text-xs text-rose-200/80 mb-5 leading-relaxed",
+                  children:
+                    "Seus pontos de vida chegaram a zero diante das criaturas deste reino.",
+                }),
+                h.jsxs("button", {
+                  id: "respawn-hero-btn",
+                  onClick: ke,
+                  className:
+                    "w-full flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-sm shadow-lg shadow-amber-950/60 active:scale-95 transition-all border border-amber-400/40 cursor-pointer",
+                  children: [
+                    h.jsx(Up, {
+                      className: "h-4 w-4 text-amber-200 animate-spin",
+                    }),
+                    h.jsx("span", {
+                      children: C
+                        ? "Renascer na Fogueira Salva (R)"
+                        : "Renascer no Início (R)",
+                    }),
+                  ],
+                }),
+                h.jsx("span", {
+                  className:
+                    "text-[11px] text-amber-200/90 mt-2.5 leading-tight",
+                  children: C
+                    ? `Você retornará em segurança à sua Fogueira Salva (${C.isUnderground ? "Subsolo" : "Superfície"} [${C.tx}, ${C.ty}]) protegido contra criaturas.`
+                    : "Você retornará ao ponto de partida inicial com vida e vigor restaurados.",
+                }),
+              ],
+            }),
+          }),
+      ],
+    });
+  };
