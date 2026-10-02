@@ -57,7 +57,8 @@
       [Te, Fe] = J.useState(() => window.innerWidth > 768),
       [_e, xe] = J.useState(() => window.innerWidth > 1024),
       [Ue, $a] = J.useState(!0),
-      [Ie, ee] = J.useState(!1),
+      isCommonMode = !window.__devMode,
+      [Ie, ee] = J.useState(() => (!window.__devMode ? !0 : !1)),
       [He, Sa] = J.useState(!1),
       oa = !!(oe && oe.prop.lit !== !1),
       ga = !!(C && oe && C.tx === oe.tx && C.ty === oe.ty),
@@ -334,52 +335,21 @@
           className:
             "pointer-events-auto absolute top-2.5 sm:top-3.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-30",
           children: [
-            h.jsxs("button", {
-              id: "hud-toggle-visibility-btn",
-              onClick: () => ee(!Ie),
-              className: `flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium transition-all shadow-md backdrop-blur-md border ${Ie ? "bg-sky-600/90 hover:bg-sky-500 text-white border-sky-400/50 shadow-sky-900/40" : "bg-slate-900/60 hover:bg-slate-900/90 text-slate-300 hover:text-white border-white/10"}`,
-              title: Ie
-                ? "Restaurar Interface (UI)"
-                : "Ocultar Interface para Visão Limpa",
-              children: [
-                Ie
-                  ? h.jsx(xp, { className: "h-3.5 w-3.5 text-sky-200" })
-                  : h.jsx(jp, { className: "h-3.5 w-3.5 text-slate-400" }),
-                h.jsx("span", {
-                  className: "hidden sm:inline",
-                  children: Ie ? "Exibir Interface" : "Modo Imersivo",
-                }),
-              ],
-            }),
-            Ie &&
-              h.jsxs("div", {
-                className: "flex items-center gap-1.5",
+            !isCommonMode &&
+              h.jsxs("button", {
+                id: "hud-toggle-visibility-btn",
+                onClick: () => ee(!Ie),
+                className: `flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium transition-all shadow-md backdrop-blur-md border ${Ie ? "bg-sky-600/90 hover:bg-sky-500 text-white border-sky-400/50 shadow-sky-900/40" : "bg-slate-900/60 hover:bg-slate-900/90 text-slate-300 hover:text-white border-white/10"}`,
+                title: Ie
+                  ? "Restaurar Interface (UI)"
+                  : "Ocultar Interface para Visão Limpa",
                 children: [
-                  h.jsxs("button", {
-                    id: "hud-floating-combat-btn",
-                    onClick: P,
-                    className:
-                      "flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-600/90 hover:bg-rose-500 active:scale-95 text-white text-[11px] font-semibold shadow-lg backdrop-blur-md border border-rose-400/50 transition",
-                    title: "Golpe de Combate / Atacar (Espaço ou F)",
-                    children: [
-                      h.jsx(Xs, { className: "h-3.5 w-3.5 text-rose-200" }),
-                      h.jsx("span", { children: "Combate" }),
-                    ],
-                  }),
-                  h.jsxs("button", {
-                    id: "hud-floating-inventory-btn",
-                    onClick: V,
-                    className:
-                      "flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-600/90 hover:bg-amber-500 text-white text-[11px] font-semibold shadow-lg backdrop-blur-md border border-amber-400/40",
-                    title: `Abrir Inventário (Tecla I ou B) - ${je}/${we}`,
-                    children: [
-                      h.jsx(uo, { className: "h-3.5 w-3.5" }),
-                      h.jsx("span", { children: "Inventário" }),
-                      h.jsxs("span", {
-                        className: `text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full border ${Be === "mochila" ? "bg-indigo-950/90 border-indigo-400/60 text-indigo-200" : Be === "bolsa" ? "bg-emerald-950/90 border-emerald-400/60 text-emerald-200" : "bg-black/50 border-white/20 text-amber-200"}`,
-                        children: [je, "/", we],
-                      }),
-                    ],
+                  Ie
+                    ? h.jsx(xp, { className: "h-3.5 w-3.5 text-sky-200" })
+                    : h.jsx(jp, { className: "h-3.5 w-3.5 text-slate-400" }),
+                  h.jsx("span", {
+                    className: "hidden sm:inline",
+                    children: Ie ? "Exibir Interface" : "Modo Imersivo",
                   }),
                 ],
               }),

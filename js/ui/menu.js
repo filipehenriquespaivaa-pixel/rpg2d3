@@ -1,0 +1,859 @@
+/* js/ui/menu.js
+ * Tela de Menu Principal e Painel Organizado do Modo Desenvolvedor.
+ * Carregado antes de js/ui/main.js.
+ * Padrão global: window.Game.MenuScreen e window.MenuScreen.
+ */
+"use strict";
+
+window.Game = window.Game || {};
+
+(function (G) {
+  // Inicialização segura de variáveis de estado a partir do localStorage
+  function getStoredBool(key, defaultVal) {
+    try {
+      const v = localStorage.getItem(key);
+      return v === null ? defaultVal : v === "1";
+    } catch (e) {
+      return defaultVal;
+    }
+  }
+
+  function setStoredBool(key, val) {
+    try {
+      localStorage.setItem(key, val ? "1" : "0");
+    } catch (e) {}
+  }
+
+  // Sincroniza globais no escopo da janela
+  window.__devMode = getStoredBool("rpg2d_dev_mode", true);
+  window.__showColliders = getStoredBool("rpg2d_colliders", true);
+  window.__godMode = getStoredBool("rpg2d_god_mode", false);
+  window.__infiniteStamina = getStoredBool("rpg2d_infinite_stamina", false);
+  window.__superSpeed = getStoredBool("rpg2d_super_speed", false);
+  window.__showTelemetry = getStoredBool("rpg2d_show_telemetry", false);
+
+  /* Componente: MenuScreen */
+  function MenuScreen(props) {
+    const onStartGame = props.onStartGame;
+    const onToggleDevMode = props.onToggleDevMode;
+    const canvasRef = J.useRef(null);
+
+    // Arte do menu desenhada em Canvas: Céu noturno, montanhas, floresta de pinheiros e fogueira viva
+    J.useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      let animId;
+      let width = (canvas.width = window.innerWidth);
+      let height = (canvas.height = window.innerHeight);
+
+      const handleResize = () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        initStars();
+      };
+      window.addEventListener("resize", handleResize);
+
+      // Estrelas fixas no céu
+      let stars = [];
+      function initStars() {
+        stars = [];
+        const count = Math.floor((width * height) / 3800);
+        for (let i = 0; i < count; i++) {
+          stars.push({
+            x: Math.random() * width,
+            y: Math.random() * (height * 0.65),
+            size: Math.random() * 1.6 + 0.4,
+            baseAlpha: Math.random() * 0.7 + 0.3,
+            blinkSpeed: Math.random() * 0.03 + 0.01,
+            phase: Math.random() * Math.PI * 2,
+          });
+        }
+      }
+      initStars();
+
+      // Partículas de fagulhas subindo da fogueira
+      const embers = [];
+      const emberCount = 50;
+
+      // Desenha pinheiro estilizado
+      function drawPineTree(x, y, treeWidth, treeHeight, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(x, y - treeHeight);
+        ctx.lineTo(x + treeWidth / 2, y);
+        ctx.lineTo(x - treeWidth / 2, y);
+        ctx.closePath();
+        ctx.fill();
+
+        // Tronco
+        ctx.fillStyle = "rgba(15, 10, 8, 0.7)";
+        ctx.fillRect(x - treeWidth * 0.08, y, treeWidth * 0.16, treeHeight * 0.18);
+      }
+
+      let tick = 0;
+
+      const render = () => {
+        tick++;
+        ctx.clearRect(0, 0, width, height);
+
+        // 1. Céu noturno com gradiente profundo
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
+        skyGrad.addColorStop(0, "#030712");
+        skyGrad.addColorStop(0.35, "#0b0f19");
+        skyGrad.addColorStop(0.65, "#15162c");
+        skyGrad.addColorStop(0.85, "#1e1b4b");
+        skyGrad.addColorStop(1, "#090d16");
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        // Brilho suave da lua no alto
+        const moonGlow = ctx.createRadialGradient(
+          width * 0.82,
+          height * 0.22,
+          5,
+          width * 0.82,
+          height * 0.22,
+          width * 0.45
+        );
+        moonGlow.addColorStop(0, "rgba(224, 231, 255, 0.12)");
+        moonGlow.addColorStop(0.4, "rgba(99, 102, 241, 0.04)");
+        moonGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = moonGlow;
+        ctx.fillRect(0, 0, width, height);
+
+        // Lua prateada crescente
+        const mx = width * 0.82;
+        const my = height * 0.22;
+        ctx.save();
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = "rgba(248, 250, 252, 0.6)";
+        ctx.fillStyle = "rgba(241, 245, 249, 0.88)";
+        ctx.beginPath();
+        ctx.arc(mx, my, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.beginPath();
+        ctx.arc(mx - 8, my - 4, 17, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // 2. Estrelas cintilantes
+        for (let i = 0; i < stars.length; i++) {
+          const s = stars[i];
+          const alpha = s.baseAlpha + Math.sin(tick * s.blinkSpeed + s.phase) * 0.3;
+          ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0.1, alpha)})`;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 3. Montanhas distantes (Camada 1 - Silhueta azulada escura)
+        ctx.fillStyle = "#0c1122";
+        ctx.beginPath();
+        ctx.moveTo(0, height * 0.72);
+        ctx.lineTo(width * 0.18, height * 0.52);
+        ctx.lineTo(width * 0.38, height * 0.64);
+        ctx.lineTo(width * 0.62, height * 0.46);
+        ctx.lineTo(width * 0.82, height * 0.62);
+        ctx.lineTo(width, height * 0.54);
+        ctx.lineTo(width, height);
+        ctx.lineTo(0, height);
+        ctx.closePath();
+        ctx.fill();
+
+        // Montanhas médias (Camada 2)
+        ctx.fillStyle = "#080c18";
+        ctx.beginPath();
+        ctx.moveTo(0, height * 0.78);
+        ctx.lineTo(width * 0.28, height * 0.62);
+        ctx.lineTo(width * 0.52, height * 0.73);
+        ctx.lineTo(width * 0.76, height * 0.58);
+        ctx.lineTo(width, height * 0.75);
+        ctx.lineTo(width, height);
+        ctx.lineTo(0, height);
+        ctx.closePath();
+        ctx.fill();
+
+        // 4. Floresta de Pinheiros na silhueta
+        const horizonY = height * 0.84;
+        const treeBaseY = horizonY;
+
+        // Pinheiros ao fundo
+        const bgTrees = 26;
+        for (let i = 0; i < bgTrees; i++) {
+          const tx = (width / bgTrees) * (i + 0.3 * Math.sin(i * 3));
+          const th = 45 + ((i * 19) % 35);
+          const tw = th * 0.52;
+          drawPineTree(tx, treeBaseY, tw, th, "rgba(5, 8, 16, 0.95)");
+        }
+
+        // Chão em primeiro plano com colina suave
+        ctx.fillStyle = "#04060d";
+        ctx.beginPath();
+        ctx.moveTo(0, horizonY);
+        ctx.quadraticCurveTo(width * 0.5, horizonY - 14, width, horizonY);
+        ctx.lineTo(width, height);
+        ctx.lineTo(0, height);
+        ctx.closePath();
+        ctx.fill();
+
+        // 5. Fogueira viva no centro inferior
+        const fireX = width * 0.5;
+        const fireY = horizonY - 4;
+
+        // Luz da fogueira refletida no chão e ambiente (pulsando organicamente)
+        const flamePulse = Math.sin(tick * 0.12) * 8 + Math.cos(tick * 0.23) * 6;
+        const fireLightRadius = Math.min(width, height) * 0.42 + flamePulse;
+
+        const groundGlow = ctx.createRadialGradient(
+          fireX,
+          fireY,
+          5,
+          fireX,
+          fireY,
+          fireLightRadius
+        );
+        groundGlow.addColorStop(0, "rgba(245, 158, 11, 0.32)");
+        groundGlow.addColorStop(0.3, "rgba(217, 119, 6, 0.14)");
+        groundGlow.addColorStop(0.65, "rgba(180, 83, 9, 0.04)");
+        groundGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = groundGlow;
+        ctx.fillRect(0, 0, width, height);
+
+        // Pedras ao redor da fogueira
+        ctx.fillStyle = "#1e293b";
+        const rockOffsets = [-22, -14, -6, 6, 14, 22];
+        for (let r = 0; r < rockOffsets.length; r++) {
+          ctx.beginPath();
+          ctx.arc(fireX + rockOffsets[r], fireY + 3, 6 + ((r % 3) * 1.5), 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Troncos de madeira cruzados
+        ctx.strokeStyle = "#451a03";
+        ctx.lineWidth = 5;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(fireX - 18, fireY + 4);
+        ctx.lineTo(fireX + 18, fireY - 3);
+        ctx.moveTo(fireX + 18, fireY + 4);
+        ctx.lineTo(fireX - 18, fireY - 3);
+        ctx.stroke();
+
+        // Camadas de chamas dançantes
+        const f1 = Math.sin(tick * 0.18) * 4;
+        const f2 = Math.cos(tick * 0.25) * 5;
+        const f3 = Math.sin(tick * 0.31) * 3;
+
+        // Labareda externa
+        ctx.fillStyle = "rgba(239, 68, 68, 0.85)";
+        ctx.beginPath();
+        ctx.moveTo(fireX - 14, fireY);
+        ctx.quadraticCurveTo(fireX - 8 + f1, fireY - 26, fireX, fireY - 38 + f2);
+        ctx.quadraticCurveTo(fireX + 8 - f2, fireY - 26, fireX + 14, fireY);
+        ctx.closePath();
+        ctx.fill();
+
+        // Labareda média
+        ctx.fillStyle = "rgba(245, 158, 11, 0.95)";
+        ctx.beginPath();
+        ctx.moveTo(fireX - 10, fireY);
+        ctx.quadraticCurveTo(fireX - 5 + f2, fireY - 20, fireX, fireY - 28 + f1);
+        ctx.quadraticCurveTo(fireX + 5 - f1, fireY - 20, fireX + 10, fireY);
+        ctx.closePath();
+        ctx.fill();
+
+        // Núcleo da chama
+        ctx.fillStyle = "rgba(254, 240, 138, 0.98)";
+        ctx.beginPath();
+        ctx.moveTo(fireX - 5, fireY);
+        ctx.quadraticCurveTo(fireX + f3, fireY - 14, fireX, fireY - 18 + f3);
+        ctx.quadraticCurveTo(fireX - f3, fireY - 14, fireX + 5, fireY);
+        ctx.closePath();
+        ctx.fill();
+
+        // 6. Fagulhas subindo
+        if (embers.length < emberCount && Math.random() < 0.65) {
+          embers.push({
+            x: fireX + (Math.random() - 0.5) * 16,
+            y: fireY - 10,
+            vx: (Math.random() - 0.5) * 1.3,
+            vy: -(Math.random() * 2.2 + 1.2),
+            size: Math.random() * 2.4 + 0.8,
+            alpha: 1,
+            decay: Math.random() * 0.018 + 0.008,
+            hue: Math.random() > 0.3 ? 38 + Math.random() * 16 : 14 + Math.random() * 15,
+          });
+        }
+
+        for (let i = embers.length - 1; i >= 0; i--) {
+          const e = embers[i];
+          e.x += e.vx + Math.sin((tick + e.y) * 0.05) * 0.4;
+          e.y += e.vy;
+          e.alpha -= e.decay;
+
+          if (e.alpha <= 0 || e.y < 0) {
+            embers.splice(i, 1);
+            continue;
+          }
+
+          ctx.fillStyle = `hsla(${e.hue}, 95%, 65%, ${e.alpha})`;
+          ctx.beginPath();
+          ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Vignette suave nas bordas para dar acabamento cinematográfico
+        const vignette = ctx.createRadialGradient(
+          width / 2,
+          height / 2,
+          Math.min(width, height) * 0.45,
+          width / 2,
+          height / 2,
+          Math.max(width, height) * 0.8
+        );
+        vignette.addColorStop(0, "rgba(0,0,0,0)");
+        vignette.addColorStop(1, "rgba(0,0,0,0.65)");
+        ctx.fillStyle = vignette;
+        ctx.fillRect(0, 0, width, height);
+
+        animId = requestAnimationFrame(render);
+      };
+
+      render();
+
+      return () => {
+        window.removeEventListener("resize", handleResize);
+        if (animId) cancelAnimationFrame(animId);
+      };
+    }, []);
+
+    // Ação do Botão Start (Modo Comum - Imersivo por natureza)
+    const handleStartCommonMode = () => {
+      setStoredBool("rpg2d_dev_mode", false);
+      window.__devMode = false;
+      window.__showColliders = false;
+      window.__godMode = false;
+      window.__infiniteStamina = false;
+      window.__superSpeed = false;
+      window.__showTelemetry = false;
+      if (typeof onToggleDevMode === "function") {
+        onToggleDevMode(false);
+      }
+      if (typeof window.updateColliderBtnVisibility === "function") {
+        window.updateColliderBtnVisibility();
+      }
+      if (typeof onStartGame === "function") {
+        onStartGame();
+      }
+    };
+
+    // Ação do Botão Start (Modo Desenvolvedor)
+    const handleStartDevMode = () => {
+      setStoredBool("rpg2d_dev_mode", true);
+      window.__devMode = true;
+      if (typeof onToggleDevMode === "function") {
+        onToggleDevMode(true);
+      }
+      if (typeof window.updateColliderBtnVisibility === "function") {
+        window.updateColliderBtnVisibility();
+      }
+      if (typeof onStartGame === "function") {
+        onStartGame();
+      }
+    };
+
+    return h.jsxs("div", {
+      className:
+        "relative w-screen h-screen overflow-hidden flex flex-col items-center justify-between py-12 px-4 select-none",
+      children: [
+        // Canvas de pintura de fundo viva (arte cinematográfica)
+        h.jsx("canvas", {
+          ref: canvasRef,
+          className: "absolute inset-0 w-full h-full pointer-events-none z-0",
+        }),
+
+        // TÍTULO DO JOGO (Limpo, sem caixas azuis ou textos de propaganda)
+        h.jsxs("div", {
+          className: "relative z-10 flex flex-col items-center text-center mt-6 sm:mt-10",
+          children: [
+            h.jsxs("div", {
+              className: "flex items-center gap-3 mb-2",
+              children: [
+                h.jsx("span", {
+                  className: "text-3xl sm:text-4xl drop-shadow-[0_0_12px_rgba(245,158,11,0.6)] animate-pulse",
+                  children: "⚔️",
+                }),
+                h.jsx("span", {
+                  className:
+                    "text-xs sm:text-sm uppercase tracking-[0.35em] text-amber-300/80 font-bold font-mono",
+                  children: "RPG 2D",
+                }),
+                h.jsx("span", {
+                  className: "text-3xl sm:text-4xl drop-shadow-[0_0_12px_rgba(245,158,11,0.6)] animate-pulse",
+                  children: "🛡️",
+                }),
+              ],
+            }),
+
+            // Logo estilizado com degradê dourado metálico
+            h.jsx("h1", {
+              className:
+                "text-4xl sm:text-6xl md:text-7xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-amber-100 via-amber-300 to-amber-600 drop-shadow-[0_6px_20px_rgba(0,0,0,0.9)] uppercase font-serif",
+              children: "Mundo RPG",
+            }),
+          ],
+        }),
+
+        // CENTRO / INFERIOR: BOTÕES DE INICIALIZAÇÃO
+        h.jsxs("div", {
+          className:
+            "relative z-10 flex flex-col items-center gap-3.5 mb-10 sm:mb-16 w-full max-w-sm",
+          children: [
+            // Botão Principal: Start (Modo Comum - Imersivo)
+            h.jsxs("button", {
+              type: "button",
+              onClick: handleStartCommonMode,
+              className:
+                "group relative w-full py-4 px-8 rounded-2xl font-black text-lg sm:text-xl text-amber-200 bg-slate-950/80 hover:bg-slate-900 border-2 border-amber-500/80 hover:border-amber-400 shadow-[0_0_30px_rgba(217,119,6,0.35)] hover:shadow-[0_0_45px_rgba(245,158,11,0.65)] backdrop-blur-md transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-3 overflow-hidden",
+              children: [
+                h.jsx("div", {
+                  className:
+                    "absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-400/20 to-amber-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none",
+                }),
+                h.jsx("span", {
+                  className:
+                    "text-2xl transition-transform duration-300 group-hover:scale-125",
+                  children: "⚔️",
+                }),
+                h.jsx("span", {
+                  className:
+                    "tracking-wide uppercase font-serif text-amber-100 group-hover:text-white drop-shadow-md",
+                  children: "Start (Modo Comum)",
+                }),
+              ],
+            }),
+
+            // Botão Secundário: Start (Modo Desenvolvedor)
+            h.jsxs("button", {
+              type: "button",
+              onClick: handleStartDevMode,
+              className:
+                "group relative w-full py-3 px-6 rounded-2xl font-bold text-sm sm:text-base text-amber-300/80 hover:text-amber-200 bg-slate-950/60 hover:bg-slate-900/80 border border-slate-700/80 hover:border-amber-500/60 shadow-md backdrop-blur-md transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-2.5 overflow-hidden",
+              children: [
+                h.jsx("span", {
+                  className:
+                    "text-lg transition-transform duration-300 group-hover:scale-110",
+                  children: "🛠️",
+                }),
+                h.jsx("span", {
+                  className:
+                    "tracking-wide uppercase font-serif text-slate-300 group-hover:text-amber-200 drop-shadow",
+                  children: "Start (Modo Desenvolvedor)",
+                }),
+              ],
+            }),
+          ],
+        }),
+      ],
+    });
+  }
+
+  /* Componente: DevFloatingBar (Painel elegante, organizado e retrátil do Modo Desenvolvedor) */
+  function DevFloatingBar(props) {
+    const onReturnToMenu = props.onReturnToMenu;
+
+    // Estado de abertura do painel
+    const [panelOpen, setPanelOpen] = J.useState(false);
+
+    // Estados de ferramentas de desenvolvedor
+    const [colliders, setColliders] = J.useState(() => window.__showColliders);
+    const [god, setGod] = J.useState(() => window.__godMode);
+    const [stamina, setStamina] = J.useState(() => window.__infiniteStamina);
+    const [speed, setSpeed] = J.useState(() => window.__superSpeed);
+    const [telemetry, setTelemetry] = J.useState(() => window.__showTelemetry);
+    const [telemetryData, setTelemetryData] = J.useState({ x: 0, y: 0, biome: "", hp: 100 });
+    const [actionToast, setActionToast] = J.useState(null);
+
+    const toastTimerRef = J.useRef(null);
+    const showNotice = (msg) => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      setActionToast(msg);
+      toastTimerRef.current = setTimeout(() => setActionToast(null), 2000);
+    };
+
+    // Atalhos de teclado: F2 para abrir/fechar painel dev
+    J.useEffect(() => {
+      const handleKeyDown = (e) => {
+        if (e.key === "F2") {
+          e.preventDefault();
+          setPanelOpen((prev) => !prev);
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
+
+    // Atualização de telemetria
+    J.useEffect(() => {
+      if (!telemetry) return;
+      const interval = setInterval(() => {
+        if (window.__rpgTelemetry) {
+          setTelemetryData({ ...window.__rpgTelemetry });
+        }
+      }, 300);
+      return () => clearInterval(interval);
+    }, [telemetry]);
+
+    const toggleCol = () => {
+      const next = !colliders;
+      setColliders(next);
+      setStoredBool("rpg2d_colliders", next);
+      window.__showColliders = next;
+      showNotice(next ? "👁️ Colisores Ativados" : "Colisores Desativados");
+    };
+
+    const toggleGod = () => {
+      const next = !god;
+      setGod(next);
+      setStoredBool("rpg2d_god_mode", next);
+      window.__godMode = next;
+      showNotice(next ? "🛡️ Modo Deus Ativado" : "Modo Deus Desativado");
+    };
+
+    const toggleStamina = () => {
+      const next = !stamina;
+      setStamina(next);
+      setStoredBool("rpg2d_infinite_stamina", next);
+      window.__infiniteStamina = next;
+      showNotice(next ? "⚡ Stamina Infinita Ativada" : "Stamina Normal");
+    };
+
+    const toggleSpeed = () => {
+      const next = !speed;
+      setSpeed(next);
+      setStoredBool("rpg2d_super_speed", next);
+      window.__superSpeed = next;
+      showNotice(next ? "🏃 Super Velocidade Ativada" : "Velocidade Normal");
+    };
+
+    const toggleTelemetry = () => {
+      const next = !telemetry;
+      setTelemetry(next);
+      setStoredBool("rpg2d_show_telemetry", next);
+      window.__showTelemetry = next;
+      showNotice(next ? "📊 Telemetria Ativada" : "Telemetria Desativada");
+    };
+
+    // Ação: Curar tudo
+    const handleFullHeal = () => {
+      if (window.__rpgTelemetry) {
+        window.__rpgTelemetry.hp = 100;
+        window.__rpgTelemetry.stamina = 100;
+      }
+      showNotice("❤️ Vida e Stamina 100% Restauradas!");
+    };
+
+    // Contagem de trapaças ativas para badge informativo no botão
+    const activeCheatsCount = [god, stamina, speed, colliders].filter(Boolean).length;
+
+    return h.jsxs("div", {
+      className: "pointer-events-auto",
+      children: [
+        // NOTIFICAÇÃO RÁPIDA (Toast limpo centralizado no topo)
+        actionToast &&
+          h.jsx("div", {
+            className:
+              "fixed top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-1.5 bg-slate-900/90 text-amber-300 font-mono text-xs font-bold rounded-full border border-amber-500/50 shadow-xl backdrop-blur animate-fade-in pointer-events-none",
+            children: actionToast,
+          }),
+
+        // BARRA COMPACTA DOCKADA (Abaixo da caixa de vida do jogador, sem conflitar com nada)
+        h.jsxs("div", {
+          className:
+            "fixed top-[116px] left-2.5 sm:left-3 z-40 flex items-center gap-1.5",
+          children: [
+            // Botão Retornar ao Menu
+            h.jsxs("button", {
+              type: "button",
+              onClick: onReturnToMenu,
+              title: "Retornar ao Menu Inicial (Esc)",
+              className:
+                "px-2.5 py-1.5 bg-slate-950/85 hover:bg-slate-900 text-amber-300 hover:text-amber-200 text-xs font-bold rounded-xl border border-amber-500/30 backdrop-blur shadow-md transition-all flex items-center gap-1 cursor-pointer active:scale-95",
+              children: [
+                h.jsx("span", { children: "🏰" }),
+                h.jsx("span", { className: "hidden sm:inline", children: "Menu" }),
+              ],
+            }),
+
+            // Botão Botão Painel Dev (Abre gaveta limpa)
+            h.jsxs("button", {
+              type: "button",
+              onClick: () => setPanelOpen((prev) => !prev),
+              title: "Abrir Painel de Desenvolvedor (F2)",
+              className:
+                "px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer shadow-md border " +
+                (panelOpen
+                  ? "bg-amber-500 text-slate-950 border-amber-400 shadow-amber-500/30"
+                  : "bg-slate-950/85 hover:bg-slate-900 text-amber-300 hover:text-amber-200 border-amber-500/30 backdrop-blur"),
+              children: [
+                h.jsx("span", { children: "🛠️" }),
+                h.jsx("span", { children: "DEV" }),
+                activeCheatsCount > 0 &&
+                  h.jsx("span", {
+                    className:
+                      "w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center " +
+                      (panelOpen ? "bg-slate-950 text-amber-400" : "bg-amber-500 text-slate-950"),
+                    children: activeCheatsCount,
+                  }),
+              ],
+            }),
+
+            // Pill de telemetria se ativa
+            telemetry &&
+              h.jsxs("div", {
+                className:
+                  "hidden md:flex items-center gap-2 bg-slate-950/80 border border-slate-700/80 rounded-xl px-2.5 py-1 text-[11px] font-mono text-slate-300 backdrop-blur shadow-md",
+                children: [
+                  h.jsxs("span", {
+                    children: ["X: ", telemetryData.x || 0, " Y: ", telemetryData.y || 0],
+                  }),
+                  telemetryData.biome &&
+                    h.jsxs("span", {
+                      className: "text-amber-400",
+                      children: ["• ", telemetryData.biome],
+                    }),
+                ],
+              }),
+          ],
+        }),
+
+        // PAINEL DE DESENVOLVEDOR ORGANIZADO (MODAL RETRÁTIL / FLYOUT)
+        panelOpen &&
+          h.jsx("div", {
+            className:
+              "fixed inset-0 z-50 flex items-start justify-start p-4 pt-32 sm:pl-3 bg-black/40 backdrop-blur-[2px]",
+            onClick: () => setPanelOpen(false),
+            children: h.jsxs("div", {
+              className:
+                "w-full max-w-sm bg-slate-950/95 border border-amber-500/40 rounded-2xl p-4 shadow-2xl backdrop-blur-xl flex flex-col gap-3.5 text-slate-100 animate-fade-in",
+              onClick: (e) => e.stopPropagation(),
+              children: [
+                // Header do Painel
+                h.jsxs("div", {
+                  className: "flex items-center justify-between border-b border-slate-800 pb-2.5",
+                  children: [
+                    h.jsxs("div", {
+                      className: "flex items-center gap-2 font-bold text-amber-400 text-sm",
+                      children: [
+                        h.jsx("span", { className: "text-base", children: "🛠️" }),
+                        h.jsx("span", { children: "Modo Desenvolvedor" }),
+                      ],
+                    }),
+                    h.jsx("button", {
+                      type: "button",
+                      onClick: () => setPanelOpen(false),
+                      className:
+                        "w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs font-bold cursor-pointer transition-colors",
+                      children: "✕",
+                    }),
+                  ],
+                }),
+
+                // Grid de Opções Organizadas
+                h.jsxs("div", {
+                  className: "flex flex-col gap-2 text-xs",
+                  children: [
+                    // Colisores
+                    h.jsxs("div", {
+                      className:
+                        "flex items-center justify-between p-2 rounded-xl bg-slate-900/80 border border-slate-800/80",
+                      children: [
+                        h.jsxs("div", {
+                          className: "flex items-center gap-2",
+                          children: [
+                            h.jsx("span", { children: "👁️" }),
+                            h.jsxs("div", {
+                              children: [
+                                h.jsx("div", { className: "font-semibold text-slate-200", children: "Colisores (Hitboxes)" }),
+                                h.jsx("div", { className: "text-[10px] text-slate-400", children: "Caixas de colisão no canvas" }),
+                              ],
+                            }),
+                          ],
+                        }),
+                        h.jsx("button", {
+                          type: "button",
+                          onClick: toggleCol,
+                          className:
+                            "px-3 py-1 rounded-lg font-mono text-[11px] font-bold cursor-pointer transition-colors border " +
+                            (colliders
+                              ? "bg-emerald-600 text-white border-emerald-400"
+                              : "bg-slate-800 text-slate-400 border-slate-700"),
+                          children: colliders ? "ON" : "OFF",
+                        }),
+                      ],
+                    }),
+
+                    // Modo Deus
+                    h.jsxs("div", {
+                      className:
+                        "flex items-center justify-between p-2 rounded-xl bg-slate-900/80 border border-slate-800/80",
+                      children: [
+                        h.jsxs("div", {
+                          className: "flex items-center gap-2",
+                          children: [
+                            h.jsx("span", { children: "🛡️" }),
+                            h.jsxs("div", {
+                              children: [
+                                h.jsx("div", { className: "font-semibold text-slate-200", children: "Modo Deus (Imortal)" }),
+                                h.jsx("div", { className: "text-[10px] text-slate-400", children: "Imune a mortes e dano" }),
+                              ],
+                            }),
+                          ],
+                        }),
+                        h.jsx("button", {
+                          type: "button",
+                          onClick: toggleGod,
+                          className:
+                            "px-3 py-1 rounded-lg font-mono text-[11px] font-bold cursor-pointer transition-colors border " +
+                            (god
+                              ? "bg-amber-600 text-white border-amber-400"
+                              : "bg-slate-800 text-slate-400 border-slate-700"),
+                          children: god ? "ON" : "OFF",
+                        }),
+                      ],
+                    }),
+
+                    // Stamina Infinita
+                    h.jsxs("div", {
+                      className:
+                        "flex items-center justify-between p-2 rounded-xl bg-slate-900/80 border border-slate-800/80",
+                      children: [
+                        h.jsxs("div", {
+                          className: "flex items-center gap-2",
+                          children: [
+                            h.jsx("span", { children: "⚡" }),
+                            h.jsxs("div", {
+                              children: [
+                                h.jsx("div", { className: "font-semibold text-slate-200", children: "Stamina Infinita" }),
+                                h.jsx("div", { className: "text-[10px] text-slate-400", children: "Corra e esquive sem cansar" }),
+                              ],
+                            }),
+                          ],
+                        }),
+                        h.jsx("button", {
+                          type: "button",
+                          onClick: toggleStamina,
+                          className:
+                            "px-3 py-1 rounded-lg font-mono text-[11px] font-bold cursor-pointer transition-colors border " +
+                            (stamina
+                              ? "bg-indigo-600 text-white border-indigo-400"
+                              : "bg-slate-800 text-slate-400 border-slate-700"),
+                          children: stamina ? "ON" : "OFF",
+                        }),
+                      ],
+                    }),
+
+                    // Super Velocidade
+                    h.jsxs("div", {
+                      className:
+                        "flex items-center justify-between p-2 rounded-xl bg-slate-900/80 border border-slate-800/80",
+                      children: [
+                        h.jsxs("div", {
+                          className: "flex items-center gap-2",
+                          children: [
+                            h.jsx("span", { children: "🏃" }),
+                            h.jsxs("div", {
+                              children: [
+                                h.jsx("div", { className: "font-semibold text-slate-200", children: "Super Velocidade (2x)" }),
+                                h.jsx("div", { className: "text-[10px] text-slate-400", children: "Exploração rápida do mapa" }),
+                              ],
+                            }),
+                          ],
+                        }),
+                        h.jsx("button", {
+                          type: "button",
+                          onClick: toggleSpeed,
+                          className:
+                            "px-3 py-1 rounded-lg font-mono text-[11px] font-bold cursor-pointer transition-colors border " +
+                            (speed
+                              ? "bg-teal-600 text-white border-teal-400"
+                              : "bg-slate-800 text-slate-400 border-slate-700"),
+                          children: speed ? "ON" : "OFF",
+                        }),
+                      ],
+                    }),
+
+                    // Telemetria
+                    h.jsxs("div", {
+                      className:
+                        "flex items-center justify-between p-2 rounded-xl bg-slate-900/80 border border-slate-800/80",
+                      children: [
+                        h.jsxs("div", {
+                          className: "flex items-center gap-2",
+                          children: [
+                            h.jsx("span", { children: "📊" }),
+                            h.jsxs("div", {
+                              children: [
+                                h.jsx("div", { className: "font-semibold text-slate-200", children: "Telemetria & Coordenadas" }),
+                                h.jsx("div", { className: "text-[10px] text-slate-400", children: "Exibe coordenadas na barra" }),
+                              ],
+                            }),
+                          ],
+                        }),
+                        h.jsx("button", {
+                          type: "button",
+                          onClick: toggleTelemetry,
+                          className:
+                            "px-3 py-1 rounded-lg font-mono text-[11px] font-bold cursor-pointer transition-colors border " +
+                            (telemetry
+                              ? "bg-sky-600 text-white border-sky-400"
+                              : "bg-slate-800 text-slate-400 border-slate-700"),
+                          children: telemetry ? "ON" : "OFF",
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+
+                // Ações Rápidas
+                h.jsxs("div", {
+                  className: "pt-1 border-t border-slate-800 flex gap-2",
+                  children: [
+                    h.jsxs("button", {
+                      type: "button",
+                      onClick: handleFullHeal,
+                      className:
+                        "flex-1 py-1.5 px-2 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600/40 text-emerald-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 cursor-pointer transition-colors",
+                      children: [h.jsx("span", { children: "❤️" }), "Cura Total"],
+                    }),
+                    h.jsxs("button", {
+                      type: "button",
+                      onClick: onReturnToMenu,
+                      className:
+                        "flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-amber-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 cursor-pointer transition-colors",
+                      children: [h.jsx("span", { children: "🏰" }), "Menu Inicial"],
+                    }),
+                  ],
+                }),
+
+                h.jsx("div", {
+                  className: "text-[10px] text-slate-500 font-mono text-center",
+                  children: "Pressione F2 para abrir/fechar este painel",
+                }),
+              ],
+            }),
+          }),
+      ],
+    });
+  }
+
+  // Exporta para o namespace global
+  G.MenuScreen = MenuScreen;
+  G.DevFloatingBar = DevFloatingBar;
+  window.MenuScreen = MenuScreen;
+  window.DevFloatingBar = DevFloatingBar;
+})(window.Game);

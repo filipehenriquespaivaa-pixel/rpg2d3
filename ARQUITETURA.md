@@ -56,7 +56,8 @@ O jogo era um bundle único (`assets/app.js`, 48 mil linhas). Foi dividido em ar
 - `js/ui/hud.js` (1866 linhas): HUD (Hud): minimapa, botoes de toque, barras de vida/stamina.
 - `js/ui/inventory.js` (3694 linhas): Detalhe do item (ItemDetailPanel), modal do inventario (InventoryModal...) e chave do save (SAVE_KEY).
 - `js/ui/game-main.js` (3895 linhas): Componente principal do jogo (GameMain): estado, loop, atalhos, modais.
-- `js/ui/main.js` (16 linhas): Componente raiz (App) e montagem do React. DEVE ser o ultimo script.
+- `js/ui/menu.js`: Tela de menu inicial (MenuScreen) com botão Modo Desenvolvedor antes de iniciar o jogo, opções de teste e barra flutuante in-game.
+- `js/ui/main.js`: Componente raiz (App) e montagem do React. DEVE ser o ultimo script.
 
 ### Extras de debug
 

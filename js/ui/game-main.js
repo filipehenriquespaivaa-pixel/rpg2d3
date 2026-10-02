@@ -4,7 +4,7 @@
  * Escopo global compartilhado entre os <script>: a ORDEM em index.html importa.
  */
 "use strict";
-  const GameMain = () => {
+  const GameMain = (props) => {
     var ur, Vo, at, vi, wi, Ti, Co, Uo, Kp, Wp;
     const e = J.useRef(null),
       t = J.useRef(null),
@@ -2916,6 +2916,10 @@
               q.code === "Escape" && Ga.current.handleStopFishing();
               return;
             }
+            if (q.code === "Escape" && props && typeof props.onReturnToMenu === "function") {
+              props.onReturnToMenu();
+              return;
+            }
             q.code === "Space" ||
             q.code === "KeyF" ||
             q.key === "f" ||
@@ -3099,6 +3103,32 @@
             $e = g.current,
             da = y.current,
             Ye = Math.min(0.1, (Je - la) / 1e3);
+          if (window.__devMode) {
+            if (window.__godMode) {
+              he.hp = he.maxHp || 100;
+              he.isDead = !1;
+            }
+            if (window.__infiniteStamina) {
+              he.stamina = he.maxStamina || 100;
+              he.isExhausted = !1;
+            }
+            if (window.__superSpeed) {
+              he.speed = 6.8;
+            } else if (he.speed === 6.8) {
+              he.speed = 3.4;
+            }
+            if (window.__showTelemetry) {
+              window.__rpgTelemetry = {
+                x: Math.round(he.x),
+                y: Math.round(he.y),
+                tx: Math.floor(he.x / 32),
+                ty: Math.floor(he.y / 32),
+                biome: w?.name || "",
+                hp: Math.round(he.hp),
+                stamina: Math.round(he.stamina || 100),
+              };
+            }
+          }
           const shiftHeld = !!($e.ShiftLeft || $e.ShiftRight || $e.Shift);
           const pebblePressDuration = pebbleKeyRef.current.pressedAt ? Je - pebbleKeyRef.current.pressedAt : 0;
           const isHoldingPebble = shiftHeld || pebbleKeyRef.current.pressedAt > 0;
