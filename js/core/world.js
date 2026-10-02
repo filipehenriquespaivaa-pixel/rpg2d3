@@ -208,7 +208,7 @@
               : c >= 2
                 ? "Grande Fogueira Crepitante"
                 : "Fogueira Crepitante"),
-          (u.descriptionPt = `Fogueira crepitante (Nível ${c}, Tamanho ${f.toFixed(1)}x). Pressione [E] para descansar ou alimente-a com galhos para expandir o fogo.`));
+          (u.descriptionPt = `Fogueira crepitante (Nível ${c}, Tamanho ${f.toFixed(1)}x). Pressione [F] para descansar ou alimente-a com galhos para expandir o fogo.`));
       }
       const m = this.interactedProps.get(o) || {};
       return (
@@ -952,10 +952,10 @@
           _.lit
             ? ((_.namePt = "Fogueira Crepitante"),
               (_.descriptionPt =
-                "Uma fogueira aquecida e crepitante. Pressione [E] para descansar e restaurar vigor."))
+                "Uma fogueira aquecida e crepitante. Pressione [F] para descansar e restaurar vigor."))
             : ((_.namePt = "Fogueira de Acampamento (Apagada)"),
               (_.descriptionPt =
-                "Uma fogueira montada com 10 galhos secos. Pressione [E] tendo 2 Pederneiras para acendê-la com faíscas!"))),
+                "Uma fogueira montada com 10 galhos secos. Pressione [F] tendo 2 Pederneiras para acendê-la com faíscas!"))),
           ue != null && ue.roastingFish && (_.roastingFish = ue.roastingFish),
           ue != null && ue.cookingPot && (_.cookingPot = ue.cookingPot));
       } else if (
@@ -1003,7 +1003,7 @@
             scale: 1.35,
             interactive: !0,
             namePt: `Saída da Caverna [${cleanName}]`,
-            descriptionPt: `Portal rochoso em arco conectado com a superfície em [${t}, ${l}] (${thisCave.namePt}). Pressione [E] para emergir no mundo superior!`,
+            descriptionPt: `Portal rochoso em arco conectado com a superfície em [${t}, ${l}] (${thisCave.namePt}). Pressione [F] para emergir no mundo superior!`,
           },
           detailHash: u,
         };
@@ -1070,7 +1070,7 @@
             namePt: P ? "Formação Mineral (Minerada)" : `Drusa de ${A[j]}`,
             descriptionPt: P
               ? "Esta formação rochosa já foi minerada."
-              : "Pressione [E] ou Interagir para extrair minerais!",
+              : "Pressione [F] ou Interagir para extrair minerais!",
           };
         } else if (y.id === BiomeId.CAVE_MUSHROOM && v < 0.07)
           w = {
@@ -1100,7 +1100,7 @@
                 : "Baú do Mineiro Perdido",
               descriptionPt: j
                 ? "Você já pegou os tesouros deste baú subterrâneo!"
-                : "Pressione [E] para destrancar este tesouro oculto nas profundezas!",
+                : "Pressione [F] para destrancar este tesouro oculto nas profundezas!",
             };
           } else if (v >= 0.008 && v < 0.035) {
             const j = Math.floor(this.hash2D(t, l, 11) * 3),
@@ -1121,7 +1121,7 @@
               namePt: A ? `${P[j]} (Extraído)` : P[j],
               descriptionPt: A
                 ? "Este veio mineral já foi completamente explorado."
-                : "Pressione [E] para extrair minérios nobres das profundezas!",
+                : "Pressione [F] para extrair minérios nobres das profundezas!",
             };
           } else
             v >= 0.035 && v < 0.045
@@ -1155,10 +1155,10 @@
           w.lit
             ? ((w.namePt = "Fogueira Crepitante"),
               (w.descriptionPt =
-                "Uma fogueira aquecida e crepitante. Pressione [E] para descansar e restaurar vigor."))
+                "Uma fogueira aquecida e crepitante. Pressione [F] para descansar e restaurar vigor."))
             : ((w.namePt = "Fogueira de Acampamento (Apagada)"),
               (w.descriptionPt =
-                "Uma fogueira montada com 10 galhos secos. Pressione [E] tendo 2 Pederneiras para acendê-la com faíscas!"))),
+                "Uma fogueira montada com 10 galhos secos. Pressione [F] tendo 2 Pederneiras para acendê-la com faíscas!"))),
           j != null && j.roastingFish && (w.roastingFish = j.roastingFish),
           j != null && j.cookingPot && (w.cookingPot = j.cookingPot));
       }
@@ -1190,7 +1190,7 @@
             harvestCount: p,
             namePt: "Ponto de Coleta de Argila",
             descriptionPt:
-              "Banco rico em argila plástica úmida no leito da lagoa. Pressione [E] para extrair porções de argila pura!",
+              "Banco rico em argila plástica úmida no leito da lagoa. Pressione [F] para extrair porções de argila pura!",
           };
         }
         return (o.id === BiomeId.COAST_WATER ||
@@ -1217,7 +1217,7 @@
           interactive: !0,
           namePt: "Entrada da Caverna dos Cristais",
           descriptionPt:
-            "Uma entrada rochosa imponente que desce para galerias subterrâneas inexploradas. Pressione [E] ou Interagir para entrar e explorar!",
+            "Uma entrada rochosa imponente que desce para galerias subterrâneas inexploradas. Pressione [F] ou Interagir para entrar e explorar!",
         };
       const g = this.hash2D(t, l, 99);
       if (g < 0.0018 && m > 0.42 && m < 0.8)
@@ -1232,7 +1232,7 @@
           descriptionPt:
             f != null && f.activated
               ? "O santuário pulsa com bênçãos radiantes ativadas!"
-              : "Pressione [E] ou Interagir para despertar a bênção mágica do santuário.",
+              : "Pressione [F] ou Interagir para despertar a bênção mágica do santuário.",
         };
       if (g > 0.0018 && g < 0.0035 && o.category === "land")
         return {
@@ -1244,7 +1244,7 @@
           interactive: !0,
           namePt: "Acampamento de Viajante",
           descriptionPt:
-            "Uma fogueira crepitante aconchegante. Pressione [E] para descansar.",
+            "Uma fogueira crepitante aconchegante. Pressione [F] para descansar.",
         };
       if (g > 0.0035 && g < 0.0055 && o.category === "land") {
         const S = (f == null ? void 0 : f.opened) ?? !1;
@@ -1259,7 +1259,7 @@
           namePt: S ? "Baú de Relíquias (Aberto)" : "Baú de Relíquias Antigo",
           descriptionPt: S
             ? "Você já recolheu o tesouro deste baú!"
-            : "Pressione [E] ou Interagir para abrir o baú e obter tesouros!",
+            : "Pressione [F] ou Interagir para abrir o baú e obter tesouros!",
         };
       }
       if (
@@ -1292,7 +1292,7 @@
           interactive: !0,
           namePt: "Boca da Caverna das Montanhas",
           descriptionPt:
-            "Uma caverna escura esculpida na rocha com brisa gelada emanando do interior. Pressione [E] para entrar e explorar!",
+            "Uma caverna escura esculpida na rocha com brisa gelada emanando do interior. Pressione [F] para entrar e explorar!",
         };
       if (g > 0.009 && g < 0.0105 && o.category === "land")
         return {
@@ -1304,7 +1304,7 @@
           interactive: !0,
           namePt: "Fenda da Caverna Oculta",
           descriptionPt:
-            "Uma fenda profunda entre os rochedos conduzindo ao mundo subterrâneo. Pressione [E] para explorar.",
+            "Uma fenda profunda entre os rochedos conduzindo ao mundo subterrâneo. Pressione [F] para explorar.",
         };
       const y = this.hash2D(t, l, 23),
         w = this.hash2D(t, l, 41),

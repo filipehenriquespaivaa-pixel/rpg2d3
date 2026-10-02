@@ -375,7 +375,7 @@
                           h.jsx("div", {
                             className: "text-[10px] text-slate-300",
                             children:
-                              "Tendo 2 Pederneiras, aproxime-se de qualquer fogueira apagada no mapa e pressione [E] para acendê-la com faíscas incandescentes sem gastar suas pederneiras!",
+                              "Tendo 2 Pederneiras, aproxime-se de qualquer fogueira apagada no mapa e pressione [F] para acendê-la com faíscas incandescentes sem gastar suas pederneiras!",
                           }),
                         ],
                       }),
@@ -832,6 +832,8 @@
         (J.useEffect(() => {
           const we = (je) => {
             (je.key === "Escape" ||
+              je.key === "e" ||
+              je.key === "E" ||
               je.key === "i" ||
               je.key === "I" ||
               je.key === "b" ||

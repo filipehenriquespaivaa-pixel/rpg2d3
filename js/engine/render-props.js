@@ -1576,7 +1576,7 @@
         (e.font = `bold ${Math.max(9, Math.round(7.5 * t))}px sans-serif`),
         (e.textAlign = "center"),
         (e.textBaseline = "middle"),
-        e.fillText("✨ Pronto [E]", 0, j));
+        e.fillText("✨ Pronto [F]", 0, j));
       for (let M = 0; M < 3; M++) {
         const $ = l * 2.5 + (M * Math.PI * 2) / 3,
           z = Math.cos($) * (9 * t),
@@ -1757,7 +1757,7 @@
         g >= 1)
       )
         ((e.fillStyle = "#4ade80"),
-          e.fillText("🐟 [E] Coletar Assado!", 0, T - 3 * t));
+          e.fillText("🐟 [F] Coletar Assado!", 0, T - 3 * t));
       else {
         const S = Math.max(0, Math.ceil((u.durationMs - f) / 1e3));
         ((e.fillStyle = "#fef08a"),

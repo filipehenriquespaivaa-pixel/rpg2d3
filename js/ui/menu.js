@@ -55,6 +55,10 @@ window.Game = window.Game || {};
         initStars();
       };
       window.addEventListener("resize", handleResize);
+      window.addEventListener("orientationchange", handleResize);
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", handleResize);
+      }
 
       // Estrelas fixas no céu
       let stars = [];
@@ -327,6 +331,10 @@ window.Game = window.Game || {};
 
       return () => {
         window.removeEventListener("resize", handleResize);
+        window.removeEventListener("orientationchange", handleResize);
+        if (window.visualViewport) {
+          window.visualViewport.removeEventListener("resize", handleResize);
+        }
         if (animId) cancelAnimationFrame(animId);
       };
     }, []);
@@ -368,7 +376,7 @@ window.Game = window.Game || {};
 
     return h.jsxs("div", {
       className:
-        "relative w-screen h-screen overflow-hidden flex flex-col items-center justify-between py-12 px-4 select-none",
+        "relative w-screen h-screen h-[100dvh] overflow-hidden flex flex-col items-center justify-between p-4 sm:p-8 md:py-12 select-none",
       children: [
         // Canvas de pintura de fundo viva (arte cinematográfica)
         h.jsx("canvas", {
@@ -376,33 +384,33 @@ window.Game = window.Game || {};
           className: "absolute inset-0 w-full h-full pointer-events-none z-0",
         }),
 
-        // TÍTULO DO JOGO (Limpo, sem caixas azuis ou textos de propaganda)
+        // TÍTULO DO JOGO (Responsivo e adaptável a telas verticais e horizontais)
         h.jsxs("div", {
-          className: "relative z-10 flex flex-col items-center text-center mt-6 sm:mt-10",
+          className: "menu-title-container relative z-10 flex flex-col items-center text-center mt-2 sm:mt-6 md:mt-10 px-2",
           children: [
             h.jsxs("div", {
-              className: "flex items-center gap-3 mb-2",
+              className: "flex items-center gap-2 sm:gap-3 mb-1.5 sm:mb-2",
               children: [
                 h.jsx("span", {
-                  className: "text-3xl sm:text-4xl drop-shadow-[0_0_12px_rgba(245,158,11,0.6)] animate-pulse",
+                  className: "text-2xl sm:text-4xl drop-shadow-[0_0_12px_rgba(245,158,11,0.6)] animate-pulse",
                   children: "⚔️",
                 }),
                 h.jsx("span", {
                   className:
-                    "text-xs sm:text-sm uppercase tracking-[0.35em] text-amber-300/80 font-bold font-mono",
+                    "text-[10px] sm:text-sm uppercase tracking-[0.35em] text-amber-300/80 font-bold font-mono",
                   children: "RPG 2D",
                 }),
                 h.jsx("span", {
-                  className: "text-3xl sm:text-4xl drop-shadow-[0_0_12px_rgba(245,158,11,0.6)] animate-pulse",
+                  className: "text-2xl sm:text-4xl drop-shadow-[0_0_12px_rgba(245,158,11,0.6)] animate-pulse",
                   children: "🛡️",
                 }),
               ],
             }),
 
-            // Logo estilizado com degradê dourado metálico
+            // Logo estilizado com degradê dourado metálico escalável
             h.jsx("h1", {
               className:
-                "text-4xl sm:text-6xl md:text-7xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-amber-100 via-amber-300 to-amber-600 drop-shadow-[0_6px_20px_rgba(0,0,0,0.9)] uppercase font-serif",
+                "text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-amber-100 via-amber-300 to-amber-600 drop-shadow-[0_6px_20px_rgba(0,0,0,0.9)] uppercase font-serif",
               children: "Mundo RPG",
             }),
           ],
@@ -411,14 +419,14 @@ window.Game = window.Game || {};
         // CENTRO / INFERIOR: BOTÕES DE INICIALIZAÇÃO
         h.jsxs("div", {
           className:
-            "relative z-10 flex flex-col items-center gap-3.5 mb-10 sm:mb-16 w-full max-w-sm",
+            "menu-btn-container relative z-10 flex flex-col items-center gap-2.5 sm:gap-3.5 mb-4 sm:mb-10 md:mb-14 w-full max-w-[320px] sm:max-w-sm px-2",
           children: [
             // Botão Principal: Start (Modo Comum - Imersivo)
             h.jsxs("button", {
               type: "button",
               onClick: handleStartCommonMode,
               className:
-                "group relative w-full py-4 px-8 rounded-2xl font-black text-lg sm:text-xl text-amber-200 bg-slate-950/80 hover:bg-slate-900 border-2 border-amber-500/80 hover:border-amber-400 shadow-[0_0_30px_rgba(217,119,6,0.35)] hover:shadow-[0_0_45px_rgba(245,158,11,0.65)] backdrop-blur-md transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-3 overflow-hidden",
+                "group relative w-full py-3.5 sm:py-4 px-4 sm:px-8 rounded-2xl font-black text-base sm:text-lg text-amber-200 bg-slate-950/80 hover:bg-slate-900 border-2 border-amber-500/80 hover:border-amber-400 shadow-[0_0_30px_rgba(217,119,6,0.35)] hover:shadow-[0_0_45px_rgba(245,158,11,0.65)] backdrop-blur-md transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-3 overflow-hidden",
               children: [
                 h.jsx("div", {
                   className:
@@ -426,12 +434,12 @@ window.Game = window.Game || {};
                 }),
                 h.jsx("span", {
                   className:
-                    "text-2xl transition-transform duration-300 group-hover:scale-125",
+                    "text-xl sm:text-2xl transition-transform duration-300 group-hover:scale-125",
                   children: "⚔️",
                 }),
                 h.jsx("span", {
                   className:
-                    "tracking-wide uppercase font-serif text-amber-100 group-hover:text-white drop-shadow-md",
+                    "tracking-wide uppercase font-serif text-amber-100 group-hover:text-white drop-shadow-md text-sm sm:text-base",
                   children: "Start (Modo Comum)",
                 }),
               ],
@@ -442,16 +450,16 @@ window.Game = window.Game || {};
               type: "button",
               onClick: handleStartDevMode,
               className:
-                "group relative w-full py-3 px-6 rounded-2xl font-bold text-sm sm:text-base text-amber-300/80 hover:text-amber-200 bg-slate-950/60 hover:bg-slate-900/80 border border-slate-700/80 hover:border-amber-500/60 shadow-md backdrop-blur-md transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-2.5 overflow-hidden",
+                "group relative w-full py-2.5 sm:py-3 px-4 sm:px-6 rounded-2xl font-bold text-xs sm:text-sm text-amber-300/80 hover:text-amber-200 bg-slate-950/60 hover:bg-slate-900/80 border border-slate-700/80 hover:border-amber-500/60 shadow-md backdrop-blur-md transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-2.5 overflow-hidden",
               children: [
                 h.jsx("span", {
                   className:
-                    "text-lg transition-transform duration-300 group-hover:scale-110",
+                    "text-base sm:text-lg transition-transform duration-300 group-hover:scale-110",
                   children: "🛠️",
                 }),
                 h.jsx("span", {
                   className:
-                    "tracking-wide uppercase font-serif text-slate-300 group-hover:text-amber-200 drop-shadow",
+                    "tracking-wide uppercase font-serif text-slate-300 group-hover:text-amber-200 drop-shadow text-xs sm:text-sm",
                   children: "Start (Modo Desenvolvedor)",
                 }),
               ],
@@ -563,18 +571,18 @@ window.Game = window.Game || {};
     return h.jsxs("div", {
       className: "pointer-events-auto",
       children: [
-        // NOTIFICAÇÃO RÁPIDA (Toast limpo centralizado no topo)
+        // NOTIFICAÇÃO RÁPIDA (Toast limpo centralizado no topo com safe-area)
         actionToast &&
           h.jsx("div", {
             className:
-              "fixed top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-1.5 bg-slate-900/90 text-amber-300 font-mono text-xs font-bold rounded-full border border-amber-500/50 shadow-xl backdrop-blur animate-fade-in pointer-events-none",
+              "fixed top-[calc(56px+var(--sat,0px))] left-1/2 -translate-x-1/2 z-50 px-4 py-1.5 bg-slate-900/90 text-amber-300 font-mono text-xs font-bold rounded-full border border-amber-500/50 shadow-xl backdrop-blur animate-fade-in pointer-events-none max-w-[90vw] text-center truncate",
             children: actionToast,
           }),
 
-        // BARRA COMPACTA DOCKADA (Abaixo da caixa de vida do jogador, sem conflitar com nada)
+        // BARRA COMPACTA DOCKADA (Abaixo da caixa de vida do jogador, ajustada à safe-area)
         h.jsxs("div", {
           className:
-            "fixed top-[116px] left-2.5 sm:left-3 z-40 flex items-center gap-1.5",
+            "fixed top-[calc(112px+var(--sat,0px))] left-[calc(10px+var(--sal,0px))] z-40 flex items-center gap-1.5",
           children: [
             // Botão Retornar ao Menu
             h.jsxs("button", {
@@ -631,15 +639,15 @@ window.Game = window.Game || {};
           ],
         }),
 
-        // PAINEL DE DESENVOLVEDOR ORGANIZADO (MODAL RETRÁTIL / FLYOUT)
+        // PAINEL DE DESENVOLVEDOR ORGANIZADO (MODAL RETRÁTIL / FLYOUT COM SCROLL E SAFE-AREA)
         panelOpen &&
           h.jsx("div", {
             className:
-              "fixed inset-0 z-50 flex items-start justify-start p-4 pt-32 sm:pl-3 bg-black/40 backdrop-blur-[2px]",
+              "fixed inset-0 z-50 flex items-start justify-start p-3 sm:p-4 pt-[calc(110px+var(--sat,0px))] sm:pl-[calc(12px+var(--sal,0px))] bg-black/40 backdrop-blur-[2px] overflow-y-auto",
             onClick: () => setPanelOpen(false),
             children: h.jsxs("div", {
               className:
-                "w-full max-w-sm bg-slate-950/95 border border-amber-500/40 rounded-2xl p-4 shadow-2xl backdrop-blur-xl flex flex-col gap-3.5 text-slate-100 animate-fade-in",
+                "w-full max-w-sm bg-slate-950/95 border border-amber-500/40 rounded-2xl p-3.5 sm:p-4 shadow-2xl backdrop-blur-xl flex flex-col gap-3.5 text-slate-100 animate-fade-in max-h-[82dvh] overflow-y-auto",
               onClick: (e) => e.stopPropagation(),
               children: [
                 // Header do Painel

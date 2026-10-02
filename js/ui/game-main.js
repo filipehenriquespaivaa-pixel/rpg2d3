@@ -681,7 +681,7 @@
               lit: !0,
               namePt: "Forno de Barro",
               descriptionPt:
-                "Forno cúpula artesanal de argila aquecido. Pressione [E] para descansar, salvar e assar peixes!",
+                "Forno cúpula artesanal de argila aquecido. Pressione [F] para descansar, salvar e assar peixes!",
             }),
               ra((ce) => {
                 const Re = ce.findIndex((ze) => ze.id === E.id);
@@ -1299,10 +1299,11 @@
     }, [ut]);
     const cancelPebbleAim = J.useCallback(() => {
       const E = f.current;
-      E.isAiming = !1;
-      E.aimAngle = void 0;
-      E.aimDistance = void 0;
-      ((g.current.ShiftLeft = !1), (g.current.ShiftRight = !1), (g.current.Shift = !1));
+      if (E) {
+        E.isAiming = !1;
+        E.aimAngle = void 0;
+        E.aimDistance = void 0;
+      }
       pebbleKeyRef.current = { pressedAt: 0, aiming: !1, angle: void 0, distance: void 0, cancelled: !0 };
     }, []);
     const Rl = J.useCallback((aimAngle, aimDistance) => {
@@ -1395,8 +1396,13 @@
         });
       }, [ve]);
     const startPebbleAim = J.useCallback((customAngle, customDist) => {
-      g.current.ShiftLeft = !0;
-      pebbleKeyRef.current = { pressedAt: performance.now(), aiming: !1, angle: customAngle, distance: customDist, cancelled: !1 };
+      pebbleKeyRef.current = { pressedAt: performance.now(), aiming: !0, angle: customAngle, distance: customDist, cancelled: !1 };
+      const E = f.current;
+      if (E) {
+        E.isAiming = !0;
+        if (customAngle !== void 0) E.aimAngle = customAngle;
+        if (customDist !== void 0) E.aimDistance = customDist;
+      }
     }, []);
     const endPebbleAim = J.useCallback((customAngle, customDist) => {
       if (pebbleKeyRef.current.cancelled || pebbleKeyRef.current.pressedAt === 0) {
@@ -1404,17 +1410,10 @@
         return;
       }
       const E = f.current;
-      const pressedAt = pebbleKeyRef.current.pressedAt;
-      const held = pressedAt ? performance.now() - pressedAt : 0;
-      const isManual = held >= 200 || customAngle !== void 0 || customDist !== void 0 || pebbleKeyRef.current.angle !== void 0;
+      const angle = customAngle !== void 0 ? customAngle : (pebbleKeyRef.current.angle !== void 0 ? pebbleKeyRef.current.angle : E.aimAngle);
+      const dist = customDist !== void 0 ? customDist : (pebbleKeyRef.current.distance !== void 0 ? pebbleKeyRef.current.distance : E.aimDistance);
       cancelPebbleAim();
-      if (isManual) {
-        const angle = customAngle !== void 0 ? customAngle : (pebbleKeyRef.current.angle !== void 0 ? pebbleKeyRef.current.angle : E.aimAngle);
-        const dist = customDist !== void 0 ? customDist : (pebbleKeyRef.current.distance !== void 0 ? pebbleKeyRef.current.distance : E.aimDistance);
-        Rl(angle, dist);
-      } else {
-        Rl(void 0, void 0);
-      }
+      Rl(angle, dist);
     }, [Rl, cancelPebbleAim]);
     const updatePebbleAim = J.useCallback((angle, distance) => {
       if (pebbleKeyRef.current.pressedAt && !pebbleKeyRef.current.cancelled) {
@@ -1423,7 +1422,10 @@
           pebbleKeyRef.current.distance = distance;
           if (f.current) f.current.aimDistance = distance;
         }
-        if (angle !== void 0 && f.current) f.current.aimAngle = angle;
+        if (angle !== void 0 && f.current) {
+          f.current.aimAngle = angle;
+          f.current.isAiming = !0;
+        }
       }
     }, []);
     const Sl = J.useCallback(() => {
@@ -1770,7 +1772,7 @@
                 lit: !0,
                 namePt: "Forno de Barro",
                 descriptionPt:
-                  "Forno cúpula artesanal de argila aquecido. Pressione [E] para descansar, salvar o jogo e assar peixes!",
+                  "Forno cúpula artesanal de argila aquecido. Pressione [F] para descansar, salvar o jogo e assar peixes!",
               }),
               m.current.playChestChime(),
               ve(
@@ -1831,7 +1833,7 @@
                 lit: !1,
                 namePt: "Fogueira de Acampamento (Apagada)",
                 descriptionPt:
-                  "Uma fogueira montada com 10 galhos secos. Pressione [E] tendo 2 Pederneiras para acendê-la com faíscas!",
+                  "Uma fogueira montada com 10 galhos secos. Pressione [F] tendo 2 Pederneiras para acendê-la com faíscas!",
               }),
               m.current.playChestChime(),
               ve(
@@ -2312,7 +2314,7 @@
             } else if (Ke.action === "start_roast_now") {
               (m.current.playTorchIgnite(),
                 ve(
-                  `🍢 Espeto montado sobre as brasas! O ${Ke.fishName} está assando. Aguarde 1 minuto e pressione [E] para recolher.`,
+                  `🍢 Espeto montado sobre as brasas! O ${Ke.fishName} está assando. Aguarde 1 minuto e pressione [F] para recolher.`,
                 ));
               const De = E.getNearbyCampfire(D.x, D.y, 95);
               ((Ue.current = De), xe(De));
@@ -2601,7 +2603,7 @@
         }
         if (Q.prop.lit === !1) {
           (m.current.playPunchWhoosh(),
-            ve("⚠️ Esta fogueira está apagada. Acenda-a primeiro com [E]!"));
+            ve("⚠️ Esta fogueira está apagada. Acenda-a primeiro com [F]!"));
           return;
         }
         const q = Q.prop.cookingPot;
@@ -2629,7 +2631,7 @@
         }
         if (Q.prop.lit === !1) {
           (m.current.playPunchWhoosh(),
-            ve("⚠️ Esta fogueira está apagada. Acenda-a primeiro com [E]!"));
+            ve("⚠️ Esta fogueira está apagada. Acenda-a primeiro com [F]!"));
           return;
         }
         const potOnFire = Q.prop.cookingPot;
@@ -2883,13 +2885,7 @@
                 (Se.current[F] = ie));
             }
             if (q.code === "ShiftLeft" || q.code === "ShiftRight" || q.key === "Shift") {
-              q.preventDefault();
-              if (!q.repeat) pebbleKeyRef.current = { pressedAt: performance.now(), aiming: !1, angle: void 0 };
               return;
-            }
-            const aimDirection = Gr(q.code, q.key);
-            if (aimDirection && pebbleKeyRef.current.pressedAt) {
-              pebbleKeyRef.current.angle = { up: -Math.PI / 2, down: Math.PI / 2, left: Math.PI, right: 0 }[aimDirection];
             }
             if (
               (([
@@ -2920,44 +2916,44 @@
               props.onReturnToMenu();
               return;
             }
-            q.code === "Space" ||
-            q.code === "KeyF" ||
-            q.key === "f" ||
-            q.key === "F"
+            q.code === "Space"
               ? Ga.current.handleAttack()
-              : q.code === "KeyE" || q.key === "e" || q.key === "E"
+              : q.code === "KeyF" || q.key === "f" || q.key === "F"
                 ? Ga.current.handleInteract()
-                : q.code === "KeyU" || q.key === "u" || q.key === "U"
-                  ? Ga.current.handleCollectWater()
-                  : q.code === "KeyP" || q.key === "p" || q.key === "P"
-                    ? ma.current && ko.current
-                      ? Ga.current.handleStartFishing()
-                      : ma.current && !ko.current
-                        ? Ga.current.showToast(
-                            "💧 Você precisa de uma Lança para pescar! Crie uma na Bancada ou equipe uma.",
-                          )
-                        : Ga.current.showToast(
-                            "⚠️ Aproxime-se da margem do lago para usar a pesca com lança!",
-                          )
-                    : q.code === "KeyG" || q.key === "g" || q.key === "G"
-                      ? Ga.current.handleFeedCampfire(10)
-                      : q.code === "KeyT" || q.key === "t" || q.key === "T"
-                        ? Ga.current.handleRoastFish()
-                        : q.code === "KeyR" || q.key === "r" || q.key === "R"
-                          ? Ga.current.handleCookingPot()
-                          : q.code === "KeyQ" || q.key === "q" || q.key === "Q"
-                            ? Ga.current.handleAddIngredient()
-                            : q.code === "Digit1" || q.key === "1"
-                          ? Ga.current.handleUseBeltSlot("cinto_slot1")
-                          : q.code === "Digit2" || q.key === "2"
-                            ? Ga.current.handleUseBeltSlot("cinto_slot2")
-                            : q.code === "KeyI" ||
-                                q.key === "i" ||
-                                q.key === "I" ||
-                                q.code === "KeyB" ||
-                                q.key === "b" ||
-                                q.key === "B"
-                              ? Ga.current.handleToggleInventory()
+                : q.code === "KeyE" ||
+                    q.key === "e" ||
+                    q.key === "E" ||
+                    q.code === "KeyI" ||
+                    q.key === "i" ||
+                    q.key === "I" ||
+                    q.code === "KeyB" ||
+                    q.key === "b" ||
+                    q.key === "B"
+                  ? Ga.current.handleToggleInventory()
+                  : q.code === "KeyU" || q.key === "u" || q.key === "U"
+                    ? Ga.current.handleCollectWater()
+                    : q.code === "KeyP" || q.key === "p" || q.key === "P"
+                      ? ma.current && ko.current
+                        ? Ga.current.handleStartFishing()
+                        : ma.current && !ko.current
+                          ? Ga.current.showToast(
+                              "💧 Você precisa de uma Lança para pescar! Crie uma na Bancada ou equipe uma.",
+                            )
+                          : Ga.current.showToast(
+                              "⚠️ Aproxime-se da margem do lago para usar a pesca com lança!",
+                            )
+                      : q.code === "KeyG" || q.key === "g" || q.key === "G"
+                        ? Ga.current.handleFeedCampfire(10)
+                        : q.code === "KeyT" || q.key === "t" || q.key === "T"
+                          ? Ga.current.handleRoastFish()
+                          : q.code === "KeyR" || q.key === "r" || q.key === "R"
+                            ? Ga.current.handleCookingPot()
+                            : q.code === "KeyQ" || q.key === "q" || q.key === "Q"
+                              ? Ga.current.handleAddIngredient()
+                              : q.code === "Digit1" || q.key === "1"
+                            ? Ga.current.handleUseBeltSlot("cinto_slot1")
+                            : q.code === "Digit2" || q.key === "2"
+                              ? Ga.current.handleUseBeltSlot("cinto_slot2")
                               : q.code === "KeyL" ||
                                   q.key === "l" ||
                                   q.key === "L"
@@ -2978,23 +2974,6 @@
                                         : Ga.current.handleCookingPot());
           },
           D = (q) => {
-            if (q.code === "ShiftLeft" || q.code === "ShiftRight" || q.key === "Shift") {
-              q.preventDefault();
-              if (pebbleKeyRef.current.cancelled || pebbleKeyRef.current.pressedAt === 0) {
-                ((g.current.ShiftLeft = !1), (g.current.ShiftRight = !1), (g.current.Shift = !1));
-                pebbleKeyRef.current = { pressedAt: 0, aiming: !1, angle: void 0, distance: void 0, cancelled: !1 };
-                return;
-              }
-              const pressedAt = pebbleKeyRef.current.pressedAt;
-              const held = pressedAt ? performance.now() - pressedAt : 0;
-              const isManual = held >= 200 || pebbleKeyRef.current.angle !== void 0;
-              const angle = f.current.aimAngle !== void 0 ? f.current.aimAngle : pebbleKeyRef.current.angle;
-              const dist = f.current.aimDistance !== void 0 ? f.current.aimDistance : pebbleKeyRef.current.distance;
-              ((g.current.ShiftLeft = !1), (g.current.ShiftRight = !1), (g.current.Shift = !1));
-              pebbleKeyRef.current = { pressedAt: 0, aiming: !1, angle: void 0, distance: void 0, cancelled: !1 };
-              Ga.current.handleThrowPebble(isManual ? angle : void 0, isManual ? dist : void 0);
-              return;
-            }
             ((g.current[q.code] = !1), (g.current[q.key] = !1));
             const F = Gr(q.code, q.key);
             F && (Ae.current[F] = !1);
@@ -3129,15 +3108,13 @@
               };
             }
           }
-          const shiftHeld = !!($e.ShiftLeft || $e.ShiftRight || $e.Shift);
-          const pebblePressDuration = pebbleKeyRef.current.pressedAt ? Je - pebbleKeyRef.current.pressedAt : 0;
-          const isHoldingPebble = shiftHeld || pebbleKeyRef.current.pressedAt > 0;
+          const isHoldingPebble = pebbleKeyRef.current.pressedAt > 0;
           const handHasPebble = [Da.current.mao_esquerda, Da.current.mao_direita].some((item) => {
             const name = (item?.name || "").toLowerCase();
             const id = (item?.id || "").toLowerCase();
             return name.includes("seixo") || id.includes("seixo") || id.includes("pebble");
           });
-          const aimHeld = isHoldingPebble && handHasPebble && !pebbleKeyRef.current.cancelled && (pebblePressDuration >= 200 || pebbleKeyRef.current.angle !== void 0);
+          const aimHeld = isHoldingPebble && handHasPebble && !pebbleKeyRef.current.cancelled;
           he.isAiming = !!aimHeld;
           if (aimHeld) {
             if (pebbleKeyRef.current.angle !== void 0) {
@@ -3239,7 +3216,7 @@
               ($e.KeyS || $e.ArrowDown || $e.Down || da.down) && (Xa += 1),
               ($e.KeyA || $e.ArrowLeft || $e.Left || da.left) && (qa -= 1),
               ($e.KeyD || $e.ArrowRight || $e.Right || da.right) && (qa += 1),
-              shiftHeld && ((qa = 0), (Xa = 0)),
+              he.isAiming && ((qa = 0), (Xa = 0)),
               (he.isMoving = qa !== 0 || Xa !== 0));
             const za = 100 + (De.staminaBonus || 0);
             ((he.maxStamina = za), he.stamina === void 0 && (he.stamina = za));
@@ -3529,15 +3506,52 @@
           ia = 0,
           Je = 0;
         const he = (Pe) => {
-            Pe.button === 0 &&
-              ((ze = !0),
-              (la = Pe.clientX),
-              (na = Pe.clientY),
-              (ia = Oa.current.x),
-              (Je = Oa.current.y));
+            if (Pe.button === 0) {
+              mouseScreenPos.current = { x: Pe.clientX, y: Pe.clientY, active: !0 };
+              const Ke = E.getBoundingClientRect();
+              const De = Pe.clientX - Ke.left;
+              const qe = Pe.clientY - Ke.top;
+              const dx = De - E.width / 2;
+              const dy = qe - E.height / 2;
+              const angle = Math.atan2(dy, dx);
+              const sa = f.current;
+              if (sa && !sa.isDead) {
+                sa.direction = angle > Math.PI * 0.25 && angle < Math.PI * 0.75 ? "down" : angle < -Math.PI * 0.25 && angle > -Math.PI * 0.75 ? "up" : angle >= 0 ? "right" : "left";
+                sa.attackAngle = angle;
+                Sl();
+              }
+              ze = !0;
+              la = Pe.clientX;
+              na = Pe.clientY;
+              ia = Oa.current.x;
+              Je = Oa.current.y;
+            } else if (Pe.button === 2) {
+              Pe.preventDefault();
+              mouseScreenPos.current = { x: Pe.clientX, y: Pe.clientY, active: !0 };
+              const Ke = E.getBoundingClientRect();
+              const zoom = Ka.current || 1;
+              const playerScreenX = Ke.left + Ke.width / 2 - Oa.current.x * zoom;
+              const playerScreenY = Ke.top + Ke.height / 2 - Oa.current.y * zoom;
+              const dx = Pe.clientX - playerScreenX;
+              const dy = Pe.clientY - playerScreenY;
+              const angle = Math.atan2(dy, dx);
+              const worldDist = Math.hypot(dx, dy) / zoom;
+              startPebbleAim(angle, Math.max(35, Math.min(330, worldDist)));
+            }
           },
           $e = (Pe) => {
             mouseScreenPos.current = { x: Pe.clientX, y: Pe.clientY, active: !0 };
+            if (pebbleKeyRef.current.pressedAt && !pebbleKeyRef.current.cancelled) {
+              const Ke = E.getBoundingClientRect();
+              const zoom = Ka.current || 1;
+              const playerScreenX = Ke.left + Ke.width / 2 - Oa.current.x * zoom;
+              const playerScreenY = Ke.top + Ke.height / 2 - Oa.current.y * zoom;
+              const dx = Pe.clientX - playerScreenX;
+              const dy = Pe.clientY - playerScreenY;
+              const angle = Math.atan2(dy, dx);
+              const worldDist = Math.hypot(dx, dy) / zoom;
+              updatePebbleAim(angle, Math.max(35, Math.min(330, worldDist)));
+            }
             if (!ze) return;
             const aa = Pe.clientX - la,
               Ke = Pe.clientY - na;
@@ -3549,38 +3563,31 @@
             }
           },
           da = (Pe) => {
+            if (Pe.button === 2) {
+              Pe.preventDefault();
+              if (pebbleKeyRef.current.pressedAt) {
+                const Ke = E.getBoundingClientRect();
+                const zoom = Ka.current || 1;
+                const playerScreenX = Ke.left + Ke.width / 2 - Oa.current.x * zoom;
+                const playerScreenY = Ke.top + Ke.height / 2 - Oa.current.y * zoom;
+                const dx = Pe.clientX - playerScreenX;
+                const dy = Pe.clientY - playerScreenY;
+                const angle = Math.atan2(dy, dx);
+                const worldDist = Math.hypot(dx, dy) / zoom;
+                endPebbleAim(angle, Math.max(35, Math.min(330, worldDist)));
+              }
+              return;
+            }
             if (!ze) return;
             if (((ze = !1), Math.hypot(Pe.clientX - la, Pe.clientY - na) < 6)) {
-              const Ke = E.getBoundingClientRect(),
-                De = Pe.clientX - Ke.left,
-                qe = Pe.clientY - Ke.top,
-                Ze = Ka.current,
-                sa = f.current,
-                Pa = (De - E.width / 2) / Ze + sa.x + Oa.current.x,
-                va = (qe - E.height / 2) / Ze + sa.y + Oa.current.y,
-                Nt = c.current.carcasses.find((ka) =>
-                  ka.collected || ka.isUnderground !== o.current.isUnderground
-                    ? !1
-                    : Math.hypot(ka.x - Pa, ka.y - va) < 36,
-                );
-              if (Nt && Math.hypot(Nt.x - sa.x, Nt.y - sa.y) <= 64) {
-                qo();
-                return;
-              }
-              const rt = c.current.droppedItems.find((ka) =>
-                ka.isUnderground !== o.current.isUnderground
-                  ? !1
-                  : Math.hypot(ka.x - Pa, ka.y - va) < 32,
-              );
-              if (rt && Math.hypot(rt.x - sa.x, rt.y - sa.y) <= 64) {
-                qo();
-                return;
-              }
               tapPot(Pe.clientX, Pe.clientY);
             }
           },
           Ye = () => {
             Oo();
+          },
+          noContext = (Pe) => {
+            Pe.preventDefault();
           },
           Ge = (Pe) => {
             Pe.preventDefault();
@@ -3596,6 +3603,7 @@
           E.addEventListener("touchend", Ce),
           E.addEventListener("touchcancel", Ce),
           E.addEventListener("mousedown", he),
+          E.addEventListener("contextmenu", noContext),
           window.addEventListener("mousemove", $e),
           window.addEventListener("mouseup", da),
           E.addEventListener("dblclick", Ye),
@@ -3606,6 +3614,7 @@
               E.removeEventListener("touchend", Ce),
               E.removeEventListener("touchcancel", Ce),
               E.removeEventListener("mousedown", he),
+              E.removeEventListener("contextmenu", noContext),
               window.removeEventListener("mousemove", $e),
               window.removeEventListener("mouseup", da),
               E.removeEventListener("dblclick", Ye),

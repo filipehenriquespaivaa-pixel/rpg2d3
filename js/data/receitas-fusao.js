@@ -706,7 +706,7 @@
             name: "Forno de Barro (Construir no Solo)",
             categoryLabel: "Construção no Solo (Mapa)",
             description:
-              "Instala imediatamente um Forno de Barro com chaminé e brasas vivas no solo onde você está pisando (não ocupa espaço na mochila). Pressione [E] para descansar e recuperar HP/Stamina ou assar peixes.",
+              "Instala imediatamente um Forno de Barro com chaminé e brasas vivas no solo onde você está pisando (não ocupa espaço na mochila). Pressione [F] para descansar e recuperar HP/Stamina ou assar peixes.",
             createResult: () => ({
               id: `forno_barro_prop_${Date.now()}`,
               name: "Forno de Barro",

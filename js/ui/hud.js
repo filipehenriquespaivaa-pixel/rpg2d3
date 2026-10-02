@@ -640,7 +640,7 @@
                         onClick: handleCombatClick,
                         className:
                           "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-700 hover:bg-rose-600 active:scale-95 text-white text-xs font-semibold shadow-md transition border border-rose-500/50",
-                        title: "Golpe de Combate / Atacar (Tecla Espaço ou F)",
+                        title: "Golpe de Combate / Atacar (Clique Esquerdo ou Espaço)",
                         children: [
                           h.jsx(Xs, { className: "h-3.5 w-3.5 text-rose-200" }),
                           h.jsx("span", {
@@ -650,7 +650,7 @@
                           h.jsx("span", {
                             className:
                               "hidden xl:inline text-[9px] bg-rose-950/80 px-1 py-0.5 rounded text-rose-300 font-mono",
-                            children: "Espaço",
+                            children: "Esq",
                           }),
                         ],
                       }),
@@ -666,11 +666,11 @@
                             ? "bg-amber-600 border-amber-300 ring-2 ring-amber-400 animate-pulse"
                             : "bg-slate-700 hover:bg-slate-600 border-slate-500/50"
                         }`,
-                        title: "Arremessar Seixo (toque rápido / segure Shift para mirar)",
+                        title: "Mirar e Disparar Seixo (Clique Direito do Mouse)",
                         children: [
                           h.jsx("span", { className: "text-[13px]", children: "⚪" }),
                           h.jsx("span", { className: "text-[11px]", children: isPebbleAiming ? "Mirando..." : "Seixo" }),
-                          h.jsx("span", { className: "hidden xl:inline text-[9px] bg-black/40 px-1 py-0.5 rounded text-slate-200 font-mono", children: "Shift" })
+                          h.jsx("span", { className: "hidden xl:inline text-[9px] bg-black/40 px-1 py-0.5 rounded text-slate-200 font-mono", children: "Dir" })
                         ],
                       }),
                       h.jsxs("button", {
@@ -678,8 +678,8 @@
                         onClick: j,
                         className: `flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold shadow-md transition border active:scale-95 ${oa ? "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-400/60 ring-1 ring-emerald-400/50" : "bg-blue-700 hover:bg-blue-600 text-white border-blue-500/50"}`,
                         title: oa
-                          ? "Descansar & Salvar Jogo (Tecla E)"
-                          : "Interagir / Coletar / Usar (Tecla E)",
+                          ? "Descansar & Salvar Jogo (Tecla F)"
+                          : "Interagir / Coletar / Usar (Tecla F)",
                         children: [
                           oa
                             ? h.jsx(Bu, {
@@ -699,7 +699,7 @@
                           h.jsx("span", {
                             className:
                               "hidden xl:inline text-[9px] bg-black/40 px-1 py-0.5 rounded text-slate-200 font-mono",
-                            children: "E",
+                            children: "F",
                           }),
                         ],
                       }),
@@ -711,7 +711,7 @@
                               className: `flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold shadow-md transition border active:scale-95 ${Oe === 0 ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-300 shadow-emerald-950/50 animate-bounce" : "bg-amber-950/90 text-amber-200 border-amber-500/50"}`,
                               title:
                                 Oe === 0
-                                  ? "🍢 Peixe assado e pronto para saborear! Pressione [E] para coletar"
+                                  ? "🍢 Peixe assado e pronto para saborear! Pressione [F] para coletar"
                                   : `⏳ Assando nas brasas da fogueira... Faltam ${Oe} segundos.`,
                               children: [
                                 h.jsx("span", {
@@ -839,7 +839,7 @@
                         onClick: V,
                         className:
                           "flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold shadow-md transition border border-amber-400/40",
-                        title: `Abrir Inventário e Equipamentos (Tecla I ou B) - ${je}/${we} slots`,
+                        title: `Abrir Inventário e Equipamentos (Tecla E) - ${je}/${we} slots`,
                         children: [
                           h.jsx(uo, { className: "h-3.5 w-3.5" }),
                           h.jsx("span", {
@@ -1041,12 +1041,12 @@
                       children: "•",
                     }),
                     h.jsxs("div", {
-                      className: "flex items-center gap-1 text-amber-200",
+                      className: "flex items-center gap-1 text-emerald-200",
                       children: [
                         h.jsx("span", {
                           className:
                             "font-mono bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-[10px] text-white",
-                          children: "E",
+                          children: "F",
                         }),
                         h.jsx("span", { children: "Coletar / Usar" }),
                       ],
@@ -1061,9 +1061,24 @@
                         h.jsx("span", {
                           className:
                             "font-mono bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-[10px] text-white",
-                          children: "Espaço / F",
+                          children: "Clique Esq",
                         }),
                         h.jsx("span", { children: "Combate" }),
+                      ],
+                    }),
+                    h.jsx("span", {
+                      className: "text-slate-600",
+                      children: "•",
+                    }),
+                    h.jsxs("div", {
+                      className: "flex items-center gap-1 text-amber-200",
+                      children: [
+                        h.jsx("span", {
+                          className:
+                            "font-mono bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-[10px] text-white",
+                          children: "Clique Dir",
+                        }),
+                        h.jsx("span", { children: "Mirar Seixo" }),
                       ],
                     }),
                     h.jsx("span", {
@@ -1076,7 +1091,7 @@
                         h.jsx("span", {
                           className:
                             "font-mono bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-[10px] text-white",
-                          children: "I",
+                          children: "E",
                         }),
                         h.jsx("span", { children: "Inventário" }),
                       ],
@@ -1587,7 +1602,7 @@
                   className: `flex flex-col items-center justify-center w-14 h-14 rounded-2xl border-2 text-white font-bold shadow-xl backdrop-blur-sm active:scale-90 transition-transform ${oa ? "bg-gradient-to-br from-emerald-600 to-teal-700 border-emerald-400/90 shadow-emerald-950/70 animate-pulse" : "bg-gradient-to-br from-blue-600 to-blue-700 border-blue-400/80 shadow-blue-950/60"}`,
                   title: oa
                     ? "Descansar & Salvar Jogo"
-                    : "Interagir / Coletar Item / Minerador (Tecla E)",
+                    : "Interagir / Coletar Item / Minerador (Tecla F)",
                   children: oa
                     ? h.jsxs(h.Fragment, {
                         children: [
@@ -1604,7 +1619,7 @@
                           h.jsx("span", {
                             className:
                               "text-base font-black leading-none text-white",
-                            children: "E",
+                            children: "F",
                           }),
                           h.jsx("span", {
                             className:

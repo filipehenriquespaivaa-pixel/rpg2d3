@@ -60,7 +60,7 @@ function App() {
                   onClick: handleReturnToMenu,
                   title: "Voltar ao Menu Principal (Esc)",
                   className:
-                    "fixed top-[116px] left-2.5 sm:left-3 z-40 px-3 py-1.5 bg-slate-900/85 hover:bg-slate-800 text-amber-300 hover:text-amber-200 text-xs font-bold rounded-xl border border-amber-500/40 backdrop-blur shadow-lg transition-all flex items-center gap-1.5 cursor-pointer pointer-events-auto",
+                    "fixed top-[calc(112px+var(--sat,0px))] left-[calc(10px+var(--sal,0px))] z-40 px-3 py-1.5 bg-slate-900/85 hover:bg-slate-800 text-amber-300 hover:text-amber-200 text-xs font-bold rounded-xl border border-amber-500/40 backdrop-blur shadow-lg transition-all flex items-center gap-1.5 cursor-pointer pointer-events-auto active:scale-95",
                   children: [
                     h.jsx("span", { children: "🏰" }),
                     h.jsx("span", { children: "Menu" }),
