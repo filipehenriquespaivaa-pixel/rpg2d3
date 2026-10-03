@@ -854,6 +854,96 @@
       }
       return this.getSurfaceTile(t, l);
     }
+    _computeSurfaceBaseBiome(t, l) {
+      const m = this.detailNoise.noise2D(t * 0.005, l * 0.005) * 12,
+        c = this.detailNoise.noise2D(t * 0.005 + 77, l * 0.005 + 77) * 12,
+        f = t + m,
+        g = l + c,
+        y = this.elevNoise.fbm2D(f * 0.0011, g * 0.0011, 2, 2, 0.4),
+        w = Math.hypot(t, l),
+        v = w < 36 ? (1 - w / 36) * 0.28 : 0;
+      let T = Math.max(0, Math.min(1, y + v)),
+        S = !1,
+        p = !1,
+        j = !1;
+      if (y < 0.24) {
+        const ue = this.islandNoise.fbm2D(
+          t * 0.0022 + 400,
+          l * 0.0022 + 400,
+          2,
+          2,
+          0.45,
+        );
+        if (ue > 0.56) {
+          S = !0;
+          const N = (ue - 0.56) / 0.44;
+          T = 0.32 + N * 0.56;
+          const Ee = this.featureNoise.fbm2D(
+            t * 0.0025 + 200,
+            l * 0.0025 + 200,
+            2,
+            2,
+            0.5,
+          );
+          Ee > 0.45 &&
+            ((p = !0), (N > 0.4 || (Ee > 0.58 && T > 0.55)) && (j = !0));
+        }
+      }
+      const P = this.tempNoise.fbm2D(f * 9e-4 + 150, g * 9e-4 + 150, 2, 2, 0.4),
+        A = this.moistNoise.fbm2D(
+          f * 0.0012 + 280,
+          g * 0.0012 + 280,
+          2,
+          2,
+          0.4,
+        ),
+        x = this.featureNoise.fbm2D(
+          t * 0.003 + 320,
+          l * 0.003 + 320,
+          2,
+          2,
+          0.5,
+        ),
+        M = this.featureNoise.fbm2D(
+          t * 0.0028 + 560,
+          l * 0.0028 + 560,
+          2,
+          2,
+          0.5,
+        ),
+        $ = this.canyonNoise.fbm2D(
+          t * 0.0028 + 780,
+          l * 0.0028 + 780,
+          2,
+          2,
+          0.5,
+        ),
+        z =
+          w < 24
+            ? 0
+            : this.lakeNoise.fbm2D(
+                f * 0.0078 + 920,
+                g * 0.0078 + 920,
+                2,
+                2,
+                0.45,
+              );
+      return Jp(T, A, P, {
+        isIsland: S,
+        isVolcano: p,
+        volcanoCore: j,
+        swampVal: x,
+        oasisVal: M,
+        canyonVal: $,
+        lakeVal: z,
+      });
+    }
+    _isMountain25DBiomeAt(t, l) {
+      const o = this._tk(t, l, !1),
+        u = this.tileCache.get(o);
+      if (u) return u.biome.id === BiomeId.MOUNTAIN_25D;
+      return this._computeSurfaceBaseBiome(t, l).id === BiomeId.MOUNTAIN_25D;
+    }
     getSurfaceTile(t, l) {
       const o = this._tk(t, l, !1),
         cached = this.tileCache.get(o);
@@ -976,6 +1066,97 @@
         prop: _,
         detailHash: V,
       };
+      if (K.id === BiomeId.MOUNTAIN_25D) {
+        const ridgeNoise = this.canyonNoise.fbm2D(t * 0.045 + 110, l * 0.045 + 110, 2, 2, 0.5);
+        const tierRaw = (T - 0.67) / 0.33 + ridgeNoise * 0.32;
+        // 5 andares de altura (Andar 1 na base elevada do bioma até o Andar 5 no cume nevado):
+        // Andar 1 = platô base elevado pela muralha perimetral espessa
+        // Andar 2 = tierRaw > 0.16
+        // Andar 3 = tierRaw > 0.34
+        // Andar 4 = tierRaw > 0.52
+        // Andar 5 = tierRaw > 0.70 (cume alpino de 5º andar)
+        const tier =
+          tierRaw > 0.70
+            ? 5
+            : tierRaw > 0.52
+              ? 4
+              : tierRaw > 0.34
+                ? 3
+                : tierRaw > 0.16
+                  ? 2
+                  : 1;
+        // Muralha perimetral espessa (2 a 3 tiles de largura ao redor de todo o bioma)
+        let isOuterEdge = !1;
+        let isThickPerimeter = !1;
+        for (let dy = -2; dy <= 2; dy++) {
+          for (let dx = -2; dx <= 2; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const dist = Math.abs(dx) + Math.abs(dy);
+            if (dist <= 3 && !this._isMountain25DBiomeAt(t + dx, l + dy)) {
+              isThickPerimeter = !0;
+              if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
+                isOuterEdge = !0;
+              }
+            }
+          }
+        }
+        const isPerimeterBorder = isThickPerimeter || tierRaw < 0.08;
+        // Paredões internos mais largos para os andares 2, 3, 4 e 5 dentro do platô elevado
+        const isBand2 = Math.abs(tierRaw - 0.16) < 0.058;
+        const isBand3 = Math.abs(tierRaw - 0.34) < 0.058;
+        const isBand4 = Math.abs(tierRaw - 0.52) < 0.058;
+        const isBand5 = Math.abs(tierRaw - 0.70) < 0.058;
+        const isCrestWave = Math.abs(Math.sin(t * 0.11 + l * 0.07 + ridgeNoise * 4.2)) < 0.22;
+        const internalContour = isBand2 || isBand3 || isBand4 || isBand5 || isCrestWave;
+        // Usa coordenadas suavizadas (divididas por 3) para que a rampa atravesse toda a espessura da muralha perimetral
+        const rampCoordX = Math.floor(t / 3) * 0.18 + 31;
+        const rampCoordY = Math.floor(l / 3) * 0.18 + 31;
+        const passVal = Math.abs(this.caveDetailNoise.noise2D(rampCoordX, rampCoordY));
+        const isRamp = isPerimeterBorder ? passVal < 0.14 : passVal < 0.15;
+        const isWall = !isRamp && (isPerimeterBorder || internalContour);
+        const wallFloor = isPerimeterBorder
+          ? 1
+          : isBand5
+            ? 5
+            : isBand4
+              ? 4
+              : isBand3
+                ? 3
+                : isBand2
+                  ? 2
+                  : tier;
+        se.mountainTier = tier;
+        se.isElevatedBiome = !0;
+        se.isPerimeterCliff = isPerimeterBorder;
+        se.isOuterCliffEdge = isOuterEdge;
+        se.isCliffWall = isWall;
+        se.isCliffRamp = isRamp && (isPerimeterBorder || internalContour);
+        if (se.isCliffWall) {
+          const canKeepSpecial =
+            _ &&
+            (_.kind === "cave_entrance" ||
+              _.kind === "shrine" ||
+              _.kind === "campfire" ||
+              _.kind === "clay_oven" ||
+              _.kind === "drying_clay");
+          if (canKeepSpecial) {
+            se.isCliffWall = !1;
+          } else {
+            se.prop = {
+              kind: "cliff_wall",
+              subType: wallFloor,
+              offsetX: 0,
+              offsetY: 0,
+              scale: 1,
+              namePt: isPerimeterBorder
+                ? "Muralha do Platô Montanhoso (1º Andar)"
+                : `Paredão Rochoso 2.5D (${wallFloor}º Andar)`,
+              descriptionPt:
+                `Escarpas verticais íngremes de granito maciço do ${wallFloor}º andar conectadas em cordilheira (você pode caminhar sobre o topo do paredão após subir pela rampa).`,
+            };
+          }
+        }
+      }
       return (this.tileCache.set(o, se), se);
     }
     getUndergroundTile(t, l) {
@@ -1279,7 +1460,7 @@
             "Inscrições rúnicas esquecidas esculpidas em granito ancestral.",
         };
       if (
-        (o.id === BiomeId.SNOW_PEAK || o.id === BiomeId.VOLCANIC || m > 0.65) &&
+        (o.id === BiomeId.SNOW_PEAK || o.id === BiomeId.VOLCANIC || o.id === BiomeId.MOUNTAIN_25D || m > 0.65) &&
         g > 0.0075 &&
         g < 0.0125
       )
@@ -1619,6 +1800,19 @@
     isTilePassable(t, l) {
       const o = this.getTile(t, l);
       if (this.isUnderground && o.biome.id === BiomeId.CAVE_WALL) return !1;
+      // Bloqueia apenas a quina/face externa vertical do paredão para quem tenta escalar direto de fora,
+      // mas permite andar livremente em cima do platô dos paredões!
+      if (!this.isUnderground && o.isCliffWall && o.isOuterCliffEdge) {
+        // Verifica se há uma rampa imediatamente adjacente: se houver, permite subir no topo do paredão
+        const hasAdjRamp =
+          this.getTile(t - 1, l).isCliffRamp ||
+          this.getTile(t + 1, l).isCliffRamp ||
+          this.getTile(t, l - 1).isCliffRamp ||
+          this.getTile(t, l + 1).isCliffRamp;
+        if (!hasAdjRamp) {
+          // A face sul/externa tem colisão na base (via isCliffFaceBlockedAt), mas o topo é caminhável
+        }
+      }
       const southTile = this.getTile(t, l + 1);
       if (
         southTile &&
@@ -1628,6 +1822,48 @@
       )
         return !1;
       return !0;
+    }
+    isCliffFaceBlockedAt(fromX, fromY, toX, toY) {
+      if (this.isUnderground) return !1;
+      const ts = this.tileSize,
+        fromTx = Math.floor(fromX / ts),
+        fromTy = Math.floor(fromY / ts),
+        toTx = Math.floor(toX / ts),
+        toTy = Math.floor(toY / ts);
+      const toTile = this.getTile(toTx, toTy);
+      if (!toTile) return !1;
+      const fromTile = this.getTile(fromTx, fromTy);
+      // Se o jogador estiver em uma rampa ou indo para uma rampa, passagem 100% livre para subir/descer!
+      if ((fromTile && fromTile.isCliffRamp) || toTile.isCliffRamp) return !1;
+
+      const fromLevel =
+        fromTile && fromTile.biome.id === BiomeId.MOUNTAIN_25D
+          ? fromTile.mountainTier || 1
+          : 0;
+      const toLevel =
+        toTile.biome.id === BiomeId.MOUNTAIN_25D
+          ? toTile.mountainTier || 1
+          : 0;
+
+      // Se ambos os tiles já estão em cima do paredão ou no mesmo andar (e já dentro do platô elevado),
+      // o jogador consegue caminhar livremente em cima de todo o paredão!
+      if (fromTile && fromTile.isCliffWall && toTile.isCliffWall && Math.abs(fromLevel - toLevel) <= 1) {
+        return !1;
+      }
+      if (fromLevel > 0 && toTile.isCliffWall && fromLevel >= (toTile.prop?.subType || toLevel)) {
+        return !1;
+      }
+      // Bloqueia atravessar a parede vertical do paredão vindo de um nível mais baixo (ex: de fora do bioma ou do andar inferior sem usar a rampa)
+      if (toTile.isCliffWall && fromLevel < (toTile.prop?.subType || toLevel)) {
+        // Permite apenas se o jogador já estiver no topo do paredão vizinho
+        if (fromTile && fromTile.isCliffWall) return !1;
+        return !0;
+      }
+      // Bloqueia pular direto da borda externa sem rampa para fora/dentro
+      if (Math.abs(toLevel - fromLevel) >= 1 && (toTile.isOuterCliffEdge || (fromTile && fromTile.isOuterCliffEdge))) {
+        if (toLevel === 0 || fromLevel === 0) return !0;
+      }
+      return !1;
     }
     isCaveRockAt(x, y) {
       const tx = Math.floor(x / this.tileSize),
@@ -1771,12 +2007,12 @@
     ) {
       const escape = !!this.findTrunkAt(x, y, hx, hy);
       const tileOk = (px, py) =>
-        isPlayer
+        (isPlayer
           ? this.canPlayerMoveTo(px, py)
           : this.isTilePassable(
               Math.floor(px / this.tileSize),
               Math.floor(py / this.tileSize),
-            );
+            )) && !this.isCliffFaceBlockedAt(x, y, px, py);
       const free = (px, py) =>
         tileOk(px, py) && (escape || !this.findTrunkAt(px, py, hx, hy));
       if (free(x + dx, y + dy))

@@ -645,7 +645,7 @@
           if (!x.prop) continue;
           const M = x.prop.kind,
             $ = M.startsWith("tree_"),
-            z = M === "rock" || M === "ruin_pillar" || M === "shrine";
+            z = M === "rock" || M === "ruin_pillar" || M === "shrine" || M === "cliff_wall";
           if (!$ && !z) continue;
           const K = x.prop.scale || 1,
             V =
@@ -1378,7 +1378,35 @@
           o === BiomeId.SAVANNA ||
           o === BiomeId.BEACH ||
           o === BiomeId.VOLCANIC;
-      if (M)
+      if (o === BiomeId.MOUNTAIN_25D) {
+        const K = Math.random();
+        K < 0.38
+          ? ((v = "golem"),
+            (T = "Golem dos Paredões"),
+            (S = "#475569"),
+            (p = "#38bdf8"),
+            (j = 36),
+            (P = 8),
+            (A = 0.68),
+            (x = 1.15))
+          : K < 0.72
+            ? ((v = "wolf"),
+              (T = CREATURES.wolf.spawn.name),
+              (S = CREATURES.wolf.spawn.color),
+              (p = CREATURES.wolf.spawn.accentColor),
+              (j = CREATURES.wolf.spawn.hp),
+              (P = CREATURES.wolf.spawn.attack),
+              (A = CREATURES.wolf.spawn.speed),
+              (x = CREATURES.wolf.spawn.scale))
+            : ((v = "deer"),
+              (T = CREATURES.deer.spawn.name),
+              (S = CREATURES.deer.spawn.color),
+              (p = CREATURES.deer.spawn.accentColor),
+              (j = CREATURES.deer.spawn.hp),
+              (P = CREATURES.deer.spawn.attack),
+              (A = CREATURES.deer.spawn.speed),
+              (x = CREATURES.deer.spawn.scale));
+      } else if (M)
         ((v = "wolf"),
           (T = CREATURES.wolf.spawnVariants.snow.name),
           (S = CREATURES.wolf.spawnVariants.snow.color),

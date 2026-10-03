@@ -49,9 +49,29 @@
     (e.CAVE_MUSHROOM = "CAVE_MUSHROOM"),
     (e.CAVE_LAKE = "CAVE_LAKE"),
     (e.CAVE_WALL = "CAVE_WALL"),
+    (e.MOUNTAIN_25D = "MOUNTAIN_25D"),
     e
   ))(BiomeId || {});
   const BIOMES = {
+    MOUNTAIN_25D: {
+      id: "MOUNTAIN_25D",
+      namePt: "⛰️ Montanhas 2.5D (Paredões)",
+      category: "mountain",
+      groundColor: "#64748b",
+      groundAccentColor: "#475569",
+      treeColor: "#1e3a2f",
+      treeTrunkColor: "#3e2723",
+      hasWater: !1,
+      passable: !0,
+      moveSpeedMultiplier: 0.9,
+      treeDensity: 0.035,
+      floraDensity: 0.025,
+      rockDensity: 0.08,
+      propType: "pine",
+      ambientParticle: "leaf",
+      descriptionPt:
+        "Montanhas 2.5D imponentes esculpidas em patamares rochosos e grandes paredões verticais de granito com passagens naturais.",
+    },
     DEEP_OCEAN: {
       id: "DEEP_OCEAN",
       namePt: "Oceano Profundo",
@@ -593,7 +613,9 @@
             ? BIOMES.BEACH
             : e > 0.86 && l < 0.28
               ? BIOMES.SNOW_PEAK
-              : l >= 0.72
+              : e > 0.67 && l >= 0.22 && l <= 0.7
+                ? BIOMES.MOUNTAIN_25D
+                : l >= 0.72
                 ? e < 0.48
                   ? BIOMES.SAVANNA
                   : (o == null ? void 0 : o.oasisVal) !== void 0 &&

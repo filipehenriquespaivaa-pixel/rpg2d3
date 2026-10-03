@@ -1766,3 +1766,295 @@
     }
     e.restore();
   }
+  function drawCliffWall25D(e, t, l = 1, o = 0.5, u = 0, neighbors = null) {
+    e.save();
+    const nL = !!(neighbors && neighbors.left),
+      nR = !!(neighbors && neighbors.right),
+      nT = !!(neighbors && neighbors.top),
+      nB = !!(neighbors && neighbors.bottom),
+      nTL = !!(neighbors && neighbors.topLeft),
+      nTR = !!(neighbors && neighbors.topRight),
+      nBL = !!(neighbors && neighbors.bottomLeft),
+      nBR = !!(neighbors && neighbors.bottomRight);
+
+    const floor = Math.max(1, Math.min(5, l || 1));
+    // Largura de 1 tile (36px) com sangria de 1.5px nas laterais conectadas
+    // Altura cresce progressivamente do 1º ao 5º andar
+    const halfTile = 18 * t,
+      leftX = nL ? -halfTile - 1.5 * t : -halfTile + 0.5 * t,
+      rightX = nR ? halfTile + 1.5 * t : halfTile - 0.5 * t,
+      fullW = rightX - leftX,
+      hWall = (25 + floor * 3.5) * t,
+      baseY = 18 * t,
+      topY = baseY - hWall,
+      topDepth = (14 + floor * 0.8) * t,
+      // Quando há paredão acima (nT), o topo se estende até cobrir a emenda vertical sem degraus
+      platBackY = nT ? -halfTile - 2 * t : topY - topDepth;
+
+    // Chanfros apenas nas bordas livres externas (sem vizinho horizontal nem vertical)
+    const bevelL = nL || nT ? 0 : 4.5 * t,
+      bevelR = nR || nT ? 0 : 4.5 * t,
+      backBevelL = nL || nT ? 0 : 4.5 * t,
+      backBevelR = nR || nT ? 0 : 4.5 * t;
+
+    // 1. Sombra de Base (apenas no pé livre do paredão, quando não há paredão abaixo)
+    if (!nB) {
+      e.fillStyle = "rgba(2, 6, 23, 0.48)";
+      e.beginPath();
+      if (nL && nR) {
+        e.fillRect(leftX, baseY - 2 * t, fullW, (6.5 + floor * 0.8) * t);
+      } else {
+        e.roundRect(
+          leftX,
+          baseY - 2 * t,
+          fullW,
+          (7 + floor * 0.8) * t,
+          [0, 0, nR ? 0 : 5 * t, nL ? 0 : 5 * t],
+        );
+        e.fill();
+      }
+    }
+
+    // 2. Face Vertical Rochosa Contínua (5 andares de cores e altitudes)
+    // Se houver paredão acima (nT) ou abaixo (nB), a face vertical se estende para unir os blocos de cima a baixo
+    const faceTopY = nT ? platBackY : topY;
+    const faceBottomY = nB ? baseY + 14 * t : baseY;
+    const wallGrad = e.createLinearGradient(0, topY, 0, baseY);
+    if (floor >= 5) {
+      // 5º Andar: Parede glacial / granito alpino gelado
+      wallGrad.addColorStop(0, "#94a3b8");
+      wallGrad.addColorStop(0.35, "#64748b");
+      wallGrad.addColorStop(0.75, "#475569");
+      wallGrad.addColorStop(1, "#1e293b");
+    } else if (floor === 4) {
+      // 4º Andar: Rocha fria sub-alpina
+      wallGrad.addColorStop(0, "#64748b");
+      wallGrad.addColorStop(0.35, "#475569");
+      wallGrad.addColorStop(0.75, "#334155");
+      wallGrad.addColorStop(1, "#1e293b");
+    } else if (floor === 3) {
+      // 3º Andar: Granito cinza claro
+      wallGrad.addColorStop(0, "#526071");
+      wallGrad.addColorStop(0.4, "#3f4d5e");
+      wallGrad.addColorStop(0.8, "#293548");
+      wallGrad.addColorStop(1, "#162032");
+    } else if (floor === 2) {
+      // 2º Andar: Ardósia montanhosa
+      wallGrad.addColorStop(0, "#57534e");
+      wallGrad.addColorStop(0.4, "#44403c");
+      wallGrad.addColorStop(0.8, "#292524");
+      wallGrad.addColorStop(1, "#1c1917");
+    } else {
+      // 1º Andar: Basalto escuro da muralha base
+      wallGrad.addColorStop(0, "#475569");
+      wallGrad.addColorStop(0.45, "#334155");
+      wallGrad.addColorStop(1, "#0f172a");
+    }
+    e.fillStyle = wallGrad;
+    e.beginPath();
+    e.moveTo(leftX, faceBottomY);
+    e.lineTo(leftX, faceTopY + bevelL);
+    e.lineTo(leftX + bevelL, faceTopY);
+    e.lineTo(rightX - bevelR, faceTopY);
+    e.lineTo(rightX, faceTopY + bevelR);
+    e.lineTo(rightX, faceBottomY);
+    e.closePath();
+    e.fill();
+
+    // Pontes diagonais (quando dois paredões se tocam na diagonal em escada, une os dois sem buraco)
+    if (!nL && nTL) {
+      e.fillStyle = wallGrad;
+      e.fillRect(-halfTile - 6 * t, faceTopY, 8 * t, 18 * t);
+    }
+    if (!nR && nTR) {
+      e.fillStyle = wallGrad;
+      e.fillRect(halfTile - 2 * t, faceTopY, 8 * t, 18 * t);
+    }
+    if (!nL && nBL) {
+      e.fillStyle = wallGrad;
+      e.fillRect(-halfTile - 6 * t, topY + 6 * t, 8 * t, 22 * t);
+    }
+    if (!nR && nBR) {
+      e.fillStyle = wallGrad;
+      e.fillRect(halfTile - 2 * t, topY + 6 * t, 8 * t, 22 * t);
+    }
+
+    // Sombreamento lateral direito contínuo (une de cima a baixo em colunas verticais)
+    if (!nR) {
+      e.fillStyle = "rgba(15, 23, 42, 0.36)";
+      e.beginPath();
+      e.moveTo(rightX - 7 * t, faceTopY);
+      e.lineTo(rightX, faceTopY + bevelR);
+      e.lineTo(rightX, faceBottomY);
+      e.lineTo(rightX - 6 * t, faceBottomY);
+      e.closePath();
+      e.fill();
+      // Borda lateral direita escura contínua
+      e.strokeStyle = "rgba(15, 23, 42, 0.65)";
+      e.lineWidth = 1.4 * t;
+      e.beginPath();
+      e.moveTo(rightX - 0.5 * t, faceTopY + bevelR);
+      e.lineTo(rightX - 0.5 * t, faceBottomY);
+      e.stroke();
+    }
+    // Iluminação lateral esquerda contínua (une de cima a baixo em colunas verticais)
+    if (!nL) {
+      e.fillStyle = "rgba(255, 255, 255, 0.11)";
+      e.beginPath();
+      e.moveTo(leftX, faceTopY + bevelL);
+      e.lineTo(leftX + 6 * t, faceTopY);
+      e.lineTo(leftX + 5 * t, faceBottomY);
+      e.lineTo(leftX, faceBottomY);
+      e.closePath();
+      e.fill();
+      // Borda lateral esquerda iluminada contínua
+      e.strokeStyle = floor >= 4 ? "#f8fafc" : floor === 3 ? "#e2e8f0" : "#cbd5e1";
+      e.lineWidth = 1.6 * t;
+      e.beginPath();
+      e.moveTo(leftX + 0.6 * t, faceTopY + bevelL);
+      e.lineTo(leftX + 0.6 * t, faceBottomY);
+      e.stroke();
+    }
+
+    // Estratos geológicos e fendas na face exposta (mais camadas nos andares mais altos)
+    const s1 = topY + hWall * 0.32,
+      s2 = topY + hWall * 0.64,
+      s3 = topY + hWall * 0.84;
+    e.strokeStyle = "rgba(15, 23, 42, 0.52)";
+    e.lineWidth = 1.4 * t;
+    e.beginPath();
+    e.moveTo(leftX + (nL ? 0 : 1.5 * t), s1);
+    e.lineTo(-4 * t, s1 + 1.5 * t);
+    e.lineTo(5 * t, s1 - 1.2 * t);
+    e.lineTo(rightX - (nR ? 0 : 1.5 * t), s1);
+
+    e.moveTo(leftX + (nL ? 0 : 1.5 * t), s2);
+    e.lineTo(-3 * t, s2 - 1.4 * t);
+    e.lineTo(6 * t, s2 + 1.3 * t);
+    e.lineTo(rightX - (nR ? 0 : 1.5 * t), s2);
+
+    if (floor >= 4) {
+      e.moveTo(leftX + (nL ? 0 : 1.5 * t), s3);
+      e.lineTo(0, s3 + 1.1 * t);
+      e.lineTo(rightX - (nR ? 0 : 1.5 * t), s3);
+    }
+
+    // Fenda vertical que se conecta com o bloco de cima e de baixo
+    const vx = (o - 0.5) * 10 * t;
+    e.moveTo(vx, faceTopY + (nT ? 0 : 2 * t));
+    e.lineTo(vx - 2 * t, s1);
+    e.lineTo(vx + 1.5 * t, s2);
+    e.lineTo(vx - 0.5 * t, faceBottomY - (nB ? 0 : 2 * t));
+    e.stroke();
+
+    // Saliências rochosas iluminadas na face
+    e.fillStyle = floor >= 4 ? "rgba(226, 232, 240, 0.3)" : "rgba(148, 163, 184, 0.24)";
+    e.fillRect(leftX + 2 * t, s1 - 2.6 * t, fullW * 0.42, 2 * t);
+    e.fillRect(1 * t, s2 - 2.4 * t, fullW * 0.38, 1.8 * t);
+
+    // 3. Platô Superior 2.5D Contínuo (5 andares de cores até o pico nevado)
+    // Se nB for verdadeiro, o platô desce até a base (baseY + 2) para fundir com o platô do paredão de baixo!
+    const platFrontY = nB ? baseY + 2 * t : topY;
+    const platFrontBevelL = nB ? 0 : bevelL;
+    const platFrontBevelR = nB ? 0 : bevelR;
+
+    e.fillStyle =
+      floor >= 5
+        ? "#f8fafc"
+        : floor === 4
+          ? "#e2e8f0"
+          : floor === 3
+            ? "#cbd5e1"
+            : floor === 2
+              ? "#94a3b8"
+              : "#64748b";
+    e.beginPath();
+    e.moveTo(leftX, platFrontY + platFrontBevelL);
+    e.lineTo(leftX + backBevelL, platBackY);
+    e.lineTo(rightX - backBevelR, platBackY);
+    e.lineTo(rightX, platFrontY + platFrontBevelR);
+    if (!nB) {
+      e.lineTo(rightX - bevelR, topY);
+      e.lineTo(leftX + bevelL, topY);
+    }
+    e.closePath();
+    e.fill();
+
+    // Se houver paredão abaixo (nB), mas não à esquerda/direita, desenha a faixa da parede lateral do platô elevado
+    if (nB && !nL) {
+      e.fillStyle = floor >= 4 ? "#64748b" : floor === 3 ? "#475569" : "#334155";
+      e.fillRect(leftX, platBackY, 4.5 * t, platFrontY - platBackY);
+      e.strokeStyle = floor >= 4 ? "#ffffff" : floor === 3 ? "#f8fafc" : "#e2e8f0";
+      e.lineWidth = 2 * t;
+      e.beginPath();
+      e.moveTo(leftX + 4.5 * t, platBackY);
+      e.lineTo(leftX + 4.5 * t, platFrontY);
+      e.stroke();
+    }
+    if (nB && !nR) {
+      e.fillStyle = "rgba(15, 23, 42, 0.45)";
+      e.fillRect(rightX - 4.5 * t, platBackY, 4.5 * t, platFrontY - platBackY);
+      e.strokeStyle = floor >= 4 ? "#f1f5f9" : floor === 3 ? "#e2e8f0" : "#cbd5e1";
+      e.lineWidth = 1.6 * t;
+      e.beginPath();
+      e.moveTo(rightX - 4.5 * t, platBackY);
+      e.lineTo(rightX - 4.5 * t, platFrontY);
+      e.stroke();
+    }
+
+    // Textura contínua no platô superior
+    e.fillStyle = floor >= 4 ? "rgba(148, 163, 184, 0.25)" : "rgba(15, 23, 42, 0.12)";
+    const platMidY = (platBackY + platFrontY) * 0.5;
+    e.fillRect(leftX + 5 * t, platMidY - 1.5 * t, fullW - 10 * t, 2 * t);
+
+    // Borda traseira norte do platô apenas quando NÃO há paredão acima (!nT)
+    if (!nT) {
+      e.strokeStyle = "rgba(15, 23, 42, 0.5)";
+      e.lineWidth = 1.5 * t;
+      e.beginPath();
+      e.moveTo(leftX + backBevelL, platBackY);
+      e.lineTo(rightX - backBevelR, platBackY);
+      e.stroke();
+    }
+
+    // Crista frontal iluminada do paredão apenas na face sul exposta (!nB)
+    if (!nB) {
+      e.strokeStyle = floor >= 4 ? "#ffffff" : floor === 3 ? "#f8fafc" : "#e2e8f0";
+      e.lineWidth = (floor >= 4 ? 2.5 : 2.2) * t;
+      e.beginPath();
+      if (!nL) {
+        e.moveTo(leftX + 0.5 * t, topY + bevelL);
+        e.lineTo(leftX + bevelL, topY + 0.5 * t);
+      } else {
+        e.moveTo(leftX, topY + 0.5 * t);
+      }
+      e.lineTo(rightX - bevelR, topY + 0.5 * t);
+      if (!nR) {
+        e.lineTo(rightX - 0.5 * t, topY + bevelR);
+      }
+      e.stroke();
+    }
+
+    // Detalhes de neve alpina (andares 4 e 5) ou vegetação alpina (andares 1 a 3) no platô
+    const detailY = nB ? (platBackY + platFrontY) * 0.5 : topY - 4 * t;
+    if (floor >= 4) {
+      e.fillStyle = floor >= 5 ? "rgba(255, 255, 255, 0.95)" : "rgba(248, 250, 252, 0.85)";
+      e.beginPath();
+      e.ellipse(-5 * t, detailY, 9.5 * t, 4 * t, -0.08, 0, Math.PI * 2);
+      e.ellipse(6 * t, detailY + 1.5 * t, 8 * t, 3.2 * t, 0.12, 0, Math.PI * 2);
+      e.fill();
+    } else if (o > 0.32) {
+      e.fillStyle = "rgba(22, 101, 52, 0.65)";
+      e.beginPath();
+      e.ellipse(-5 * t, detailY, 6.5 * t, 2.3 * t, 0, 0, Math.PI * 2);
+      e.ellipse(5 * t, detailY - 1 * t, 5.5 * t, 2 * t, 0, 0, Math.PI * 2);
+      e.fill();
+    }
+
+    // Rodapé escuro de encaixe com o chão apenas quando não há paredão colado embaixo (!nB)
+    if (!nB) {
+      e.fillStyle = "rgba(9, 13, 22, 0.58)";
+      e.fillRect(leftX, baseY - 3.5 * t, fullW, 3.5 * t);
+    }
+    e.restore();
+  }

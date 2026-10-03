@@ -366,26 +366,63 @@
         "pointer-events-none absolute inset-0 z-20 overflow-hidden select-none",
       children: [
         isDevMode &&
-          h.jsx("div", {
+          h.jsxs("div", {
             className:
-              "pointer-events-auto absolute top-2.5 sm:top-3.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-30",
-            children: h.jsxs("button", {
-              id: "hud-toggle-visibility-btn",
-              onClick: () => ee(!Ie),
-              className: `flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium transition-all shadow-md backdrop-blur-md border ${Ie ? "bg-sky-600/90 hover:bg-sky-500 text-white border-sky-400/50 shadow-sky-900/40" : "bg-slate-900/60 hover:bg-slate-900/90 text-slate-300 hover:text-white border-white/10"}`,
-              title: Ie
-                ? "Restaurar Interface (Dev)"
-                : "Ocultar Interface para Visão Limpa",
-              children: [
-                Ie
-                  ? h.jsx(xp, { className: "h-3.5 w-3.5 text-sky-200" })
-                  : h.jsx(jp, { className: "h-3.5 w-3.5 text-slate-400" }),
-                h.jsx("span", {
-                  className: "hidden sm:inline",
-                  children: Ie ? "Exibir Interface Dev" : "Modo Imersivo (Dev)",
-                }),
-              ],
-            }),
+              "pointer-events-auto absolute top-2.5 sm:top-3.5 left-1/2 -translate-x-1/2 flex flex-wrap items-center justify-center gap-1.5 z-30",
+            children: [
+              h.jsxs("div", {
+                className:
+                  "flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/90 border border-amber-500/60 shadow-lg shadow-black/60 backdrop-blur-md text-[11px]",
+                children: [
+                  h.jsx("span", {
+                    className: "text-amber-400 font-bold whitespace-nowrap",
+                    children: "⛰️ Bioma (Dev):",
+                  }),
+                  h.jsx("select", {
+                    id: "hud-top-dev-biome-select",
+                    value: (e && e.id) || "",
+                    onChange: (We) => {
+                      if (We.target.value && p) p(We.target.value);
+                    },
+                    className:
+                      "bg-slate-900 text-amber-200 font-bold rounded-lg px-2 py-0.5 border border-amber-500/40 cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-400 max-w-[190px] sm:max-w-[230px]",
+                    title: "Selecionar e Teleportar para Bioma",
+                    children: Object.values(BIOMES).map((We) =>
+                      h.jsx(
+                        "option",
+                        { value: We.id, children: We.namePt },
+                        We.id,
+                      ),
+                    ),
+                  }),
+                  h.jsx("button", {
+                    type: "button",
+                    onClick: () => p && p("MOUNTAIN_25D"),
+                    className:
+                      "px-2 py-0.5 rounded-full bg-amber-600 hover:bg-amber-500 text-white font-bold text-[10px] transition cursor-pointer active:scale-95 whitespace-nowrap shadow",
+                    title: "Ir direto para Montanhas 2.5D (Paredões)",
+                    children: "Ir p/ Montanhas 2.5D",
+                  }),
+                ],
+              }),
+              h.jsxs("button", {
+                id: "hud-toggle-visibility-btn",
+                onClick: () => ee(!Ie),
+                className: `flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium transition-all shadow-md backdrop-blur-md border ${Ie ? "bg-sky-600/90 hover:bg-sky-500 text-white border-sky-400/50 shadow-sky-900/40" : "bg-slate-900/60 hover:bg-slate-900/90 text-slate-300 hover:text-white border-white/10"}`,
+                title: Ie
+                  ? "Restaurar Interface (Dev)"
+                  : "Ocultar Interface para Visão Limpa",
+                children: [
+                  Ie
+                    ? h.jsx(xp, { className: "h-3.5 w-3.5 text-sky-200" })
+                    : h.jsx(jp, { className: "h-3.5 w-3.5 text-slate-400" }),
+                  h.jsx("span", {
+                    className: "hidden sm:inline",
+                    children: Ie ? "Exibir Interface Dev" : "Modo Imersivo (Dev)",
+                  }),
+                ],
+              }),
+            ],
           }),
         !isImmersive &&
           h.jsxs(h.Fragment, {
@@ -566,16 +603,22 @@
                         be &&
                           h.jsx("div", {
                             className:
-                              "mt-1 flex flex-col gap-0.5 border-t border-white/10 pt-1.5 max-h-40 overflow-y-auto pr-1",
+                              "mt-1 flex flex-col gap-0.5 border-t border-white/10 pt-1.5 max-h-60 overflow-y-auto pr-1",
                             children: Object.values(BIOMES).map((We) =>
                               h.jsx(
                                 "button",
                                 {
                                   onClick: () => {
-                                    (p(We.id), Me(!1));
+                                    p(We.id);
+                                    if (!isDevMode) Me(!1);
                                   },
-                                  className:
-                                    "flex items-center justify-between text-left px-1.5 py-1 rounded text-[11px] text-slate-200 hover:bg-slate-800 hover:text-white transition",
+                                  className: `flex items-center justify-between text-left px-1.5 py-1 rounded text-[11px] transition ${
+                                    We.id === "MOUNTAIN_25D"
+                                      ? "bg-amber-500/20 text-amber-200 border border-amber-500/40 font-bold hover:bg-amber-500/30"
+                                      : (e && e.id === We.id)
+                                        ? "bg-sky-500/20 text-sky-200 font-semibold"
+                                        : "text-slate-200 hover:bg-slate-800 hover:text-white"
+                                  }`,
                                   children: h.jsxs("div", {
                                     className:
                                       "flex items-center gap-1.5 truncate",

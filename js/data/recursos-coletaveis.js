@@ -244,7 +244,8 @@
         const t =
           e.tile.biome.propType === "pine" ||
           e.tile.biome.id === "SNOW_TAIGA" ||
-          e.tile.biome.id === "SNOW_PEAK";
+          e.tile.biome.id === "SNOW_PEAK" ||
+          e.tile.biome.id === "MOUNTAIN_25D";
         return !e.hasNearbyTree || !t ? !1 : e.hash < RESOURCE_DIFFICULTY.media.spawnChance;
       },
       render: (e, t, l, o, u) => {

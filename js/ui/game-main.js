@@ -1287,9 +1287,9 @@
                     found = !0;
                     break;
                   }
-                  if (isImpassable || Re.biome.passable) {
-                    targetPixelX = me * D.tileSize;
-                    targetPixelY = ce * D.tileSize;
+                  if (isImpassable || (Re.biome.passable && !Re.isCliffWall)) {
+                    targetPixelX = me * D.tileSize + D.tileSize / 2;
+                    targetPixelY = ce * D.tileSize + D.tileSize / 2;
                     foundDist = r;
                     found = !0;
                     break;
@@ -3100,7 +3100,8 @@
             for (let sa = 0; sa < Pe; sa += 2) {
               const Pa = Ye + Math.floor((sa - De) * 0.9),
                 va = Ge + Math.floor((Ze - qe) * 0.9),
-                rt = Q.getTile(Pa, va).biome.groundColor;
+                tileAt = Q.getTile(Pa, va),
+                rt = tileAt.isCliffWall ? "#1e293b" : tileAt.biome.groundColor;
               let ka = me[rt];
               ka ||
                 ((ka = [
@@ -3739,6 +3740,8 @@
             onDropItem: rc,
             onMoveToBeltSlot: gn,
             onInvertBeltSlot: Ur,
+            currentBiome: w,
+            onTeleportToBiome: dt,
             devMode:
               typeof (props && props.devMode) === "boolean"
                 ? props.devMode

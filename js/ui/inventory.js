@@ -802,6 +802,9 @@
       onAddGold,
       onClearBackpack,
       onEquipBackpack,
+      onTeleportToBiome,
+      currentBiome,
+      onCloseModal,
       backpackCount,
       backpackMax,
     }) => {
@@ -816,6 +819,7 @@
 
       const categories = [
         { id: "todos", label: "Todos", icon: "📦" },
+        { id: "biomas", label: "Biomas", icon: "⛰️" },
         { id: "armas", label: "Armas", icon: "⚔️" },
         { id: "armaduras", label: "Armaduras", icon: "🛡️" },
         { id: "acessorios", label: "Acessórios", icon: "💍" },
@@ -1008,12 +1012,88 @@
             ],
           }),
 
-          // Lista de Itens Rolável
+          // Lista de Itens ou Biomas Rolável
           h.jsx("div", {
             className:
               "flex-1 overflow-y-auto p-2.5 space-y-2 divide-y divide-white/5 scrollbar-thin",
             children:
-              filteredItems.length === 0
+              selectedCategory === "biomas"
+                ? Object.values(BIOMES)
+                    .filter((b) => {
+                      const q = searchTerm.trim().toLowerCase();
+                      if (!q) return true;
+                      return (
+                        (b.namePt || "").toLowerCase().includes(q) ||
+                        (b.id || "").toLowerCase().includes(q) ||
+                        (b.descriptionPt || "").toLowerCase().includes(q)
+                      );
+                    })
+                    .map((b) => {
+                      const isCurrent = currentBiome && currentBiome.id === b.id;
+                      const isMountain25D = b.id === "MOUNTAIN_25D";
+                      return h.jsxs(
+                        "div",
+                        {
+                          className: `pt-2 first:pt-0 flex items-center justify-between gap-2 p-2.5 rounded-xl border transition ${
+                            isMountain25D
+                              ? "bg-amber-950/35 border-amber-500/60 shadow-md"
+                              : isCurrent
+                                ? "bg-sky-950/35 border-sky-500/50"
+                                : "bg-slate-900/40 hover:bg-slate-900/80 border-white/5 hover:border-amber-500/30"
+                          }`,
+                          children: [
+                            h.jsxs("div", {
+                              className: "flex items-center gap-2.5 min-w-0 flex-1",
+                              children: [
+                                h.jsx("span", {
+                                  className:
+                                    "w-4 h-4 rounded-full shrink-0 border border-white/30 shadow",
+                                  style: { backgroundColor: b.groundColor },
+                                }),
+                                h.jsxs("div", {
+                                  className: "min-w-0 flex-1",
+                                  children: [
+                                    h.jsx("div", {
+                                      className: `text-xs font-bold truncate ${
+                                        isMountain25D
+                                          ? "text-amber-300"
+                                          : isCurrent
+                                            ? "text-sky-300"
+                                            : "text-slate-100"
+                                      }`,
+                                      children: b.namePt,
+                                    }),
+                                    h.jsx("div", {
+                                      className:
+                                        "text-[10px] text-slate-400 line-clamp-1",
+                                      children: b.descriptionPt,
+                                    }),
+                                  ],
+                                }),
+                              ],
+                            }),
+                            h.jsx("button", {
+                              type: "button",
+                              onClick: () => {
+                                if (onTeleportToBiome) {
+                                  onTeleportToBiome(b.id);
+                                  triggerMsg(`⛰️ Teleportado: ${b.namePt}!`);
+                                  if (onCloseModal) onCloseModal();
+                                }
+                              },
+                              className: `px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer shrink-0 ${
+                                isMountain25D
+                                  ? "bg-amber-600 hover:bg-amber-500 text-white shadow"
+                                  : "bg-sky-600 hover:bg-sky-500 text-white"
+                              }`,
+                              children: "Teleportar",
+                            }),
+                          ],
+                        },
+                        b.id,
+                      );
+                    })
+                : filteredItems.length === 0
                 ? h.jsxs("div", {
                     className:
                       "py-8 text-center text-slate-500 text-xs flex flex-col items-center gap-2",
@@ -1238,6 +1318,8 @@
       onInvertBeltSlot: j,
       onCookingPot: Aa,
       onOpenCookingModal: Ra = null,
+      currentBiome = null,
+      onTeleportToBiome = null,
       devMode: devModeProp = false,
       onDevAddItem = null,
       onDevEquipItem = null,
@@ -3036,6 +3118,9 @@
             onAddGold: handleDevAddGold,
             onClearBackpack: handleDevClearBackpack,
             onEquipBackpack: handleDevEquipBackpack,
+            onTeleportToBiome: onTeleportToBiome,
+            currentBiome: currentBiome,
+            onCloseModal: t,
             backpackCount: o.length,
             backpackMax: I,
           }),
