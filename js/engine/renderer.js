@@ -192,11 +192,11 @@
             const ke = ne.prop,
               G = ne.tx * f + f / 2 + ke.offsetX,
               de = ne.ty * f + f / 2 + ke.offsetY;
-            // Se for um paredão 2.5D, o topo dele é uma superfície caminhável:
-            // desenhamos o paredão abaixo dos pés do jogador quando o jogador está caminhando em cima do paredão!
+            // A rampa (cliff_ramp) é desenhada no chão/encosta abaixo dos pés do personagem,
+            // enquanto o paredão (cliff_wall) é uma parede intransponível com ordenação Y normal.
             const sortY =
-              ke.kind === "cliff_wall"
-                ? de - f * 0.85
+              ke.kind === "cliff_ramp"
+                ? de - f * 1.5
                 : de;
             Ee.push({ y: sortY, draw: () => this.renderProp(ke, G, de, ne, u) });
           }
@@ -666,68 +666,38 @@
             (g.fillStyle = "#7c2d12"),
             g.fillRect(l + 6 + T * 14, o + 4 + T * 16, 3.5, 2.5));
         else if (y.id === BiomeId.MOUNTAIN_25D) {
-          const tier = t.mountainTier || 1;
-          // 5 andares de altura (Andar 1 na base elevada do bioma até o Andar 5 no cume alpino nevado)
-          const baseCol =
-            tier >= 5
-              ? "#e2e8f0"
-              : tier === 4
-                ? "#cbd5e1"
-                : tier === 3
-                  ? "#94a3b8"
-                  : tier === 2
-                    ? "#64748b"
-                    : "#475569";
-          g.fillStyle = baseCol;
+          // Todo o bioma está exatamente no mesmo nível de platô elevado (cor uniforme em todo o interior)
+          g.fillStyle = "#64748b";
           g.fillRect(l, o, u + 1.2, u + 1.2);
-          // Degraus de relevo 2.5D entre patamares vizinhos e na borda externa do platô elevado
+          // Borda externa do platô elevado apenas quando faz fronteira com outro bioma
           const nTop = this.engine.getTile(t.tx, t.ty - 1);
           const nBot = this.engine.getTile(t.tx, t.ty + 1);
           const nLeft = this.engine.getTile(t.tx - 1, t.ty);
           const nRight = this.engine.getTile(t.tx + 1, t.ty);
-          if ((nTop.mountainTier || 0) > tier || nTop.isCliffWall) {
-            g.fillStyle = "rgba(15, 23, 42, 0.45)";
-            g.fillRect(l, o, u + 1, 7.5);
-            g.fillStyle = "rgba(241, 245, 249, 0.28)";
-            g.fillRect(l, o + 7.5, u + 1, 1.5);
-          } else if (nTop.biome.id !== BiomeId.MOUNTAIN_25D) {
-            // Borda norte do platô elevado (+1 andar acima do bioma vizinho)
+          if (nTop.biome.id !== BiomeId.MOUNTAIN_25D) {
             g.fillStyle = "#e2e8f0";
             g.fillRect(l, o, u + 1, 3);
             g.fillStyle = "rgba(15, 23, 42, 0.35)";
             g.fillRect(l, o + 3, u + 1, 2.5);
           }
-          if (((nBot.mountainTier || 0) < tier || nBot.biome.id !== BiomeId.MOUNTAIN_25D) && !t.isCliffWall) {
+          if (nBot.biome.id !== BiomeId.MOUNTAIN_25D && !t.isCliffWall) {
             g.fillStyle = "#f1f5f9";
             g.fillRect(l, o + u - 6, u + 1, 2.5);
             g.fillStyle = "#0f172a";
             g.fillRect(l, o + u - 3.5, u + 1, 3.5);
           }
-          if ((nLeft.mountainTier || 0) < tier || nLeft.biome.id !== BiomeId.MOUNTAIN_25D) {
+          if (nLeft.biome.id !== BiomeId.MOUNTAIN_25D) {
             g.fillStyle = "rgba(248, 250, 252, 0.32)";
             g.fillRect(l, o, 3, u);
           }
-          if ((nRight.mountainTier || 0) < tier || nRight.biome.id !== BiomeId.MOUNTAIN_25D) {
+          if (nRight.biome.id !== BiomeId.MOUNTAIN_25D) {
             g.fillStyle = "rgba(15, 23, 42, 0.38)";
             g.fillRect(l + u - 3.5, o, 3.5, u);
           }
-          if (t.isCliffRamp) {
-            // Rampa de pedra esculpida subindo o andar do paredão
-            g.fillStyle = "rgba(30, 41, 59, 0.5)";
-            g.fillRect(l + 3, o, 2.5, u);
-            g.fillRect(l + u - 5.5, o, 2.5, u);
-            for (let step = 3; step < u - 3; step += 6) {
-              g.fillStyle = "rgba(71, 85, 105, 0.85)";
-              g.fillRect(l + 5, o + step, u - 10, 4);
-              g.fillStyle = "rgba(241, 245, 249, 0.55)";
-              g.fillRect(l + 5, o + step, u - 10, 1.4);
-            }
-          } else {
-            g.fillStyle = "rgba(30, 41, 59, 0.32)";
-            g.fillRect(l + 3, o + ((t.tx + t.ty) % 3) * 9 + 4, u - 6, 2.2);
-            g.fillStyle = "rgba(241, 245, 249, 0.28)";
-            g.fillRect(l + 4, o + ((t.tx + t.ty) % 3) * 9 + 2.8, u - 8, 1.2);
-          }
+          g.fillStyle = "rgba(30, 41, 59, 0.26)";
+          g.fillRect(l + 3, o + ((t.tx + t.ty) % 3) * 9 + 4, u - 6, 2);
+          g.fillStyle = "rgba(241, 245, 249, 0.22)";
+          g.fillRect(l + 4, o + ((t.tx + t.ty) % 3) * 9 + 2.8, u - 8, 1.2);
         }
         else if (y.id === BiomeId.GLACIER) {
           const S =
@@ -1285,7 +1255,9 @@
         switch (
           (c.save(),
           c.translate(l, o),
-          t.kind !== "cliff_wall" && this.drawPropDirectionalShadow(c, t.kind, f, y),
+          t.kind !== "cliff_wall" &&
+            t.kind !== "cliff_ramp" &&
+            this.drawPropDirectionalShadow(c, t.kind, f, y),
           t.kind)
         ) {
           case "tree_oak":
@@ -1394,20 +1366,55 @@
               t.dryingDurationMs || 12e4,
             );
             break;
+          case "cliff_ramp": {
+            const eng = this.engine,
+              tx = u.tx,
+              ty = u.ty,
+              rampNeighbors = {
+                leftWall: !!eng.getTile(tx - 1, ty).isCliffWall,
+                rightWall: !!eng.getTile(tx + 1, ty).isCliffWall,
+                topRamp: !!eng.getTile(tx, ty - 1).isCliffRamp,
+                bottomRamp: !!eng.getTile(tx, ty + 1).isCliffRamp,
+              };
+            drawCliffRamp25D(
+              c,
+              f,
+              t.subType || 1,
+              t.lowerTier ?? 0,
+              t.rampDir || "up",
+              rampNeighbors,
+            );
+            break;
+          }
           case "cliff_wall": {
             const eng = this.engine,
               tx = u.tx,
               ty = u.ty,
+              tL = eng.getTile(tx - 1, ty),
+              tR = eng.getTile(tx + 1, ty),
+              tT = eng.getTile(tx, ty - 1),
+              tB = eng.getTile(tx, ty + 1),
+              tTL = eng.getTile(tx - 1, ty - 1),
+              tTR = eng.getTile(tx + 1, ty - 1),
+              tBL = eng.getTile(tx - 1, ty + 1),
+              tBR = eng.getTile(tx + 1, ty + 1),
+              isElevatedOrWall = (tile) =>
+                !!(tile && (tile.isCliffWall || tile.biome.id === BiomeId.MOUNTAIN_25D)),
               neighbors = {
-                left: !!eng.getTile(tx - 1, ty).isCliffWall,
-                right: !!eng.getTile(tx + 1, ty).isCliffWall,
-                top: !!eng.getTile(tx, ty - 1).isCliffWall,
-                bottom: !!eng.getTile(tx, ty + 1).isCliffWall,
-                topLeft: !!eng.getTile(tx - 1, ty - 1).isCliffWall,
-                topRight: !!eng.getTile(tx + 1, ty - 1).isCliffWall,
-                bottomLeft: !!eng.getTile(tx - 1, ty + 1).isCliffWall,
-                bottomRight: !!eng.getTile(tx + 1, ty + 1).isCliffWall,
+                left: isElevatedOrWall(tL),
+                right: isElevatedOrWall(tR),
+                top: isElevatedOrWall(tT),
+                bottom: isElevatedOrWall(tB),
+                topLeft: isElevatedOrWall(tTL),
+                topRight: isElevatedOrWall(tTR),
+                bottomLeft: isElevatedOrWall(tBL),
+                bottomRight: isElevatedOrWall(tBR),
+                wallLeft: !!(tL && tL.isCliffWall),
+                wallRight: !!(tR && tR.isCliffWall),
+                wallTop: !!(tT && tT.isCliffWall),
+                wallBottom: !!(tB && tB.isCliffWall),
               };
+            // Só desenha sombra direcional quando o sul é externo (fora do platô elevado)
             if (!neighbors.bottom) {
               this.drawPropDirectionalShadow(c, t.kind, f, y);
             }

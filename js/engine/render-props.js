@@ -1768,6 +1768,8 @@
   }
   function drawCliffWall25D(e, t, l = 1, o = 0.5, u = 0, neighbors = null) {
     e.save();
+    // nL, nR, nT, nB = true quando o tile vizinho faz parte do platô elevado (seja outro paredão ou o chão interno de MOUNTAIN_25D)
+    // Assim, o lado interno NUNCA tem queda/parede nem sombra: o topo do paredão se funde 100% no mesmo nível do interior!
     const nL = !!(neighbors && neighbors.left),
       nR = !!(neighbors && neighbors.right),
       nT = !!(neighbors && neighbors.top),
@@ -1777,284 +1779,320 @@
       nBL = !!(neighbors && neighbors.bottomLeft),
       nBR = !!(neighbors && neighbors.bottomRight);
 
-    const floor = Math.max(1, Math.min(5, l || 1));
-    // Largura de 1 tile (36px) com sangria de 1.5px nas laterais conectadas
-    // Altura cresce progressivamente do 1º ao 5º andar
     const halfTile = 18 * t,
+      // Sangria de 1.5px para dentro de qualquer lado conectado ao platô/paredão para zero frestas
       leftX = nL ? -halfTile - 1.5 * t : -halfTile + 0.5 * t,
       rightX = nR ? halfTile + 1.5 * t : halfTile - 0.5 * t,
       fullW = rightX - leftX,
-      hWall = (25 + floor * 3.5) * t,
+      hWall = 28 * t,
       baseY = 18 * t,
+      // Quando o lado Sul é o interior do bioma (nB = true), não existe queda para o sul:
+      // o platô superior ocupa o tile inteiro até a borda sul (baseY + 1.5*t) na mesma cor #64748b do interior!
+      // Quando o lado Sul é fora do bioma (!nB), a parede vertical de 28px aparece na face sul e o topo fica em topY.
       topY = baseY - hWall,
-      topDepth = (14 + floor * 0.8) * t,
-      // Quando há paredão acima (nT), o topo se estende até cobrir a emenda vertical sem degraus
-      platBackY = nT ? -halfTile - 2 * t : topY - topDepth;
+      platBackY = -halfTile - 1.5 * t,
+      platFrontY = nB ? halfTile + 1.5 * t : topY;
 
-    // Chanfros apenas nas bordas livres externas (sem vizinho horizontal nem vertical)
+    // Chanfros apenas nas quinas externas livres (que dão para fora do bioma)
     const bevelL = nL || nT ? 0 : 4.5 * t,
-      bevelR = nR || nT ? 0 : 4.5 * t,
-      backBevelL = nL || nT ? 0 : 4.5 * t,
-      backBevelR = nR || nT ? 0 : 4.5 * t;
+      bevelR = nR || nT ? 0 : 4.5 * t;
 
-    // 1. Sombra de Base (apenas no pé livre do paredão, quando não há paredão abaixo)
+    // 1. Sombra de Base externa (APENAS quando o sul é fora do bioma: !nB)
     if (!nB) {
       e.fillStyle = "rgba(2, 6, 23, 0.48)";
       e.beginPath();
       if (nL && nR) {
-        e.fillRect(leftX, baseY - 2 * t, fullW, (6.5 + floor * 0.8) * t);
+        e.fillRect(leftX, baseY - 2 * t, fullW, 7.5 * t);
       } else {
         e.roundRect(
           leftX,
           baseY - 2 * t,
           fullW,
-          (7 + floor * 0.8) * t,
+          8 * t,
           [0, 0, nR ? 0 : 5 * t, nL ? 0 : 5 * t],
         );
         e.fill();
       }
     }
 
-    // 2. Face Vertical Rochosa Contínua (5 andares de cores e altitudes)
-    // Se houver paredão acima (nT) ou abaixo (nB), a face vertical se estende para unir os blocos de cima a baixo
-    const faceTopY = nT ? platBackY : topY;
-    const faceBottomY = nB ? baseY + 14 * t : baseY;
-    const wallGrad = e.createLinearGradient(0, topY, 0, baseY);
-    if (floor >= 5) {
-      // 5º Andar: Parede glacial / granito alpino gelado
-      wallGrad.addColorStop(0, "#94a3b8");
-      wallGrad.addColorStop(0.35, "#64748b");
-      wallGrad.addColorStop(0.75, "#475569");
-      wallGrad.addColorStop(1, "#1e293b");
-    } else if (floor === 4) {
-      // 4º Andar: Rocha fria sub-alpina
-      wallGrad.addColorStop(0, "#64748b");
-      wallGrad.addColorStop(0.35, "#475569");
-      wallGrad.addColorStop(0.75, "#334155");
-      wallGrad.addColorStop(1, "#1e293b");
-    } else if (floor === 3) {
-      // 3º Andar: Granito cinza claro
-      wallGrad.addColorStop(0, "#526071");
-      wallGrad.addColorStop(0.4, "#3f4d5e");
-      wallGrad.addColorStop(0.8, "#293548");
-      wallGrad.addColorStop(1, "#162032");
-    } else if (floor === 2) {
-      // 2º Andar: Ardósia montanhosa
-      wallGrad.addColorStop(0, "#57534e");
-      wallGrad.addColorStop(0.4, "#44403c");
-      wallGrad.addColorStop(0.8, "#292524");
-      wallGrad.addColorStop(1, "#1c1917");
-    } else {
-      // 1º Andar: Basalto escuro da muralha base
+    // 2. Face Vertical Rochosa Exposta (APENAS onde há queda para fora do bioma!)
+    // Se !nB (borda Sul/Leste/Oeste do bioma), desenha a parede vertical de rocha abaixo do platô.
+    // Se nB for true (o interior do bioma está ao sul), NÃO desenha parede virada para o interior!
+    if (!nB) {
+      const faceTopY = topY;
+      const faceBottomY = baseY;
+      const wallGrad = e.createLinearGradient(0, faceTopY, 0, faceBottomY);
       wallGrad.addColorStop(0, "#475569");
       wallGrad.addColorStop(0.45, "#334155");
       wallGrad.addColorStop(1, "#0f172a");
-    }
-    e.fillStyle = wallGrad;
-    e.beginPath();
-    e.moveTo(leftX, faceBottomY);
-    e.lineTo(leftX, faceTopY + bevelL);
-    e.lineTo(leftX + bevelL, faceTopY);
-    e.lineTo(rightX - bevelR, faceTopY);
-    e.lineTo(rightX, faceTopY + bevelR);
-    e.lineTo(rightX, faceBottomY);
-    e.closePath();
-    e.fill();
 
-    // Pontes diagonais (quando dois paredões se tocam na diagonal em escada, une os dois sem buraco)
-    if (!nL && nTL) {
       e.fillStyle = wallGrad;
-      e.fillRect(-halfTile - 6 * t, faceTopY, 8 * t, 18 * t);
-    }
-    if (!nR && nTR) {
-      e.fillStyle = wallGrad;
-      e.fillRect(halfTile - 2 * t, faceTopY, 8 * t, 18 * t);
-    }
-    if (!nL && nBL) {
-      e.fillStyle = wallGrad;
-      e.fillRect(-halfTile - 6 * t, topY + 6 * t, 8 * t, 22 * t);
-    }
-    if (!nR && nBR) {
-      e.fillStyle = wallGrad;
-      e.fillRect(halfTile - 2 * t, topY + 6 * t, 8 * t, 22 * t);
-    }
-
-    // Sombreamento lateral direito contínuo (une de cima a baixo em colunas verticais)
-    if (!nR) {
-      e.fillStyle = "rgba(15, 23, 42, 0.36)";
       e.beginPath();
-      e.moveTo(rightX - 7 * t, faceTopY);
+      e.moveTo(leftX, faceBottomY);
+      e.lineTo(leftX, faceTopY + bevelL);
+      e.lineTo(leftX + bevelL, faceTopY);
+      e.lineTo(rightX - bevelR, faceTopY);
       e.lineTo(rightX, faceTopY + bevelR);
       e.lineTo(rightX, faceBottomY);
-      e.lineTo(rightX - 6 * t, faceBottomY);
       e.closePath();
       e.fill();
-      // Borda lateral direita escura contínua
-      e.strokeStyle = "rgba(15, 23, 42, 0.65)";
+
+      // Pontes diagonais externas
+      if (!nL && nTL) {
+        e.fillStyle = wallGrad;
+        e.fillRect(-halfTile - 6 * t, faceTopY, 8 * t, 18 * t);
+      }
+      if (!nR && nTR) {
+        e.fillStyle = wallGrad;
+        e.fillRect(halfTile - 2 * t, faceTopY, 8 * t, 18 * t);
+      }
+      if (!nL && nBL) {
+        e.fillStyle = wallGrad;
+        e.fillRect(-halfTile - 6 * t, topY + 6 * t, 8 * t, 22 * t);
+      }
+      if (!nR && nBR) {
+        e.fillStyle = wallGrad;
+        e.fillRect(halfTile - 2 * t, topY + 6 * t, 8 * t, 22 * t);
+      }
+
+      // Estratos geológicos e fendas na face frontal sul exposta
+      const s1 = topY + hWall * 0.34,
+        s2 = topY + hWall * 0.68;
+      e.strokeStyle = "rgba(15, 23, 42, 0.55)";
       e.lineWidth = 1.4 * t;
       e.beginPath();
-      e.moveTo(rightX - 0.5 * t, faceTopY + bevelR);
-      e.lineTo(rightX - 0.5 * t, faceBottomY);
+      e.moveTo(leftX + (nL ? 0 : 1.5 * t), s1);
+      e.lineTo(-4 * t, s1 + 1.5 * t);
+      e.lineTo(5 * t, s1 - 1.2 * t);
+      e.lineTo(rightX - (nR ? 0 : 1.5 * t), s1);
+
+      e.moveTo(leftX + (nL ? 0 : 1.5 * t), s2);
+      e.lineTo(-3 * t, s2 - 1.4 * t);
+      e.lineTo(6 * t, s2 + 1.3 * t);
+      e.lineTo(rightX - (nR ? 0 : 1.5 * t), s2);
+
+      const vx = (o - 0.5) * 10 * t;
+      e.moveTo(vx, faceTopY + 2 * t);
+      e.lineTo(vx - 2 * t, s1);
+      e.lineTo(vx + 1.5 * t, s2);
+      e.lineTo(vx - 0.5 * t, faceBottomY - 2 * t);
       e.stroke();
-    }
-    // Iluminação lateral esquerda contínua (une de cima a baixo em colunas verticais)
-    if (!nL) {
-      e.fillStyle = "rgba(255, 255, 255, 0.11)";
-      e.beginPath();
-      e.moveTo(leftX, faceTopY + bevelL);
-      e.lineTo(leftX + 6 * t, faceTopY);
-      e.lineTo(leftX + 5 * t, faceBottomY);
-      e.lineTo(leftX, faceBottomY);
-      e.closePath();
-      e.fill();
-      // Borda lateral esquerda iluminada contínua
-      e.strokeStyle = floor >= 4 ? "#f8fafc" : floor === 3 ? "#e2e8f0" : "#cbd5e1";
-      e.lineWidth = 1.6 * t;
-      e.beginPath();
-      e.moveTo(leftX + 0.6 * t, faceTopY + bevelL);
-      e.lineTo(leftX + 0.6 * t, faceBottomY);
-      e.stroke();
-    }
 
-    // Estratos geológicos e fendas na face exposta (mais camadas nos andares mais altos)
-    const s1 = topY + hWall * 0.32,
-      s2 = topY + hWall * 0.64,
-      s3 = topY + hWall * 0.84;
-    e.strokeStyle = "rgba(15, 23, 42, 0.52)";
-    e.lineWidth = 1.4 * t;
-    e.beginPath();
-    e.moveTo(leftX + (nL ? 0 : 1.5 * t), s1);
-    e.lineTo(-4 * t, s1 + 1.5 * t);
-    e.lineTo(5 * t, s1 - 1.2 * t);
-    e.lineTo(rightX - (nR ? 0 : 1.5 * t), s1);
+      e.fillStyle = "rgba(148, 163, 184, 0.24)";
+      e.fillRect(leftX + 2 * t, s1 - 2.6 * t, fullW * 0.42, 2 * t);
+      e.fillRect(1 * t, s2 - 2.4 * t, fullW * 0.38, 1.8 * t);
 
-    e.moveTo(leftX + (nL ? 0 : 1.5 * t), s2);
-    e.lineTo(-3 * t, s2 - 1.4 * t);
-    e.lineTo(6 * t, s2 + 1.3 * t);
-    e.lineTo(rightX - (nR ? 0 : 1.5 * t), s2);
-
-    if (floor >= 4) {
-      e.moveTo(leftX + (nL ? 0 : 1.5 * t), s3);
-      e.lineTo(0, s3 + 1.1 * t);
-      e.lineTo(rightX - (nR ? 0 : 1.5 * t), s3);
-    }
-
-    // Fenda vertical que se conecta com o bloco de cima e de baixo
-    const vx = (o - 0.5) * 10 * t;
-    e.moveTo(vx, faceTopY + (nT ? 0 : 2 * t));
-    e.lineTo(vx - 2 * t, s1);
-    e.lineTo(vx + 1.5 * t, s2);
-    e.lineTo(vx - 0.5 * t, faceBottomY - (nB ? 0 : 2 * t));
-    e.stroke();
-
-    // Saliências rochosas iluminadas na face
-    e.fillStyle = floor >= 4 ? "rgba(226, 232, 240, 0.3)" : "rgba(148, 163, 184, 0.24)";
-    e.fillRect(leftX + 2 * t, s1 - 2.6 * t, fullW * 0.42, 2 * t);
-    e.fillRect(1 * t, s2 - 2.4 * t, fullW * 0.38, 1.8 * t);
-
-    // 3. Platô Superior 2.5D Contínuo (5 andares de cores até o pico nevado)
-    // Se nB for verdadeiro, o platô desce até a base (baseY + 2) para fundir com o platô do paredão de baixo!
-    const platFrontY = nB ? baseY + 2 * t : topY;
-    const platFrontBevelL = nB ? 0 : bevelL;
-    const platFrontBevelR = nB ? 0 : bevelR;
-
-    e.fillStyle =
-      floor >= 5
-        ? "#f8fafc"
-        : floor === 4
-          ? "#e2e8f0"
-          : floor === 3
-            ? "#cbd5e1"
-            : floor === 2
-              ? "#94a3b8"
-              : "#64748b";
-    e.beginPath();
-    e.moveTo(leftX, platFrontY + platFrontBevelL);
-    e.lineTo(leftX + backBevelL, platBackY);
-    e.lineTo(rightX - backBevelR, platBackY);
-    e.lineTo(rightX, platFrontY + platFrontBevelR);
-    if (!nB) {
-      e.lineTo(rightX - bevelR, topY);
-      e.lineTo(leftX + bevelL, topY);
-    }
-    e.closePath();
-    e.fill();
-
-    // Se houver paredão abaixo (nB), mas não à esquerda/direita, desenha a faixa da parede lateral do platô elevado
-    if (nB && !nL) {
-      e.fillStyle = floor >= 4 ? "#64748b" : floor === 3 ? "#475569" : "#334155";
-      e.fillRect(leftX, platBackY, 4.5 * t, platFrontY - platBackY);
-      e.strokeStyle = floor >= 4 ? "#ffffff" : floor === 3 ? "#f8fafc" : "#e2e8f0";
-      e.lineWidth = 2 * t;
-      e.beginPath();
-      e.moveTo(leftX + 4.5 * t, platBackY);
-      e.lineTo(leftX + 4.5 * t, platFrontY);
-      e.stroke();
-    }
-    if (nB && !nR) {
-      e.fillStyle = "rgba(15, 23, 42, 0.45)";
-      e.fillRect(rightX - 4.5 * t, platBackY, 4.5 * t, platFrontY - platBackY);
-      e.strokeStyle = floor >= 4 ? "#f1f5f9" : floor === 3 ? "#e2e8f0" : "#cbd5e1";
-      e.lineWidth = 1.6 * t;
-      e.beginPath();
-      e.moveTo(rightX - 4.5 * t, platBackY);
-      e.lineTo(rightX - 4.5 * t, platFrontY);
-      e.stroke();
-    }
-
-    // Textura contínua no platô superior
-    e.fillStyle = floor >= 4 ? "rgba(148, 163, 184, 0.25)" : "rgba(15, 23, 42, 0.12)";
-    const platMidY = (platBackY + platFrontY) * 0.5;
-    e.fillRect(leftX + 5 * t, platMidY - 1.5 * t, fullW - 10 * t, 2 * t);
-
-    // Borda traseira norte do platô apenas quando NÃO há paredão acima (!nT)
-    if (!nT) {
-      e.strokeStyle = "rgba(15, 23, 42, 0.5)";
-      e.lineWidth = 1.5 * t;
-      e.beginPath();
-      e.moveTo(leftX + backBevelL, platBackY);
-      e.lineTo(rightX - backBevelR, platBackY);
-      e.stroke();
-    }
-
-    // Crista frontal iluminada do paredão apenas na face sul exposta (!nB)
-    if (!nB) {
-      e.strokeStyle = floor >= 4 ? "#ffffff" : floor === 3 ? "#f8fafc" : "#e2e8f0";
-      e.lineWidth = (floor >= 4 ? 2.5 : 2.2) * t;
-      e.beginPath();
-      if (!nL) {
-        e.moveTo(leftX + 0.5 * t, topY + bevelL);
-        e.lineTo(leftX + bevelL, topY + 0.5 * t);
-      } else {
-        e.moveTo(leftX, topY + 0.5 * t);
-      }
-      e.lineTo(rightX - bevelR, topY + 0.5 * t);
-      if (!nR) {
-        e.lineTo(rightX - 0.5 * t, topY + bevelR);
-      }
-      e.stroke();
-    }
-
-    // Detalhes de neve alpina (andares 4 e 5) ou vegetação alpina (andares 1 a 3) no platô
-    const detailY = nB ? (platBackY + platFrontY) * 0.5 : topY - 4 * t;
-    if (floor >= 4) {
-      e.fillStyle = floor >= 5 ? "rgba(255, 255, 255, 0.95)" : "rgba(248, 250, 252, 0.85)";
-      e.beginPath();
-      e.ellipse(-5 * t, detailY, 9.5 * t, 4 * t, -0.08, 0, Math.PI * 2);
-      e.ellipse(6 * t, detailY + 1.5 * t, 8 * t, 3.2 * t, 0.12, 0, Math.PI * 2);
-      e.fill();
-    } else if (o > 0.32) {
-      e.fillStyle = "rgba(22, 101, 52, 0.65)";
-      e.beginPath();
-      e.ellipse(-5 * t, detailY, 6.5 * t, 2.3 * t, 0, 0, Math.PI * 2);
-      e.ellipse(5 * t, detailY - 1 * t, 5.5 * t, 2 * t, 0, 0, Math.PI * 2);
-      e.fill();
-    }
-
-    // Rodapé escuro de encaixe com o chão apenas quando não há paredão colado embaixo (!nB)
-    if (!nB) {
+      // Rodapé escuro na base externa sul
       e.fillStyle = "rgba(9, 13, 22, 0.58)";
       e.fillRect(leftX, baseY - 3.5 * t, fullW, 3.5 * t);
     }
+
+    // 3. Platô Superior 2.5D Contínuo — EXATAMENTE na mesma cor (#64748b) e nível do chão interno de MOUNTAIN_25D!
+    // Assim, o topo do paredão é a continuação direta e nivelada do terreno interno do bioma!
+    e.fillStyle = "#64748b";
+    e.fillRect(leftX, platBackY, fullW, platFrontY - platBackY);
+
+    // Textura idêntica à do chão interno do platô para fusão visual perfeita
+    e.fillStyle = "rgba(30, 41, 59, 0.26)";
+    const platMidY = (platBackY + platFrontY) * 0.5;
+    e.fillRect(leftX + 4 * t, platMidY - 1.5 * t, fullW - 8 * t, 2 * t);
+    e.fillStyle = "rgba(241, 245, 249, 0.22)";
+    e.fillRect(leftX + 5 * t, platMidY - 2.7 * t, fullW - 10 * t, 1.2 * t);
+
+    // 4. Bordas / Escarpas nas laterais que dão para FORA do bioma (Norte, Oeste, Leste, Sul)
+    // Se o Norte é fora do bioma (!nT), desenha a escarpa traseira norte do platô elevado
+    if (!nT) {
+      const northCliffH = 12 * t;
+      const nGrad = e.createLinearGradient(0, platBackY - northCliffH, 0, platBackY + 4 * t);
+      nGrad.addColorStop(0, "#0f172a");
+      nGrad.addColorStop(0.7, "#334155");
+      nGrad.addColorStop(1, "#475569");
+      e.fillStyle = nGrad;
+      e.fillRect(leftX, platBackY - northCliffH, fullW, northCliffH + 2 * t);
+      // Crista iluminada norte do platô
+      e.strokeStyle = "#e2e8f0";
+      e.lineWidth = 2.2 * t;
+      e.beginPath();
+      e.moveTo(leftX, platBackY + 1 * t);
+      e.lineTo(rightX, platBackY + 1 * t);
+      e.stroke();
+    }
+
+    // Se o Oeste é fora do bioma (!nL), desenha a escarpa lateral esquerda contínua
+    if (!nL) {
+      const westCliffW = 12 * t;
+      const wGrad = e.createLinearGradient(leftX - westCliffW, 0, leftX + 3 * t, 0);
+      wGrad.addColorStop(0, "#0f172a");
+      wGrad.addColorStop(0.65, "#334155");
+      wGrad.addColorStop(1, "#475569");
+      e.fillStyle = wGrad;
+      e.fillRect(leftX - westCliffW, platBackY, westCliffW + 2 * t, (nB ? platFrontY : baseY) - platBackY);
+      // Crista iluminada esquerda do platô
+      e.strokeStyle = "#e2e8f0";
+      e.lineWidth = 2.2 * t;
+      e.beginPath();
+      e.moveTo(leftX + 1 * t, platBackY);
+      e.lineTo(leftX + 1 * t, platFrontY);
+      e.stroke();
+    }
+
+    // Se o Leste é fora do bioma (!nR), desenha a escarpa lateral direita contínua
+    if (!nR) {
+      const eastCliffW = 12 * t;
+      const eGrad = e.createLinearGradient(rightX - 3 * t, 0, rightX + eastCliffW, 0);
+      eGrad.addColorStop(0, "#475569");
+      eGrad.addColorStop(0.35, "#1e293b");
+      eGrad.addColorStop(1, "#0f172a");
+      e.fillStyle = eGrad;
+      e.fillRect(rightX - 2 * t, platBackY, eastCliffW + 2 * t, (nB ? platFrontY : baseY) - platBackY);
+      // Crista direita do platô
+      e.strokeStyle = "#cbd5e1";
+      e.lineWidth = 2 * t;
+      e.beginPath();
+      e.moveTo(rightX - 1 * t, platBackY);
+      e.lineTo(rightX - 1 * t, platFrontY);
+      e.stroke();
+    }
+
+    // Se o Sul é fora do bioma (!nB), desenha a crista iluminada frontal onde o platô encontra o topo da parede vertical sul
+    if (!nB) {
+      e.strokeStyle = "#e2e8f0";
+      e.lineWidth = 2.4 * t;
+      e.beginPath();
+      e.moveTo(leftX, topY + 0.5 * t);
+      e.lineTo(rightX, topY + 0.5 * t);
+      e.stroke();
+    }
+
+    e.restore();
+  }
+
+  function drawCliffRamp25D(e, t, upperTier = 1, lowerTier = 0, rampDir = "up", neighbors = null) {
+    e.save();
+    const halfTile = 18 * t,
+      floor = Math.max(1, Math.min(5, upperTier || 1)),
+      hWall = (25 + floor * 3.5) * t,
+      baseY = 18 * t,
+      topY = baseY - hWall,
+      nL = !!(neighbors && neighbors.leftWall),
+      nR = !!(neighbors && neighbors.rightWall),
+      nT = !!(neighbors && neighbors.topRamp),
+      nB = !!(neighbors && neighbors.bottomRamp);
+
+    // Cores do andar inferior (base da rampa) e do andar superior (topo da rampa)
+    const getTierColor = (tr) =>
+      tr >= 5
+        ? "#e2e8f0"
+        : tr === 4
+          ? "#cbd5e1"
+          : tr === 3
+            ? "#94a3b8"
+            : tr === 2
+              ? "#64748b"
+              : tr === 1
+                ? "#475569"
+                : "#57534e";
+    const upperCol = getTierColor(floor);
+    const lowerCol = getTierColor(lowerTier);
+
+    // A rampa 2.5D começa no nível do chão do andar inferior (baseY) e sobe inclinada na altura 2.5D
+    // até encontrar a altura exata do platô do andar superior (topY), conectando visualmente os dois andares!
+    const rampTopY = nT ? -halfTile - 2 * t : topY + 2 * t;
+    const rampBotY = baseY;
+    const rampLeftX = -halfTile;
+    const rampRightX = halfTile;
+    const rampW = rampRightX - rampLeftX;
+    const rampH = rampBotY - rampTopY;
+
+    // 1. Paredes laterais de sustentação da rampa (conectando com o paredão ao lado)
+    e.fillStyle = "#1e293b";
+    e.beginPath();
+    e.moveTo(rampLeftX, rampBotY);
+    e.lineTo(rampLeftX, rampTopY);
+    e.lineTo(rampRightX, rampTopY);
+    e.lineTo(rampRightX, rampBotY);
+    e.closePath();
+    e.fill();
+
+    // 2. Superfície inclinada da rampa (gradiente contínuo do andar inferior até a cor do andar superior no topo)
+    const slopeGrad = e.createLinearGradient(0, rampTopY, 0, rampBotY);
+    if (rampDir === "down") {
+      slopeGrad.addColorStop(0, lowerCol);
+      slopeGrad.addColorStop(0.5, "#64748b");
+      slopeGrad.addColorStop(1, upperCol);
+    } else {
+      slopeGrad.addColorStop(0, upperCol);
+      slopeGrad.addColorStop(0.55, "#64748b");
+      slopeGrad.addColorStop(1, lowerCol);
+    }
+    e.fillStyle = slopeGrad;
+    e.fillRect(rampLeftX + 2.5 * t, rampTopY, rampW - 5 * t, rampH);
+
+    // 3. Degraus 3D esculpidos em perspectiva subindo do andar inferior até o topo do paredão
+    const stepCount = 6;
+    const stepH = rampH / stepCount;
+    for (let i = 0; i < stepCount; i++) {
+      const sy = rampBotY - (i + 1) * stepH;
+      const stepProgress = (i + 1) / stepCount;
+      // Face vertical do degrau (espelho do degrau)
+      e.fillStyle = "rgba(15, 23, 42, 0.62)";
+      e.fillRect(rampLeftX + 3 * t, sy + stepH * 0.52, rampW - 6 * t, stepH * 0.48);
+
+      // Piso do degrau (mais claro conforme sobe para o andar superior)
+      e.fillStyle =
+        stepProgress > 0.65
+          ? upperCol
+          : stepProgress > 0.35
+            ? "#94a3b8"
+            : lowerCol;
+      e.fillRect(rampLeftX + 3 * t, sy, rampW - 6 * t, stepH * 0.56);
+
+      // Quina iluminada de cada degrau
+      e.fillStyle = floor >= 4 ? "rgba(255, 255, 255, 0.7)" : "rgba(241, 245, 249, 0.5)";
+      e.fillRect(rampLeftX + 3 * t, sy, rampW - 6 * t, 1.3 * t);
+    }
+
+    // 4. Parapeitos / Muretas laterais em rampa que acompanham a inclinação do andar inferior ao superior
+    // Mureta esquerda
+    const curbGradL = e.createLinearGradient(0, rampTopY, 0, rampBotY);
+    curbGradL.addColorStop(0, upperCol);
+    curbGradL.addColorStop(1, "#334155");
+    e.fillStyle = curbGradL;
+    e.fillRect(rampLeftX, rampTopY, 3.8 * t, rampH);
+    e.strokeStyle = "#e2e8f0";
+    e.lineWidth = 1.2 * t;
+    e.beginPath();
+    e.moveTo(rampLeftX + 3.6 * t, rampTopY);
+    e.lineTo(rampLeftX + 3.6 * t, rampBotY);
+    e.stroke();
+
+    // Mureta direita
+    e.fillStyle = curbGradL;
+    e.fillRect(rampRightX - 3.8 * t, rampTopY, 3.8 * t, rampH);
+    e.strokeStyle = "#0f172a";
+    e.lineWidth = 1.2 * t;
+    e.beginPath();
+    e.moveTo(rampRightX - 3.6 * t, rampTopY);
+    e.lineTo(rampRightX - 3.6 * t, rampBotY);
+    e.stroke();
+
+    // 5. Patamar de chegada no topo (encaixe perfeito com o piso do andar superior)
+    if (!nT) {
+      e.fillStyle = upperCol;
+      e.fillRect(rampLeftX + 2 * t, rampTopY - 3 * t, rampW - 4 * t, 5 * t);
+      e.strokeStyle = floor >= 4 ? "#ffffff" : "#e2e8f0";
+      e.lineWidth = 1.8 * t;
+      e.beginPath();
+      e.moveTo(rampLeftX + 2 * t, rampTopY + 1 * t);
+      e.lineTo(rampRightX - 2 * t, rampTopY + 1 * t);
+      e.stroke();
+    }
+
+    // 6. Soleira de entrada na base (encaixe com o andar inferior)
+    if (!nB) {
+      e.fillStyle = "rgba(15, 23, 42, 0.38)";
+      e.fillRect(rampLeftX + 2 * t, rampBotY - 2 * t, rampW - 4 * t, 3.5 * t);
+    }
+
     e.restore();
   }

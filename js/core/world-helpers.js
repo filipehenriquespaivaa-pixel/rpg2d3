@@ -33,7 +33,8 @@
         o.prop.kind === "shrine" ||
         o.prop.kind === "campfire" ||
         o.prop.kind === "clay_deposit" ||
-        o.prop.kind === "cliff_wall")
+        o.prop.kind === "cliff_wall" ||
+        o.prop.kind === "cliff_ramp")
     )
       return !1;
     if (o.biome.hasWater && !o.biome.passable) return null;
