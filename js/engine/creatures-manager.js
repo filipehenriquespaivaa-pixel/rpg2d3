@@ -1189,6 +1189,7 @@
         const moveStepX = p.vx * t * 60,
           moveStepY = p.vy * t * 60;
         const attemptedDist = Math.hypot(moveStepX, moveStepY);
+        p.isMoving = attemptedDist > 0.001;
         if (attemptedDist > 0.001) {
           const _m = this.engine.moveWithSlide(
             p.x,
@@ -1207,6 +1208,8 @@
               if (p.wanderTimer > 0) p.wanderTimer = 0;
             }
           }
+        } else {
+          p.isMoving = !1;
         }
       }
       const g = this.monsters.filter(
@@ -1614,6 +1617,7 @@
         accentColor: p,
         scale: x,
         isUnderground: l,
+        isMoving: !1,
         hitFlashTimer: 0,
         animTimer: Math.random() * 10,
         wanderTimer: 1,

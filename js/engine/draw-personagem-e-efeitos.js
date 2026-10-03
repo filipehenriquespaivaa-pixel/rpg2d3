@@ -276,15 +276,56 @@
     }
 
     const anim = t.animTimer || 0;
-    const isMoving = !!t.isMoving;
+    const speedSq = (t.vx || 0) * (t.vx || 0) + (t.vy || 0) * (t.vy || 0);
+    const isMoving = (t.isMoving !== undefined) ? !!t.isMoving : (speedSq > 0.005);
     const pulse = Math.sin(anim * 3.5);
     const breathe = Math.sin(anim * 2.2) * 0.8 * o;
 
-    // Movimentação de passos e braços
-    const walkCycle = isMoving ? Math.sin(anim * 5) : 0;
-    const walkBob = isMoving ? Math.abs(Math.sin(anim * 5)) * 1.8 * o : 0;
-    const armSwingL = isMoving ? Math.sin(anim * 5) * 4.5 * o : 0;
-    const armSwingR = isMoving ? -Math.sin(anim * 5) * 4.5 * o : 0;
+    // Movimentação de passos rítmicos e pesados
+    const walkPhase = anim * 4;
+    const walkBob = isMoving ? Math.abs(Math.sin(walkPhase)) * 1.8 * o : 0;
+    const bodyY = -walkBob + breathe;
+
+    // Cálculo dinâmico das articulações de pernas e braços
+    let legAngleL = 0;
+    let legAngleR = 0;
+    let legLiftL = 0;
+    let legLiftR = 0;
+    let armAngleL = 0;
+    let armAngleR = 0;
+
+    if (isMoving) {
+      if (isLeft || isRight) {
+        // Passada ampla lateral em perfil
+        legAngleL = Math.sin(walkPhase) * 0.44;
+        legAngleR = -Math.sin(walkPhase) * 0.44;
+        legLiftL = Math.max(0, -Math.sin(walkPhase)) * 2.4 * o;
+        legLiftR = Math.max(0, Math.sin(walkPhase)) * 2.4 * o;
+        // Braços balançam em contra-passo firme
+        armAngleL = -Math.sin(walkPhase) * 0.5;
+        armAngleR = Math.sin(walkPhase) * 0.5;
+      } else {
+        // Passada frontal/traseira (down/up): pisadas pesadas alternadas
+        legAngleL = Math.sin(walkPhase) * 0.18;
+        legAngleR = -Math.sin(walkPhase) * 0.18;
+        legLiftL = Math.max(0, -Math.sin(walkPhase)) * 2.8 * o;
+        legLiftR = Math.max(0, Math.sin(walkPhase)) * 2.8 * o;
+        armAngleL = -Math.sin(walkPhase) * 0.32;
+        armAngleR = Math.sin(walkPhase) * 0.32;
+      }
+    } else {
+      // Repouso: respiração lenta e suave oscilação dos braços
+      armAngleL = Math.sin(anim * 2.2) * 0.06;
+      armAngleR = -Math.sin(anim * 2.2) * 0.06;
+    }
+
+    // Ataque esmagador com punhos se estiver desferindo golpe
+    const attackCd = t.attackCooldown || 0;
+    if (attackCd > 0.8) {
+      const punchFactor = Math.sin(((attackCd - 0.8) / 0.9) * Math.PI);
+      armAngleL -= punchFactor * 0.75;
+      armAngleR -= punchFactor * 0.75;
+    }
 
     // Paleta Vulcânica: Basalto Profundo + Núcleo de Magma
     const rockDark = l ? "#ffffff" : "#18181b"; // Obsidiana profunda
@@ -324,58 +365,55 @@
       }
     }
 
-    const bodyY = -walkBob + breathe;
-
-    // 3. Pernas de Pilares de Basalto
-    const legOffsetL = isMoving ? walkCycle * 2.8 * o : 0;
-    const legOffsetR = isMoving ? -walkCycle * 2.8 * o : 0;
-
+    // 3. Pernas de Pilares de Basalto com Articulação do Quadril
     // Perna Esquerda
     e.save();
-    e.translate(-5.5 * o, bodyY);
+    e.translate(-5.5 * o, bodyY - 2 * o - legLiftL);
+    e.rotate(legAngleL);
     e.fillStyle = lavaOrange;
     e.beginPath();
-    e.arc(0, -2 * o, 2 * o, 0, Math.PI * 2);
+    e.arc(0, 0, 2 * o, 0, Math.PI * 2);
     e.fill();
     e.fillStyle = rockMid;
     e.beginPath();
-    e.moveTo(-3 * o, -2 * o);
-    e.lineTo(3 * o, -2 * o);
-    e.lineTo(3.8 * o, 3 * o + legOffsetL);
-    e.lineTo(-3.8 * o, 3 * o + legOffsetL);
+    e.moveTo(-3 * o, 0);
+    e.lineTo(3 * o, 0);
+    e.lineTo(3.8 * o, 5 * o);
+    e.lineTo(-3.8 * o, 5 * o);
     e.closePath();
     e.fill();
     e.strokeStyle = rockDark;
     e.lineWidth = 1 * o;
     e.stroke();
     e.fillStyle = rockDark;
-    e.fillRect(-4.5 * o, 2 * o + legOffsetL, 6.5 * o, 2.5 * o);
+    e.fillRect(-4.5 * o, 4 * o, 6.5 * o, 2.5 * o);
     e.fillStyle = lavaBright;
-    e.fillRect(-3 * o, 2.8 * o + legOffsetL, 3.5 * o, 0.8 * o);
+    e.fillRect(-3 * o, 4.8 * o, 3.5 * o, 0.8 * o);
     e.restore();
 
     // Perna Direita
     e.save();
-    e.translate(5.5 * o, bodyY);
+    e.translate(5.5 * o, bodyY - 2 * o - legLiftR);
+    e.rotate(legAngleR);
     e.fillStyle = lavaOrange;
     e.beginPath();
-    e.arc(0, -2 * o, 2 * o, 0, Math.PI * 2);
+    e.arc(0, 0, 2 * o, 0, Math.PI * 2);
     e.fill();
     e.fillStyle = rockMid;
     e.beginPath();
-    e.moveTo(-3 * o, -2 * o);
-    e.lineTo(3 * o, -2 * o);
-    e.lineTo(3.8 * o, 3 * o + legOffsetR);
-    e.lineTo(-3.8 * o, 3 * o + legOffsetR);
+    e.moveTo(-3 * o, 0);
+    e.lineTo(3 * o, 0);
+    e.lineTo(3.8 * o, 5 * o);
+    e.lineTo(-3.8 * o, 5 * o);
     e.closePath();
     e.fill();
     e.strokeStyle = rockDark;
     e.lineWidth = 1 * o;
     e.stroke();
     e.fillStyle = rockDark;
-    e.fillRect(-2 * o, 2 * o + legOffsetR, 6.5 * o, 2.5 * o);
+    e.fillRect(-2 * o, 4 * o, 6.5 * o, 2.5 * o);
     e.fillStyle = lavaBright;
-    e.fillRect(-0.5 * o, 2.8 * o + legOffsetR, 3.5 * o, 0.8 * o);
+    e.fillRect(-0.5 * o, 4.8 * o, 3.5 * o, 0.8 * o);
     e.restore();
 
     // 4. Espinhas Dorsais Pontiagudas de Obsidiana
@@ -411,6 +449,8 @@
     // 5. Tronco Titânico de Rocha Ígnea
     e.save();
     e.translate(0, bodyY);
+    const torsoTilt = isMoving ? Math.sin(walkPhase) * 0.035 : 0;
+    if (isMoving) e.rotate(torsoTilt);
 
     // Aura de calor no torso
     if (!l) {
@@ -541,10 +581,11 @@
     e.lineTo(13 * o, -15.5 * o);
     e.stroke();
 
-    // 8. Braços e Punhos Pesados de Rocha
+    // 8. Braços e Punhos Pesados de Rocha com Rotação dos Ombros
     // Braço Esquerdo
     e.save();
-    e.translate(-11.5 * o, -10 * o + armSwingL);
+    e.translate(-11.5 * o, -10 * o);
+    e.rotate(armAngleL);
     e.fillStyle = lavaOrange;
     e.beginPath();
     e.arc(0, 0, 2.5 * o, 0, Math.PI * 2);
@@ -580,7 +621,8 @@
 
     // Braço Direito
     e.save();
-    e.translate(11.5 * o, -10 * o + armSwingR);
+    e.translate(11.5 * o, -10 * o);
+    e.rotate(armAngleR);
     e.fillStyle = lavaOrange;
     e.beginPath();
     e.arc(0, 0, 2.5 * o, 0, Math.PI * 2);
@@ -618,6 +660,7 @@
     const headY = -18 * o + (isDown ? 1 * o : isUp ? -1.5 * o : 0);
     e.save();
     e.translate(0, headY);
+    if (isMoving) e.rotate(-torsoTilt * 0.7);
 
     e.fillStyle = rockMid;
     e.beginPath();
