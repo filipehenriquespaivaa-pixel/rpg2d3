@@ -1045,99 +1045,569 @@
   }
   function jg(e, t, l, o) {
     e.save();
-    const u = t.facing === "left" ? -1 : 1;
-    e.scale(u, 1);
-    const m = o ? "#ffffff" : t.color || "#dc2626",
-      c = o ? "#fca5a5" : "#ea580c",
-      f = Math.sin(t.animTimer * 5) * 8 * l;
-    ((e.fillStyle = "rgba(15, 23, 42, 0.45)"),
-      e.beginPath(),
-      e.ellipse(0, 5 * l, 16 * l, 6 * l, 0, 0, Math.PI * 2),
-      e.fill(),
-      (e.strokeStyle = m),
-      (e.lineWidth = 4 * l),
-      e.beginPath(),
-      e.moveTo(-10 * l, -2 * l),
-      e.quadraticCurveTo(
-        -18 * l,
-        -4 * l,
-        -22 * l + Math.sin(t.animTimer * 3) * 3 * l,
-        2 * l,
-      ),
-      e.stroke(),
-      (e.fillStyle = "#991b1b"),
-      e.fillRect(-7 * l, 0, 4 * l, 7 * l),
-      e.fillRect(4 * l, 0, 4 * l, 7 * l),
-      (e.fillStyle = m),
-      e.beginPath(),
-      e.ellipse(0, -3 * l, 13 * l, 8 * l, 0.05, 0, Math.PI * 2),
-      e.fill(),
-      (e.fillStyle = c),
-      e.beginPath(),
-      e.ellipse(2 * l, -1 * l, 8 * l, 4.5 * l, 0.05, 0, Math.PI * 2),
-      e.fill(),
-      (e.fillStyle = "#7f1d1d"),
-      e.beginPath(),
-      e.moveTo(-2 * l, -8 * l),
-      e.lineTo(-14 * l, -22 * l + f),
-      e.lineTo(-6 * l, -14 * l + f * 0.5),
-      e.lineTo(2 * l, -20 * l + f),
-      e.lineTo(1 * l, -7 * l),
-      e.closePath(),
-      e.fill(),
-      (e.strokeStyle = "#f59e0b"),
-      (e.lineWidth = 1.6 * l),
-      e.beginPath(),
-      e.moveTo(-2 * l, -8 * l),
-      e.lineTo(-14 * l, -22 * l + f),
-      e.moveTo(-2 * l, -8 * l),
-      e.lineTo(2 * l, -20 * l + f),
-      e.stroke(),
-      (e.fillStyle = "#f59e0b"));
-    for (let y = -8; y <= 6; y += 3.5)
-      (e.beginPath(),
-        e.moveTo((y - 1.2) * l, -11 * l),
-        e.lineTo(y * l, -15 * l),
-        e.lineTo((y + 1.2) * l, -11 * l),
-        e.closePath(),
-        e.fill());
-    ((e.fillStyle = m),
-      e.beginPath(),
-      e.moveTo(8 * l, -6 * l),
-      e.lineTo(14 * l, -14 * l),
-      e.lineTo(21 * l, -13 * l),
-      e.lineTo(12 * l, -2 * l),
-      e.closePath(),
-      e.fill(),
-      e.beginPath(),
-      e.ellipse(17 * l, -13 * l, 7 * l, 4.5 * l, 0.1, 0, Math.PI * 2),
-      e.fill(),
-      (e.strokeStyle = "#ea580c"),
-      (e.lineWidth = 2.4 * l),
-      e.beginPath(),
-      e.moveTo(14 * l, -15 * l),
-      e.quadraticCurveTo(11 * l, -22 * l, 6 * l, -23 * l),
-      e.stroke(),
-      (e.fillStyle = o ? "#ffffff" : "#fbbf24"),
-      e.beginPath(),
-      e.arc(17.5 * l, -14.5 * l, 1.6 * l, 0, Math.PI * 2),
-      e.fill(),
-      (e.fillStyle = "#0f172a"),
-      e.beginPath(),
-      e.ellipse(17.8 * l, -14.5 * l, 0.6 * l, 1.4 * l, 0, 0, Math.PI * 2),
-      e.fill());
-    const g = (t.animTimer * 4) % Math.PI;
-    ((e.fillStyle = "rgba(251, 191, 36, 0.45)"),
-      e.beginPath(),
-      e.arc(
-        23 * l + g * 3 * l,
-        -12 * l - g * 2 * l,
-        (1.2 + g * 1.2) * l,
-        0,
-        Math.PI * 2,
-      ),
-      e.fill(),
-      e.restore());
+
+    const facing = t.facing || "down";
+    const isLeft = facing === "left";
+    const isRight = facing === "right";
+    const isUp = facing === "up";
+    const isDown = facing === "down";
+
+    // Orientação horizontal
+    if (isLeft) {
+      e.scale(-1, 1);
+    }
+
+    const anim = t.animTimer || 0;
+    const speedSq = (t.vx || 0) * (t.vx || 0) + (t.vy || 0) * (t.vy || 0);
+    const isMoving = (t.isMoving !== undefined) ? !!t.isMoving : (speedSq > 0.005);
+    const isAttacking = (t.attackCooldown || 0) > 0.8;
+
+    // Escala proporcional da criatura
+    const s = l;
+
+    // Paleta de Cores Míticas do Dragão Ancião (suporte completo ao hitFlash)
+    const isHit = !!o;
+    const colBase = isHit ? "#ffffff" : (t.color || "#dc2626"); // Escamas vermelhas carmesim vivas
+    const colDark = isHit ? "#f1f5f9" : "#991b1b";             // Escamas sombreadas
+    const colDeep = isHit ? "#e2e8f0" : "#450a0a";             // Sombreamento profundo / contornos
+    const colBelly = isHit ? "#ffffff" : (t.accentColor || "#fbbf24"); // Placas ventrais douradas incandescentes
+    const colOrange = isHit ? "#ffffff" : "#f97316";            // Magma alaranjado / fogo
+    const colYellow = isHit ? "#ffffff" : "#fef08a";            // Brilho dourado luminoso
+    const colHorn = isHit ? "#ffffff" : "#d97706";              // Chifres dourados / âmbar nobre
+    const colHornDark = isHit ? "#ffffff" : "#78350f";          // Nervuras e sulcos do chifre
+    const colWingMem = isHit ? "#ffffff" : "#7f1d1d";           // Membrana alar coriácea
+    const colWingMemDark = isHit ? "#ffffff" : "#500724";       // Sombra da asa traseira
+    const colClaw = isHit ? "#ffffff" : "#1c1917";              // Garras afiadas de obsidiana
+
+    // Ciclo de voo / batimento de asas e flutuação
+    const flapFreq = isMoving ? 5.5 : 3.8;
+    const wingFlap = Math.sin(anim * flapFreq);
+    const hoverY = Math.sin(anim * 3.2) * (2.8 * s);
+    const bodyTilt = isMoving ? (Math.sin(anim * flapFreq) * 0.06) : (Math.sin(anim * 2.2) * 0.03);
+
+    // 1. Sombra projetada no solo e aura de calor vulcânico
+    if (!isHit) {
+      // Aura de brasas e calor no chão
+      const groundHeat = e.createRadialGradient(0, 16 * s, 3 * s, 0, 16 * s, 26 * s);
+      groundHeat.addColorStop(0, "rgba(249, 115, 22, 0.28)");
+      groundHeat.addColorStop(0.6, "rgba(220, 38, 38, 0.1)");
+      groundHeat.addColorStop(1, "rgba(0, 0, 0, 0)");
+      e.fillStyle = groundHeat;
+      e.beginPath();
+      e.ellipse(0, 16 * s, 26 * s, 10 * s, 0, 0, Math.PI * 2);
+      e.fill();
+
+      // Sombra corporal dinâmica que reage ao bater das asas
+      const shadowScale = 1 - (wingFlap * 0.12);
+      e.fillStyle = "rgba(15, 23, 42, 0.42)";
+      e.beginPath();
+      e.ellipse(0, 16 * s, 18 * s * shadowScale, 6.5 * s * shadowScale, 0, 0, Math.PI * 2);
+      e.fill();
+    }
+
+    // 2. Cauda Serpentina Longa com Espigões Dorsais e Lâmina Terminal
+    e.save();
+    {
+      const tailBaseX = -10 * s;
+      const tailBaseY = hoverY - 1 * s;
+      const tWave1 = Math.sin(anim * 3.5) * 4 * s;
+      const tWave2 = Math.sin(anim * 3.5 + 1.2) * 7 * s;
+      const tWave3 = Math.sin(anim * 3.5 + 2.4) * 9 * s;
+
+      // Corpo carnoso da cauda sinuosa
+      e.fillStyle = colDark;
+      e.beginPath();
+      e.moveTo(tailBaseX, tailBaseY - 5 * s);
+      e.quadraticCurveTo(tailBaseX - 12 * s, tailBaseY - 4 * s + tWave1, tailBaseX - 22 * s, tailBaseY + tWave2);
+      e.quadraticCurveTo(tailBaseX - 30 * s, tailBaseY + 2 * s + tWave3, tailBaseX - 36 * s, tailBaseY + tWave3);
+      e.lineTo(tailBaseX - 35 * s, tailBaseY + 3 * s + tWave3);
+      e.quadraticCurveTo(tailBaseX - 22 * s, tailBaseY + 5 * s + tWave2, tailBaseX - 12 * s, tailBaseY + 4 * s + tWave1);
+      e.lineTo(tailBaseX, tailBaseY + 4 * s);
+      e.closePath();
+      e.fill();
+      e.strokeStyle = colDeep;
+      e.lineWidth = 1 * s;
+      e.stroke();
+
+      // Espinhos dorsais na cauda
+      e.fillStyle = colHorn;
+      for (let i = 1; i <= 4; i++) {
+        const prog = i / 4.5;
+        const spkX = tailBaseX - (i * 7.5 * s);
+        const spkY = tailBaseY - (2.5 * s) + (Math.sin(anim * 3.5 + i * 0.6) * (5 * s) * prog);
+        e.beginPath();
+        e.moveTo(spkX + 1.5 * s, spkY);
+        e.lineTo(spkX, spkY - (5 - i * 0.8) * s);
+        e.lineTo(spkX - 1.5 * s, spkY);
+        e.closePath();
+        e.fill();
+      }
+
+      // Ponta da Cauda: Lâmina de Fogo / Arpão em Espada
+      const tipX = tailBaseX - 36 * s;
+      const tipY = tailBaseY + tWave3;
+      e.fillStyle = colBelly;
+      e.strokeStyle = colOrange;
+      e.lineWidth = 1.2 * s;
+      e.beginPath();
+      e.moveTo(tipX, tipY);
+      e.lineTo(tipX - 7 * s, tipY - 4.5 * s);
+      e.lineTo(tipX - 5 * s, tipY);
+      e.lineTo(tipX - 10 * s, tipY + 0.5 * s);
+      e.lineTo(tipX - 5 * s, tipY + 1 * s);
+      e.lineTo(tipX - 7 * s, tipY + 5.5 * s);
+      e.closePath();
+      e.fill();
+      e.stroke();
+    }
+    e.restore();
+
+    // 3. Asa Traseira (Far Wing) - Batendo em perspectiva atrás do corpo
+    e.save();
+    {
+      const wingRootX = -2 * s;
+      const wingRootY = hoverY - 7 * s;
+      const farFlap = Math.sin(anim * flapFreq + 0.35);
+      const farWingTipY = wingRootY - (18 * s) + (farFlap * 11 * s);
+      const farWingTipX = wingRootX - 18 * s;
+
+      // Membrana escura em perspectiva
+      e.fillStyle = colWingMemDark;
+      e.beginPath();
+      e.moveTo(wingRootX, wingRootY);
+      e.lineTo(wingRootX - 6 * s, farWingTipY - 3 * s); // Cotovelo
+      e.lineTo(farWingTipX, farWingTipY);             // Dedo 1
+      e.quadraticCurveTo(farWingTipX + 7 * s, farWingTipY + 7 * s, wingRootX - 10 * s, farWingTipY + 6 * s); // Dedo 2
+      e.quadraticCurveTo(wingRootX - 4 * s, farWingTipY + 11 * s, wingRootX + 2 * s, wingRootY + 2 * s);
+      e.closePath();
+      e.fill();
+
+      // Ossos da asa traseira
+      e.strokeStyle = colDark;
+      e.lineWidth = 2 * s;
+      e.beginPath();
+      e.moveTo(wingRootX, wingRootY);
+      e.lineTo(wingRootX - 6 * s, farWingTipY - 3 * s);
+      e.lineTo(farWingTipX, farWingTipY);
+      e.stroke();
+    }
+    e.restore();
+
+    // 4. Pernas Traseiras e Garras Posteriores (Far Legs)
+    e.save();
+    {
+      // Perna traseira posterior
+      e.fillStyle = colDeep;
+      e.beginPath();
+      e.moveTo(-7 * s, hoverY + 3 * s);
+      e.lineTo(-10 * s, hoverY + 12 * s);
+      e.lineTo(-6 * s, hoverY + 13.5 * s);
+      e.lineTo(-4 * s, hoverY + 3 * s);
+      e.closePath();
+      e.fill();
+      // Garras da pata traseira posterior
+      e.fillStyle = colClaw;
+      e.fillRect(-11 * s, hoverY + 12.5 * s, 6 * s, 1.8 * s);
+
+      // Perna dianteira posterior
+      e.fillStyle = colDeep;
+      e.beginPath();
+      e.moveTo(7 * s, hoverY + 4 * s);
+      e.lineTo(8 * s, hoverY + 12.5 * s);
+      e.lineTo(11 * s, hoverY + 12.5 * s);
+      e.lineTo(10 * s, hoverY + 4 * s);
+      e.closePath();
+      e.fill();
+      e.fillStyle = colClaw;
+      e.fillRect(7.5 * s, hoverY + 12 * s, 5 * s, 1.6 * s);
+    }
+    e.restore();
+
+    // 5. Tronco Musculoso e Placas Ventrais Incandescentes (Torso & Belly Scutes)
+    e.save();
+    e.translate(0, hoverY);
+    if (bodyTilt !== 0) e.rotate(bodyTilt);
+    {
+      // Silhueta do torso forte
+      e.fillStyle = colBase;
+      e.beginPath();
+      e.moveTo(-13 * s, -4 * s);
+      e.quadraticCurveTo(-4 * s, -9 * s, 10 * s, -7 * s);  // Costas arqueadas
+      e.lineTo(14 * s, 1 * s);                             // Base do pescoço
+      e.quadraticCurveTo(11 * s, 8 * s, 2 * s, 7 * s);     // Peitoral forte
+      e.quadraticCurveTo(-7 * s, 7 * s, -13 * s, 2 * s);   // Abdômen
+      e.closePath();
+      e.fill();
+      e.strokeStyle = colDark;
+      e.lineWidth = 1.3 * s;
+      e.stroke();
+
+      // Placas ventrais incandescentes (Belly Plates)
+      e.fillStyle = colBelly;
+      e.beginPath();
+      e.moveTo(-6 * s, 2 * s);
+      e.quadraticCurveTo(2 * s, 1 * s, 11 * s, -2 * s);
+      e.lineTo(12.5 * s, 3.5 * s);
+      e.quadraticCurveTo(5 * s, 6.5 * s, -4 * s, 5.5 * s);
+      e.closePath();
+      e.fill();
+
+      // Nervuras de magma entre as placas ventrais
+      e.strokeStyle = colOrange;
+      e.lineWidth = 1.2 * s;
+      for (let bx = -3; bx <= 9; bx += 3.2) {
+        e.beginPath();
+        e.moveTo(bx * s, 1.5 * s);
+        e.lineTo((bx + 1.2) * s, 6 * s);
+        e.stroke();
+      }
+
+      // Cristas espinhosas dorsais ao longo do dorso
+      e.fillStyle = colHorn;
+      e.strokeStyle = colHornDark;
+      e.lineWidth = 0.8 * s;
+      for (let sx = -11; sx <= 8; sx += 3.8) {
+        const spkHeight = (sx > -2 && sx < 6) ? 5.5 : 4;
+        e.beginPath();
+        e.moveTo((sx - 1.4) * s, -7.5 * s);
+        e.lineTo(sx * s, -(7.5 + spkHeight) * s);
+        e.lineTo((sx + 1.4) * s, -7.5 * s);
+        e.closePath();
+        e.fill();
+        e.stroke();
+      }
+    }
+    e.restore();
+
+    // 6. Pernas Dianteiras e Traseiras Próximas (Near Legs) com Articulação e Garras
+    e.save();
+    {
+      const legBob = isMoving ? Math.sin(anim * flapFreq) * 1.5 * s : 0;
+
+      // Perna Traseira Próxima (Coxa musculosa de réptil + Jarrete)
+      e.fillStyle = colBase;
+      e.beginPath();
+      e.moveTo(-2 * s, hoverY);
+      e.quadraticCurveTo(-8 * s, hoverY + 4 * s, -6 * s, hoverY + 9 * s);
+      e.lineTo(-4 * s, hoverY + 14 * s + legBob);
+      e.lineTo(-1 * s, hoverY + 14 * s + legBob);
+      e.lineTo(1 * s, hoverY + 7 * s);
+      e.closePath();
+      e.fill();
+      e.strokeStyle = colDark;
+      e.lineWidth = 1 * s;
+      e.stroke();
+
+      // Pata e Garras Traseiras Afiadas
+      e.fillStyle = colClaw;
+      e.beginPath();
+      e.moveTo(-5.5 * s, hoverY + 13.5 * s + legBob);
+      e.lineTo(-7 * s, hoverY + 16 * s + legBob);
+      e.lineTo(-3.5 * s, hoverY + 15 * s + legBob);
+      e.lineTo(-2 * s, hoverY + 16.5 * s + legBob);
+      e.lineTo(-0.5 * s, hoverY + 14 * s + legBob);
+      e.closePath();
+      e.fill();
+
+      // Perna Dianteira Próxima
+      e.fillStyle = colBase;
+      e.beginPath();
+      e.moveTo(5 * s, hoverY + 1 * s);
+      e.lineTo(4 * s, hoverY + 8 * s);
+      e.lineTo(7 * s, hoverY + 14 * s - legBob);
+      e.lineTo(9.5 * s, hoverY + 14 * s - legBob);
+      e.lineTo(9 * s, hoverY + 4 * s);
+      e.closePath();
+      e.fill();
+      e.strokeStyle = colDark;
+      e.lineWidth = 1 * s;
+      e.stroke();
+
+      // Garras Dianteiras
+      e.fillStyle = colClaw;
+      e.beginPath();
+      e.moveTo(5.5 * s, hoverY + 13.5 * s - legBob);
+      e.lineTo(5 * s, hoverY + 16.5 * s - legBob);
+      e.lineTo(8 * s, hoverY + 15 * s - legBob);
+      e.lineTo(10.5 * s, hoverY + 16.5 * s - legBob);
+      e.lineTo(10 * s, hoverY + 13.5 * s - legBob);
+      e.closePath();
+      e.fill();
+    }
+    e.restore();
+
+    // 7. Pescoço e Cabeça Régia Dracônica
+    e.save();
+    {
+      const neckBaseX = 9 * s;
+      const neckBaseY = hoverY - 4 * s;
+      const headX = 22 * s;
+      const headY = hoverY - 14 * s + (Math.sin(anim * 2.8) * 1.2 * s);
+
+      // Garganta com Brilho de Fogo Interno (Glowing Gullet)
+      if (!isHit) {
+        const throatGlow = e.createRadialGradient(neckBaseX + 6 * s, neckBaseY - 4 * s, 1 * s, neckBaseX + 6 * s, neckBaseY - 4 * s, 8 * s);
+        throatGlow.addColorStop(0, "rgba(254, 240, 138, 0.75)");
+        throatGlow.addColorStop(0.4, "rgba(249, 115, 22, 0.45)");
+        throatGlow.addColorStop(1, "rgba(220, 38, 38, 0)");
+        e.fillStyle = throatGlow;
+        e.beginPath();
+        e.arc(neckBaseX + 6 * s, neckBaseY - 4 * s, 8 * s, 0, Math.PI * 2);
+        e.fill();
+      }
+
+      // Pescoço Sinuoso Musculoso
+      e.fillStyle = colBase;
+      e.beginPath();
+      e.moveTo(neckBaseX, neckBaseY - 3 * s);
+      e.quadraticCurveTo(neckBaseX + 4 * s, neckBaseY - 11 * s, headX - 2 * s, headY - 1 * s);
+      e.lineTo(headX, headY + 5 * s);
+      e.quadraticCurveTo(neckBaseX + 8 * s, neckBaseY + 3 * s, neckBaseX + 3 * s, neckBaseY + 5 * s);
+      e.closePath();
+      e.fill();
+      e.strokeStyle = colDark;
+      e.lineWidth = 1.3 * s;
+      e.stroke();
+
+      // Placas douradas na parte inferior do pescoço
+      e.fillStyle = colBelly;
+      e.beginPath();
+      e.moveTo(neckBaseX + 4 * s, neckBaseY + 3 * s);
+      e.quadraticCurveTo(neckBaseX + 9 * s, neckBaseY - 1 * s, headX - 1 * s, headY + 4 * s);
+      e.lineTo(headX - 3 * s, headY + 5.5 * s);
+      e.quadraticCurveTo(neckBaseX + 6 * s, neckBaseY + 4 * s, neckBaseX + 2 * s, neckBaseY + 4.5 * s);
+      e.closePath();
+      e.fill();
+
+      // Espinhos na nuca
+      e.fillStyle = colHorn;
+      for (let ni = 0; ni < 3; ni++) {
+        const nx = neckBaseX + (ni * 4 * s) + 2 * s;
+        const ny = neckBaseY - (ni * 3.5 * s) - 5 * s;
+        e.beginPath();
+        e.moveTo(nx - 1 * s, ny + 1 * s);
+        e.lineTo(nx - 3.5 * s, ny - 4.5 * s);
+        e.lineTo(nx + 1 * s, ny);
+        e.closePath();
+        e.fill();
+      }
+
+      // Crânio do Dragão
+      e.fillStyle = colBase;
+      e.beginPath();
+      e.moveTo(headX - 4 * s, headY - 4 * s);
+      e.lineTo(headX + 4 * s, headY - 6 * s);   // Topo da cabeça
+      e.lineTo(headX + 11 * s, headY - 2 * s);  // Focinho superior
+      e.lineTo(headX + 12 * s, headY + 1 * s);  // Narina
+      e.lineTo(headX + 6 * s, headY + 2 * s);   // Mandíbula
+      e.lineTo(headX + 10 * s, headY + 5 * s);  // Queixo inferior
+      e.lineTo(headX + 1 * s, headY + 5 * s);   // Garganta
+      e.lineTo(headX - 4 * s, headY);
+      e.closePath();
+      e.fill();
+      e.strokeStyle = colDark;
+      e.lineWidth = 1.3 * s;
+      e.stroke();
+
+      // Dentes / Presas de Marfim
+      e.fillStyle = "#ffffff";
+      e.beginPath();
+      e.moveTo(headX + 7 * s, headY + 2 * s);
+      e.lineTo(headX + 8 * s, headY + 4.2 * s);
+      e.lineTo(headX + 9 * s, headY + 2 * s);
+      e.lineTo(headX + 10 * s, headY + 3.8 * s);
+      e.lineTo(headX + 11 * s, headY + 1.8 * s);
+      e.closePath();
+      e.fill();
+
+      // Chifres Ancestrais Magníficos (Par Superior Imponente + Esporão Inferior)
+      // Chifre Principal Curvado
+      e.fillStyle = colHorn;
+      e.strokeStyle = colHornDark;
+      e.lineWidth = 1 * s;
+      e.beginPath();
+      e.moveTo(headX - 1 * s, headY - 5 * s);
+      e.quadraticCurveTo(headX - 8 * s, headY - 14 * s, headX - 16 * s, headY - 15 * s);
+      e.quadraticCurveTo(headX - 7 * s, headY - 11 * s, headX - 3 * s, headY - 3 * s);
+      e.closePath();
+      e.fill();
+      e.stroke();
+
+      // Anéis de crescimento e ranhuras no chifre
+      if (!isHit) {
+        e.strokeStyle = colYellow;
+        e.lineWidth = 0.8 * s;
+        e.beginPath();
+        e.moveTo(headX - 5 * s, headY - 8 * s);
+        e.lineTo(headX - 7 * s, headY - 6 * s);
+        e.moveTo(headX - 9 * s, headY - 12 * s);
+        e.lineTo(headX - 11 * s, headY - 10 * s);
+        e.stroke();
+      }
+
+      // Chifre Secundário da Bochecha / Tempora
+      e.fillStyle = colHornDark;
+      e.beginPath();
+      e.moveTo(headX - 2 * s, headY - 1 * s);
+      e.lineTo(headX - 9 * s, headY - 5 * s);
+      e.lineTo(headX - 3 * s, headY + 1 * s);
+      e.closePath();
+      e.fill();
+
+      // Olho de Réptil Dourado Incandescente com Pupila em Fenda
+      e.fillStyle = colYellow;
+      e.beginPath();
+      e.ellipse(headX + 3 * s, headY - 1.8 * s, 2.2 * s, 1.6 * s, -0.15, 0, Math.PI * 2);
+      e.fill();
+      // Pupila vertical felina/réptil
+      e.fillStyle = "#0f172a";
+      e.beginPath();
+      e.ellipse(headX + 3.2 * s, headY - 1.8 * s, 0.7 * s, 1.5 * s, 0, 0, Math.PI * 2);
+      e.fill();
+      // Brilho especular branco no olho
+      e.fillStyle = "#ffffff";
+      e.beginPath();
+      e.arc(headX + 2.4 * s, headY - 2.4 * s, 0.6 * s, 0, Math.PI * 2);
+      e.fill();
+
+      // Narina com fumaça e faísca
+      e.fillStyle = colDeep;
+      e.beginPath();
+      e.ellipse(headX + 10.5 * s, headY - 0.5 * s, 0.9 * s, 0.6 * s, 0.2, 0, Math.PI * 2);
+      e.fill();
+
+      // 8. Bafo de Fogo / Labaredas e Brasas
+      if (isAttacking) {
+        // Labareda estrondosa de fogo em jato cônico
+        const flameProg = ((t.animTimer * 12) % 3) / 3;
+        const breathReach = 28 * s + (flameProg * 14 * s);
+
+        // Cone externo de magma
+        const flameGrad = e.createRadialGradient(headX + 10 * s, headY + 2 * s, 2 * s, headX + 18 * s + breathReach * 0.5, headY + 3 * s, breathReach);
+        flameGrad.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+        flameGrad.addColorStop(0.2, "rgba(254, 240, 138, 0.9)");
+        flameGrad.addColorStop(0.55, "rgba(249, 115, 22, 0.75)");
+        flameGrad.addColorStop(0.85, "rgba(220, 38, 38, 0.5)");
+        flameGrad.addColorStop(1, "rgba(127, 29, 29, 0)");
+
+        e.fillStyle = flameGrad;
+        e.beginPath();
+        e.moveTo(headX + 11 * s, headY);
+        e.lineTo(headX + 12 * s + breathReach, headY - 10 * s);
+        e.lineTo(headX + 16 * s + breathReach * 1.1, headY + 4 * s);
+        e.lineTo(headX + 12 * s + breathReach, headY + 16 * s);
+        e.lineTo(headX + 11 * s, headY + 4 * s);
+        e.closePath();
+        e.fill();
+
+        // Núcleo branco incandescente
+        e.fillStyle = "#ffffff";
+        e.beginPath();
+        e.arc(headX + 13 * s, headY + 2 * s, 3.5 * s, 0, Math.PI * 2);
+        e.fill();
+      } else if (!isHit) {
+        // Fagulhas e brasas saindo da respiração em repouso
+        for (let fi = 0; fi < 3; fi++) {
+          const spkProg = (anim * 2.5 + fi * 0.33) % 1;
+          const spkX = headX + 12 * s + (spkProg * 14 * s);
+          const spkY = headY - 1 * s - (spkProg * 7 * s) + Math.sin(anim * 6 + fi) * (2 * s);
+          e.fillStyle = fi % 2 === 0 ? colYellow : colOrange;
+          e.globalAlpha = (1 - spkProg) * 0.85;
+          e.beginPath();
+          e.arc(spkX, spkY, (1 - spkProg * 0.5) * 1.3 * s, 0, Math.PI * 2);
+          e.fill();
+          e.globalAlpha = 1;
+        }
+      }
+    }
+    e.restore();
+
+    // 9. Asa Frontal Próxima Majestosa (Near Forewing) com Dedos e Membrana Translúcida
+    e.save();
+    {
+      const wingRootX = 0;
+      const wingRootY = hoverY - 8 * s;
+      const flapAngle = wingFlap * 0.45;
+
+      e.translate(wingRootX, wingRootY);
+      e.rotate(flapAngle);
+
+      // Articulação do braço da asa até o cotovelo
+      const elbowX = -10 * s;
+      const elbowY = -22 * s;
+
+      // Três dedos longos da asa
+      const f1X = 14 * s;   // Dedo frontal superior
+      const f1Y = -34 * s;
+      const f2X = -6 * s;   // Dedo central
+      const f2Y = -36 * s;
+      const f3X = -24 * s;  // Dedo traseiro
+      const f3Y = -28 * s;
+
+      // Membrana Alar com Gradiente de Couro de Dragão
+      const wingGrad = e.createLinearGradient(0, 0, -10 * s, -35 * s);
+      wingGrad.addColorStop(0, colBase);
+      wingGrad.addColorStop(0.45, colWingMem);
+      wingGrad.addColorStop(0.85, colOrange);
+      wingGrad.addColorStop(1, colYellow);
+
+      e.fillStyle = isHit ? "#ffffff" : wingGrad;
+      e.beginPath();
+      e.moveTo(0, 0);
+      e.lineTo(elbowX, elbowY);
+      e.lineTo(f1X, f1Y);
+      // Curvaturas recortadas clássicas entre os dedos (scalloped edges)
+      e.quadraticCurveTo(f1X - 8 * s, f1Y + 9 * s, f2X, f2Y);
+      e.quadraticCurveTo(f2X - 8 * s, f2Y + 10 * s, f3X, f3Y);
+      e.quadraticCurveTo(f3X + 10 * s, f3Y + 16 * s, 4 * s, 4 * s);
+      e.closePath();
+      e.fill();
+      e.strokeStyle = colDark;
+      e.lineWidth = 1.2 * s;
+      e.stroke();
+
+      // Ossos e Falanges Fortes da Asa
+      e.strokeStyle = colBase;
+      e.lineWidth = 2.4 * s;
+      e.lineCap = "round";
+      e.beginPath();
+      e.moveTo(0, 0);
+      e.lineTo(elbowX, elbowY); // Braço
+      e.lineTo(f1X, f1Y);       // Dedo 1
+      e.moveTo(elbowX, elbowY);
+      e.lineTo(f2X, f2Y);       // Dedo 2
+      e.moveTo(elbowX, elbowY);
+      e.lineTo(f3X, f3Y);       // Dedo 3
+      e.stroke();
+
+      // Garra / Espigão do Polegar no Cotovelo da Asa
+      e.fillStyle = colHorn;
+      e.beginPath();
+      e.moveTo(elbowX - 1 * s, elbowY - 1 * s);
+      e.lineTo(elbowX - 3.5 * s, elbowY - 4 * s);
+      e.lineTo(elbowX + 1.5 * s, elbowY - 1 * s);
+      e.closePath();
+      e.fill();
+    }
+    e.restore();
+
+    // 10. Brasas Vulcânicas Flutuando ao Redor do Dragão
+    if (!isHit) {
+      for (let bi = 0; bi < 4; bi++) {
+        const floatProg = (anim * 1.8 + bi * 0.25) % 1;
+        const bX = Math.sin(anim * 4 + bi * 2.5) * (14 * s) + (bi % 2 === 0 ? -12 * s : 8 * s);
+        const bY = hoverY - (floatProg * 28 * s) + 4 * s;
+        const bAlpha = Math.sin(floatProg * Math.PI) * 0.8;
+        e.fillStyle = bi % 2 === 0 ? colYellow : colOrange;
+        e.globalAlpha = bAlpha;
+        e.beginPath();
+        e.arc(bX, bY, (1 - floatProg * 0.5) * 1.4 * s, 0, Math.PI * 2);
+        e.fill();
+        e.globalAlpha = 1;
+      }
+    }
+
+    e.restore();
   }
   function xg(e, t, l, o) {
     t.facing === "down"

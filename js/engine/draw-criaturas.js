@@ -2261,35 +2261,80 @@
   }
   function Ob(e, t, l) {
     const o = l.color || "#dc2626";
-    ((e.fillStyle = o),
-      e.beginPath(),
-      e.ellipse(0, 1 * t, 11 * t, 6 * t, 0, 0, Math.PI * 2),
-      e.fill(),
-      e.beginPath(),
-      e.ellipse(9 * t, -2 * t, 6 * t, 4 * t, 0.1, 0, Math.PI * 2),
-      e.fill(),
-      (e.fillStyle = "#991b1b"),
-      e.beginPath(),
-      e.moveTo(-3 * t, 0),
-      e.lineTo(-8 * t, -8 * t),
-      e.lineTo(-4 * t, -3 * t),
-      e.lineTo(-1 * t, 2 * t),
-      e.closePath(),
-      e.fill(),
-      (e.strokeStyle = "#ea580c"),
-      (e.lineWidth = 1.8 * t),
-      e.beginPath(),
-      e.moveTo(8 * t, -4 * t),
-      e.quadraticCurveTo(5 * t, -9 * t, 2 * t, -10 * t),
-      e.stroke(),
-      (e.strokeStyle = "#fbbf24"),
-      (e.lineWidth = 1.3 * t),
-      e.beginPath(),
-      e.moveTo(9 * t, -3.5 * t),
-      e.lineTo(11 * t, -1.5 * t),
-      e.moveTo(11 * t, -3.5 * t),
-      e.lineTo(9 * t, -1.5 * t),
-      e.stroke());
+    // Sombra suave da base
+    e.fillStyle = "rgba(15, 23, 42, 0.45)";
+    e.beginPath();
+    e.ellipse(0, 4.5 * t, 8 * t, 2.5 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Cauda
+    e.strokeStyle = "#991b1b";
+    e.lineWidth = 2 * t;
+    e.beginPath();
+    e.moveTo(-5 * t, 2 * t);
+    e.quadraticCurveTo(-9 * t, 3 * t, -10 * t, 0);
+    e.stroke();
+
+    // Corpo carmesim
+    e.fillStyle = o;
+    e.beginPath();
+    e.ellipse(0, 1 * t, 10 * t, 5.5 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Placas ventrais douradas
+    e.fillStyle = "#fbbf24";
+    e.beginPath();
+    e.ellipse(2 * t, 2.5 * t, 5.5 * t, 2.5 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Asa recortada com nervuras
+    e.fillStyle = "#7f1d1d";
+    e.beginPath();
+    e.moveTo(-2 * t, 0);
+    e.lineTo(-8 * t, -9 * t);
+    e.lineTo(-4 * t, -4 * t);
+    e.lineTo(-1 * t, -7 * t);
+    e.lineTo(1 * t, 2 * t);
+    e.closePath();
+    e.fill();
+    e.strokeStyle = "#f97316";
+    e.lineWidth = 1 * t;
+    e.stroke();
+
+    // Espinhos dorsais
+    e.fillStyle = "#d97706";
+    for (let i = -6; i <= 2; i += 3) {
+      e.beginPath();
+      e.moveTo((i - 1) * t, -4 * t);
+      e.lineTo(i * t, -7 * t);
+      e.lineTo((i + 1) * t, -4 * t);
+      e.closePath();
+      e.fill();
+    }
+
+    // Cabeça do dragão
+    e.fillStyle = o;
+    e.beginPath();
+    e.moveTo(5 * t, -1 * t);
+    e.lineTo(12 * t, -3 * t);
+    e.lineTo(11 * t, 2 * t);
+    e.lineTo(6 * t, 3 * t);
+    e.closePath();
+    e.fill();
+
+    // Chifre curvado
+    e.strokeStyle = "#d97706";
+    e.lineWidth = 1.8 * t;
+    e.beginPath();
+    e.moveTo(8 * t, -3 * t);
+    e.quadraticCurveTo(4 * t, -10 * t, 0, -10 * t);
+    e.stroke();
+
+    // Olho brilhante
+    e.fillStyle = "#fef08a";
+    e.beginPath();
+    e.arc(9 * t, -1.5 * t, 1.2 * t, 0, Math.PI * 2);
+    e.fill();
   }
   function gl(e) {
     return (
