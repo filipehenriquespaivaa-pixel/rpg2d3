@@ -1162,23 +1162,38 @@
     }
     e.restore();
 
-    // 3. Asa Traseira (Far Wing) - Batendo em perspectiva atrás do corpo
+    // 3. Asa Traseira (Far Wing) - Batendo em perspectiva atrás do corpo com curvatura para trás
     e.save();
     {
-      const wingRootX = -2 * s;
+      const wingRootX = -1 * s;
       const wingRootY = hoverY - 7 * s;
       const farFlap = Math.sin(anim * flapFreq + 0.35);
-      const farWingTipY = wingRootY - (18 * s) + (farFlap * 11 * s);
-      const farWingTipX = wingRootX - 18 * s;
+      const farFlapAngle = farFlap * 0.35;
+
+      e.translate(wingRootX, wingRootY);
+      e.rotate(farFlapAngle);
+
+      // Pulso alar traseiro (borda frontal superior da asa)
+      const fWristX = 5 * s;
+      const fWristY = -19 * s;
+
+      // Falanges traseiras curvando para trás
+      const fTip1X = -5 * s;
+      const fTip1Y = -31 * s;
+      const fTip2X = -16 * s;
+      const fTip2Y = -25 * s;
+      const fTip3X = -22 * s;
+      const fTip3Y = -14 * s;
 
       // Membrana escura em perspectiva
       e.fillStyle = colWingMemDark;
       e.beginPath();
-      e.moveTo(wingRootX, wingRootY);
-      e.lineTo(wingRootX - 6 * s, farWingTipY - 3 * s); // Cotovelo
-      e.lineTo(farWingTipX, farWingTipY);             // Dedo 1
-      e.quadraticCurveTo(farWingTipX + 7 * s, farWingTipY + 7 * s, wingRootX - 10 * s, farWingTipY + 6 * s); // Dedo 2
-      e.quadraticCurveTo(wingRootX - 4 * s, farWingTipY + 11 * s, wingRootX + 2 * s, wingRootY + 2 * s);
+      e.moveTo(0, 0);
+      e.lineTo(fWristX, fWristY);
+      e.lineTo(fTip1X, fTip1Y);
+      e.quadraticCurveTo(-11 * s, -29 * s, fTip2X, fTip2Y);
+      e.quadraticCurveTo(-20 * s, -20 * s, fTip3X, fTip3Y);
+      e.quadraticCurveTo(-12 * s, -7 * s, -2 * s, 0);
       e.closePath();
       e.fill();
 
@@ -1186,9 +1201,13 @@
       e.strokeStyle = colDark;
       e.lineWidth = 2 * s;
       e.beginPath();
-      e.moveTo(wingRootX, wingRootY);
-      e.lineTo(wingRootX - 6 * s, farWingTipY - 3 * s);
-      e.lineTo(farWingTipX, farWingTipY);
+      e.moveTo(0, 0);
+      e.lineTo(fWristX, fWristY);
+      e.lineTo(fTip1X, fTip1Y);
+      e.moveTo(fWristX, fWristY);
+      e.lineTo(fTip2X, fTip2Y);
+      e.moveTo(fWristX, fWristY);
+      e.lineTo(fTip3X, fTip3Y);
       e.stroke();
     }
     e.restore();
@@ -1522,30 +1541,30 @@
     }
     e.restore();
 
-    // 9. Asa Frontal Próxima Majestosa (Near Forewing) com Dedos e Membrana Translúcida
+    // 9. Asa Frontal Próxima Majestosa (Near Forewing) com Curvatura Natural para Trás
     e.save();
     {
-      const wingRootX = 0;
-      const wingRootY = hoverY - 8 * s;
-      const flapAngle = wingFlap * 0.45;
+      const wingRootX = 1 * s;
+      const wingRootY = hoverY - 7 * s;
+      const flapAngle = wingFlap * 0.42;
 
       e.translate(wingRootX, wingRootY);
       e.rotate(flapAngle);
 
-      // Articulação do braço da asa até o cotovelo
-      const elbowX = -10 * s;
-      const elbowY = -22 * s;
+      // Pulso / Carpo da asa na borda frontal superior (borda de ataque da asa)
+      const wristX = 7 * s;
+      const wristY = -23 * s;
 
-      // Três dedos longos da asa
-      const f1X = 14 * s;   // Dedo frontal superior
-      const f1Y = -34 * s;
-      const f2X = -6 * s;   // Dedo central
-      const f2Y = -36 * s;
-      const f3X = -24 * s;  // Dedo traseiro
-      const f3Y = -28 * s;
+      // Dedos longos da asa curvando graciosamente PARA TRÁS sobre o dorso
+      const tip1X = -6 * s;   // Dedo 1 (topo, arqueado para trás)
+      const tip1Y = -37 * s;
+      const tip2X = -20 * s;  // Dedo 2 (central, varrendo para trás)
+      const tip2Y = -30 * s;
+      const tip3X = -28 * s;  // Dedo 3 (inferior, estendendo-se em direção aos flancos)
+      const tip3Y = -18 * s;
 
       // Membrana Alar com Gradiente de Couro de Dragão
-      const wingGrad = e.createLinearGradient(0, 0, -10 * s, -35 * s);
+      const wingGrad = e.createLinearGradient(0, 0, -18 * s, -35 * s);
       wingGrad.addColorStop(0, colBase);
       wingGrad.addColorStop(0.45, colWingMem);
       wingGrad.addColorStop(0.85, colOrange);
@@ -1554,40 +1573,55 @@
       e.fillStyle = isHit ? "#ffffff" : wingGrad;
       e.beginPath();
       e.moveTo(0, 0);
-      e.lineTo(elbowX, elbowY);
-      e.lineTo(f1X, f1Y);
+      e.lineTo(wristX, wristY); // Braço frontal (borda de ataque)
+      e.lineTo(tip1X, tip1Y);   // Borda do dedo 1
       // Curvaturas recortadas clássicas entre os dedos (scalloped edges)
-      e.quadraticCurveTo(f1X - 8 * s, f1Y + 9 * s, f2X, f2Y);
-      e.quadraticCurveTo(f2X - 8 * s, f2Y + 10 * s, f3X, f3Y);
-      e.quadraticCurveTo(f3X + 10 * s, f3Y + 16 * s, 4 * s, 4 * s);
+      e.quadraticCurveTo(-14 * s, -34 * s, tip2X, tip2Y);
+      e.quadraticCurveTo(-25 * s, -25 * s, tip3X, tip3Y);
+      e.quadraticCurveTo(-16 * s, -9 * s, -2 * s, 2 * s);
       e.closePath();
       e.fill();
       e.strokeStyle = colDark;
-      e.lineWidth = 1.2 * s;
+      e.lineWidth = 1.3 * s;
       e.stroke();
+
+      // Veias translúcidas de fogo na membrana
+      if (!isHit) {
+        e.strokeStyle = "rgba(254, 240, 138, 0.4)";
+        e.lineWidth = 0.9 * s;
+        e.beginPath();
+        e.moveTo(wristX - 2 * s, wristY + 2 * s);
+        e.quadraticCurveTo(-4 * s, -26 * s, -11 * s, -33 * s);
+        e.moveTo(wristX - 2 * s, wristY + 4 * s);
+        e.quadraticCurveTo(-10 * s, -20 * s, -21 * s, -26 * s);
+        e.stroke();
+      }
 
       // Ossos e Falanges Fortes da Asa
       e.strokeStyle = colBase;
-      e.lineWidth = 2.4 * s;
+      e.lineWidth = 2.6 * s;
       e.lineCap = "round";
       e.beginPath();
       e.moveTo(0, 0);
-      e.lineTo(elbowX, elbowY); // Braço
-      e.lineTo(f1X, f1Y);       // Dedo 1
-      e.moveTo(elbowX, elbowY);
-      e.lineTo(f2X, f2Y);       // Dedo 2
-      e.moveTo(elbowX, elbowY);
-      e.lineTo(f3X, f3Y);       // Dedo 3
+      e.lineTo(wristX, wristY); // Braço da asa
+      e.lineTo(tip1X, tip1Y);   // Falange 1
+      e.moveTo(wristX, wristY);
+      e.lineTo(tip2X, tip2Y);   // Falange 2
+      e.moveTo(wristX, wristY);
+      e.lineTo(tip3X, tip3Y);   // Falange 3
       e.stroke();
 
-      // Garra / Espigão do Polegar no Cotovelo da Asa
+      // Espigão / Garra Afiada do Polegar no Pulso da Asa (apontando para cima/frente)
       e.fillStyle = colHorn;
+      e.strokeStyle = colHornDark;
+      e.lineWidth = 0.8 * s;
       e.beginPath();
-      e.moveTo(elbowX - 1 * s, elbowY - 1 * s);
-      e.lineTo(elbowX - 3.5 * s, elbowY - 4 * s);
-      e.lineTo(elbowX + 1.5 * s, elbowY - 1 * s);
+      e.moveTo(wristX - 1 * s, wristY + 1 * s);
+      e.lineTo(wristX + 3.5 * s, wristY - 3.5 * s);
+      e.lineTo(wristX + 0.5 * s, wristY - 1 * s);
       e.closePath();
       e.fill();
+      e.stroke();
     }
     e.restore();
 
