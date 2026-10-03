@@ -192,11 +192,11 @@
             const ke = ne.prop,
               G = ne.tx * f + f / 2 + ke.offsetX,
               de = ne.ty * f + f / 2 + ke.offsetY;
-            // A rampa (cliff_ramp) é desenhada no chão/encosta abaixo dos pés do personagem,
-            // enquanto o paredão (cliff_wall) é uma parede intransponível com ordenação Y normal.
+            // Desenha o paredão (cliff_wall) e a rampa (cliff_ramp) na camada de terreno/platô abaixo dos pés do personagem
+            // para que o jogador apareça caminhando em cima do paredão!
             const sortY =
-              ke.kind === "cliff_ramp"
-                ? de - f * 1.5
+              ke.kind === "cliff_wall" || ke.kind === "cliff_ramp"
+                ? de - f * 4.5
                 : de;
             Ee.push({ y: sortY, draw: () => this.renderProp(ke, G, de, ne, u) });
           }

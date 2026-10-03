@@ -1784,46 +1784,45 @@
       leftX = nL ? -halfTile - 1.5 * t : -halfTile + 0.5 * t,
       rightX = nR ? halfTile + 1.5 * t : halfTile - 0.5 * t,
       fullW = rightX - leftX,
-      hWall = 28 * t,
-      baseY = 18 * t,
-      // Quando o lado Sul é o interior do bioma (nB = true), não existe queda para o sul:
-      // o platô superior ocupa o tile inteiro até a borda sul (baseY + 1.5*t) na mesma cor #64748b do interior!
-      // Quando o lado Sul é fora do bioma (!nB), a parede vertical de 28px aparece na face sul e o topo fica em topY.
-      topY = baseY - hWall,
+      // Paredão 4x maior na face externa (112px de altura monumental 2.5D)!
+      hWall = 112 * t,
+      baseY = 18 * t + (nB ? 0 : 94 * t),
+      topY = 18 * t - 18 * t,
       platBackY = -halfTile - 1.5 * t,
-      platFrontY = nB ? halfTile + 1.5 * t : topY;
+      platFrontY = halfTile + 1.5 * t;
 
     // Chanfros apenas nas quinas externas livres (que dão para fora do bioma)
-    const bevelL = nL || nT ? 0 : 4.5 * t,
-      bevelR = nR || nT ? 0 : 4.5 * t;
+    const bevelL = nL || nT ? 0 : 6 * t,
+      bevelR = nR || nT ? 0 : 6 * t;
 
-    // 1. Sombra de Base externa (APENAS quando o sul é fora do bioma: !nB)
+    // 1. Sombra de Base externa gigante (APENAS quando o sul é fora do bioma: !nB)
     if (!nB) {
-      e.fillStyle = "rgba(2, 6, 23, 0.48)";
+      e.fillStyle = "rgba(2, 6, 23, 0.52)";
       e.beginPath();
       if (nL && nR) {
-        e.fillRect(leftX, baseY - 2 * t, fullW, 7.5 * t);
+        e.fillRect(leftX, baseY - 4 * t, fullW, 22 * t);
       } else {
         e.roundRect(
           leftX,
-          baseY - 2 * t,
+          baseY - 4 * t,
           fullW,
-          8 * t,
-          [0, 0, nR ? 0 : 5 * t, nL ? 0 : 5 * t],
+          24 * t,
+          [0, 0, nR ? 0 : 10 * t, nL ? 0 : 10 * t],
         );
         e.fill();
       }
     }
 
-    // 2. Face Vertical Rochosa Exposta (APENAS onde há queda para fora do bioma!)
-    // Se !nB (borda Sul/Leste/Oeste do bioma), desenha a parede vertical de rocha abaixo do platô.
-    // Se nB for true (o interior do bioma está ao sul), NÃO desenha parede virada para o interior!
+    // 2. Face Vertical Rochosa Exposta 4x MAIOR (APENAS onde há queda para fora do bioma!)
+    // O topo do paredão fica em platFrontY (18*t), conectado com o interior do bioma,
+    // e a parede colossal desce 4x (até baseY = 112*t) para fora do bioma!
     if (!nB) {
-      const faceTopY = topY;
+      const faceTopY = platFrontY - 2 * t;
       const faceBottomY = baseY;
       const wallGrad = e.createLinearGradient(0, faceTopY, 0, faceBottomY);
       wallGrad.addColorStop(0, "#475569");
-      wallGrad.addColorStop(0.45, "#334155");
+      wallGrad.addColorStop(0.3, "#334155");
+      wallGrad.addColorStop(0.7, "#1e293b");
       wallGrad.addColorStop(1, "#0f172a");
 
       e.fillStyle = wallGrad;
@@ -1837,54 +1836,51 @@
       e.closePath();
       e.fill();
 
-      // Pontes diagonais externas
+      // Pontes diagonais externas (4x maiores para acompanhar a parede colossal)
       if (!nL && nTL) {
         e.fillStyle = wallGrad;
-        e.fillRect(-halfTile - 6 * t, faceTopY, 8 * t, 18 * t);
+        e.fillRect(-halfTile - 18 * t, faceTopY - 18 * t, 22 * t, 64 * t);
       }
       if (!nR && nTR) {
         e.fillStyle = wallGrad;
-        e.fillRect(halfTile - 2 * t, faceTopY, 8 * t, 18 * t);
+        e.fillRect(halfTile - 4 * t, faceTopY - 18 * t, 22 * t, 64 * t);
       }
       if (!nL && nBL) {
         e.fillStyle = wallGrad;
-        e.fillRect(-halfTile - 6 * t, topY + 6 * t, 8 * t, 22 * t);
+        e.fillRect(-halfTile - 18 * t, faceTopY + 12 * t, 22 * t, 80 * t);
       }
       if (!nR && nBR) {
         e.fillStyle = wallGrad;
-        e.fillRect(halfTile - 2 * t, topY + 6 * t, 8 * t, 22 * t);
+        e.fillRect(halfTile - 4 * t, faceTopY + 12 * t, 22 * t, 80 * t);
       }
 
-      // Estratos geológicos e fendas na face frontal sul exposta
-      const s1 = topY + hWall * 0.34,
-        s2 = topY + hWall * 0.68;
-      e.strokeStyle = "rgba(15, 23, 42, 0.55)";
-      e.lineWidth = 1.4 * t;
+      // 5 faixas de estratos geológicos e fendas ao longo da altura 4x da parede
+      const faceH = faceBottomY - faceTopY;
+      e.strokeStyle = "rgba(15, 23, 42, 0.58)";
+      e.lineWidth = 1.8 * t;
       e.beginPath();
-      e.moveTo(leftX + (nL ? 0 : 1.5 * t), s1);
-      e.lineTo(-4 * t, s1 + 1.5 * t);
-      e.lineTo(5 * t, s1 - 1.2 * t);
-      e.lineTo(rightX - (nR ? 0 : 1.5 * t), s1);
+      for (let i = 1; i <= 4; i++) {
+        const sy = faceTopY + faceH * (i * 0.2);
+        e.moveTo(leftX + (nL ? 0 : 1.5 * t), sy);
+        e.lineTo(-5 * t, sy + (i % 2 === 0 ? -2.2 : 2.2) * t);
+        e.lineTo(6 * t, sy + (i % 2 === 0 ? 1.8 : -1.8) * t);
+        e.lineTo(rightX - (nR ? 0 : 1.5 * t), sy);
+      }
 
-      e.moveTo(leftX + (nL ? 0 : 1.5 * t), s2);
-      e.lineTo(-3 * t, s2 - 1.4 * t);
-      e.lineTo(6 * t, s2 + 1.3 * t);
-      e.lineTo(rightX - (nR ? 0 : 1.5 * t), s2);
-
-      const vx = (o - 0.5) * 10 * t;
-      e.moveTo(vx, faceTopY + 2 * t);
-      e.lineTo(vx - 2 * t, s1);
-      e.lineTo(vx + 1.5 * t, s2);
-      e.lineTo(vx - 0.5 * t, faceBottomY - 2 * t);
+      const vx = (o - 0.5) * 12 * t;
+      e.moveTo(vx, faceTopY + 3 * t);
+      e.lineTo(vx - 3.5 * t, faceTopY + faceH * 0.33);
+      e.lineTo(vx + 2.5 * t, faceTopY + faceH * 0.66);
+      e.lineTo(vx - 1.5 * t, faceBottomY - 4 * t);
       e.stroke();
 
       e.fillStyle = "rgba(148, 163, 184, 0.24)";
-      e.fillRect(leftX + 2 * t, s1 - 2.6 * t, fullW * 0.42, 2 * t);
-      e.fillRect(1 * t, s2 - 2.4 * t, fullW * 0.38, 1.8 * t);
+      e.fillRect(leftX + 2 * t, faceTopY + faceH * 0.2 - 3 * t, fullW * 0.45, 2.8 * t);
+      e.fillRect(1 * t, faceTopY + faceH * 0.6 - 3 * t, fullW * 0.4, 2.5 * t);
 
       // Rodapé escuro na base externa sul
-      e.fillStyle = "rgba(9, 13, 22, 0.58)";
-      e.fillRect(leftX, baseY - 3.5 * t, fullW, 3.5 * t);
+      e.fillStyle = "rgba(9, 13, 22, 0.65)";
+      e.fillRect(leftX, faceBottomY - 6 * t, fullW, 6 * t);
     }
 
     // 3. Platô Superior 2.5D Contínuo — EXATAMENTE na mesma cor (#64748b) e nível do chão interno de MOUNTAIN_25D!
@@ -1899,68 +1895,62 @@
     e.fillStyle = "rgba(241, 245, 249, 0.22)";
     e.fillRect(leftX + 5 * t, platMidY - 2.7 * t, fullW - 10 * t, 1.2 * t);
 
-    // 4. Bordas / Escarpas fininhas nas laterais que dão para FORA do bioma (Norte, Oeste, Leste, Sul)
-    // Se o Norte é fora do bioma (!nT), desenha a escarpa traseira norte fininha do platô elevado
+    // 4. Bordas / Escarpas 4x maiores nas laterais que dão para FORA do bioma (Norte, Oeste, Leste, Sul)
     if (!nT) {
-      const northCliffH = 6 * t;
-      const nGrad = e.createLinearGradient(0, platBackY - northCliffH, 0, platBackY + 2 * t);
+      const northCliffH = 24 * t;
+      const nGrad = e.createLinearGradient(0, platBackY - northCliffH, 0, platBackY + 3 * t);
       nGrad.addColorStop(0, "#0f172a");
       nGrad.addColorStop(0.7, "#334155");
       nGrad.addColorStop(1, "#475569");
       e.fillStyle = nGrad;
-      e.fillRect(leftX, platBackY - northCliffH, fullW, northCliffH + 1 * t);
-      // Crista iluminada norte do platô
+      e.fillRect(leftX, platBackY - northCliffH, fullW, northCliffH + 2 * t);
       e.strokeStyle = "#e2e8f0";
-      e.lineWidth = 1.8 * t;
+      e.lineWidth = 2.4 * t;
       e.beginPath();
-      e.moveTo(leftX, platBackY + 0.5 * t);
-      e.lineTo(rightX, platBackY + 0.5 * t);
+      e.moveTo(leftX, platBackY + 1 * t);
+      e.lineTo(rightX, platBackY + 1 * t);
       e.stroke();
     }
 
-    // Se o Oeste é fora do bioma (!nL), desenha a escarpa lateral esquerda fininha contínua
     if (!nL) {
-      const westCliffW = 6 * t;
-      const wGrad = e.createLinearGradient(leftX - westCliffW, 0, leftX + 2 * t, 0);
+      const westCliffW = 24 * t;
+      const wGrad = e.createLinearGradient(leftX - westCliffW, 0, leftX + 3 * t, 0);
       wGrad.addColorStop(0, "#0f172a");
       wGrad.addColorStop(0.65, "#334155");
       wGrad.addColorStop(1, "#475569");
       e.fillStyle = wGrad;
-      e.fillRect(leftX - westCliffW, platBackY, westCliffW + 1 * t, (nB ? platFrontY : baseY) - platBackY);
-      // Crista iluminada esquerda do platô
+      e.fillRect(leftX - westCliffW, platBackY, westCliffW + 2 * t, (nB ? platFrontY : baseY) - platBackY);
       e.strokeStyle = "#e2e8f0";
-      e.lineWidth = 1.8 * t;
+      e.lineWidth = 2.4 * t;
       e.beginPath();
-      e.moveTo(leftX + 0.5 * t, platBackY);
-      e.lineTo(leftX + 0.5 * t, platFrontY);
+      e.moveTo(leftX + 1 * t, platBackY);
+      e.lineTo(leftX + 1 * t, platFrontY);
       e.stroke();
     }
 
-    // Se o Leste é fora do bioma (!nR), desenha a escarpa lateral direita fininha contínua
     if (!nR) {
-      const eastCliffW = 6 * t;
-      const eGrad = e.createLinearGradient(rightX - 2 * t, 0, rightX + eastCliffW, 0);
+      const eastCliffW = 24 * t;
+      const eGrad = e.createLinearGradient(rightX - 3 * t, 0, rightX + eastCliffW, 0);
       eGrad.addColorStop(0, "#475569");
       eGrad.addColorStop(0.35, "#1e293b");
       eGrad.addColorStop(1, "#0f172a");
       e.fillStyle = eGrad;
-      e.fillRect(rightX - 1 * t, platBackY, eastCliffW + 1 * t, (nB ? platFrontY : baseY) - platBackY);
-      // Crista direita do platô
+      e.fillRect(rightX - 2 * t, platBackY, eastCliffW + 2 * t, (nB ? platFrontY : baseY) - platBackY);
       e.strokeStyle = "#cbd5e1";
-      e.lineWidth = 1.8 * t;
+      e.lineWidth = 2.4 * t;
       e.beginPath();
-      e.moveTo(rightX - 0.5 * t, platBackY);
-      e.lineTo(rightX - 0.5 * t, platFrontY);
+      e.moveTo(rightX - 1 * t, platBackY);
+      e.lineTo(rightX - 1 * t, platFrontY);
       e.stroke();
     }
 
     // Se o Sul é fora do bioma (!nB), desenha a crista iluminada frontal onde o platô encontra o topo da parede vertical sul
     if (!nB) {
       e.strokeStyle = "#e2e8f0";
-      e.lineWidth = 2.4 * t;
+      e.lineWidth = 2.8 * t;
       e.beginPath();
-      e.moveTo(leftX, topY + 0.5 * t);
-      e.lineTo(rightX, topY + 0.5 * t);
+      e.moveTo(leftX, platFrontY - 1 * t);
+      e.lineTo(rightX, platFrontY - 1 * t);
       e.stroke();
     }
 

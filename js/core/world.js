@@ -1075,18 +1075,28 @@
       };
       if (K.id === BiomeId.MOUNTAIN_25D) {
         // Todo o bioma fica em um único nível uniforme (sem sub-níveis nem degraus internos),
-        // cercado apenas pelo paredão perimetral fininho (1 tile) ao redor do bioma.
-        const isPerimeterBorder =
-          !this._isMountain25DBiomeAt(t - 1, l) ||
-          !this._isMountain25DBiomeAt(t + 1, l) ||
-          !this._isMountain25DBiomeAt(t, l - 1) ||
-          !this._isMountain25DBiomeAt(t, l + 1);
+        // cercado por um paredão 4 vezes maior (4 tiles de largura) onde o jogador consegue andar por cima do topo do paredão!
+        let isPerimeterBorder = !1;
+        let isOuterFace = !1;
+        for (let dy = -4; dy <= 4; dy++) {
+          for (let dx = -4; dx <= 4; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const dist = Math.max(Math.abs(dx), Math.abs(dy));
+            if (dist <= 4 && !this._isMountain25DBiomeAt(t + dx, l + dy)) {
+              isPerimeterBorder = !0;
+              if (dist === 1) {
+                isOuterFace = !0;
+              }
+            }
+          }
+        }
         const isWall = isPerimeterBorder;
 
         se.mountainTier = 1;
-        se.lowerTier = isPerimeterBorder ? 0 : 1;
+        se.lowerTier = isOuterFace ? 0 : 1;
         se.isElevatedBiome = !0;
         se.isPerimeterCliff = isPerimeterBorder;
+        se.isOuterCliffEdge = isOuterFace;
         se.isCliffWall = isWall;
         se.isCliffRamp = !1;
         if (se.isCliffWall) {
@@ -1106,9 +1116,9 @@
               offsetX: 0,
               offsetY: 0,
               scale: 1,
-              namePt: "Muralha do Platô Montanhoso",
+              namePt: "Muralha Gigante do Platô (4x)",
               descriptionPt:
-                "Paredão vertical contínuo de granito maciço que cerca e eleva todo o bioma de Montanhas 2.5D no mesmo nível.",
+                "Paredão monumental 4x maior que cerca e eleva todo o bioma de Montanhas 2.5D. O topo do paredão é plano e caminhável.",
             };
           }
         }
@@ -1756,9 +1766,7 @@
     isTilePassable(t, l) {
       const o = this.getTile(t, l);
       if (this.isUnderground && o.biome.id === BiomeId.CAVE_WALL) return !1;
-      // Ninguém anda na parede do paredão: todo tile de paredão (isCliffWall) é 100% bloqueado!
-      // A subida do andar inferior para o andar superior acontece exclusivamente pelas rampas (isCliffRamp).
-      if (!this.isUnderground && o.isCliffWall) return !1;
+      // Permite subir e andar livremente em cima de todo o paredão (isCliffWall)!
       const southTile = this.getTile(t, l + 1);
       if (
         southTile &&
@@ -1770,11 +1778,8 @@
       return !0;
     }
     isCliffFaceBlockedAt(fromX, fromY, toX, toY) {
-      if (this.isUnderground) return !1;
-      const toTx = Math.floor(toX / this.tileSize),
-        toTy = Math.floor(toY / this.tileSize),
-        toTile = this.getTile(toTx, toTy);
-      return !!(toTile && toTile.isCliffWall);
+      // Livre para subir e caminhar por cima de todo o paredão
+      return !1;
     }
     isCaveRockAt(x, y) {
       const tx = Math.floor(x / this.tileSize),
