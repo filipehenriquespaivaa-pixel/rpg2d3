@@ -55,7 +55,7 @@
   }) => {
     var So;
     const isDevMode = Boolean(
-      typeof devModeProp !== "undefined"
+      typeof devModeProp === "boolean"
         ? devModeProp
         : (typeof window !== "undefined" && window.__devMode)
     );
@@ -63,8 +63,9 @@
       [Te, Fe] = J.useState(() => isDevMode || window.innerWidth > 768),
       [_e, xe] = J.useState(() => isDevMode || window.innerWidth > 1024),
       [Ue, $a] = J.useState(!0),
-      [Ie, ee] = J.useState(!1),
+      [Ie, ee] = J.useState(() => !isDevMode),
       [He, Sa] = J.useState(!1),
+      isImmersive = !isDevMode || Ie,
       oa = !!(oe && oe.prop.lit !== !1),
       ga = !!(C && oe && C.tx === oe.tx && C.ty === oe.ty),
       we = _ ? ot(_.mochila) : 6,
@@ -327,6 +328,10 @@
         () => window.removeEventListener("resize", We)
       );
     }, [isDevMode]);
+    J.useEffect(() => {
+      // O modo comum deve ser imersivo por padrão; no modo dev os controles de teste iniciam visíveis
+      ee(!isDevMode);
+    }, [isDevMode]);
     const Lo = () => {
         const We = (typeof Bb === "function" ? Bb : (typeof buildStandaloneHtml === "function" ? buildStandaloneHtml : () => ("")))({
             seed: l,
@@ -360,16 +365,16 @@
       className:
         "pointer-events-none absolute inset-0 z-20 overflow-hidden select-none",
       children: [
-        h.jsxs("div", {
-          className:
-            "pointer-events-auto absolute top-2.5 sm:top-3.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-30",
-          children: [
-            h.jsxs("button", {
+        isDevMode &&
+          h.jsx("div", {
+            className:
+              "pointer-events-auto absolute top-2.5 sm:top-3.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-30",
+            children: h.jsxs("button", {
               id: "hud-toggle-visibility-btn",
               onClick: () => ee(!Ie),
               className: `flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium transition-all shadow-md backdrop-blur-md border ${Ie ? "bg-sky-600/90 hover:bg-sky-500 text-white border-sky-400/50 shadow-sky-900/40" : "bg-slate-900/60 hover:bg-slate-900/90 text-slate-300 hover:text-white border-white/10"}`,
               title: Ie
-                ? "Restaurar Interface (UI)"
+                ? "Restaurar Interface (Dev)"
                 : "Ocultar Interface para Visão Limpa",
               children: [
                 Ie
@@ -377,47 +382,12 @@
                   : h.jsx(jp, { className: "h-3.5 w-3.5 text-slate-400" }),
                 h.jsx("span", {
                   className: "hidden sm:inline",
-                  children: Ie ? "Exibir Interface" : "Modo Imersivo",
+                  children: Ie ? "Exibir Interface Dev" : "Modo Imersivo (Dev)",
                 }),
               ],
             }),
-            Ie &&
-              h.jsxs("div", {
-                className: "flex items-center gap-1.5",
-                children: [
-                  !isDevMode &&
-                    h.jsxs("button", {
-                      id: "hud-floating-combat-btn",
-                      onClick: P,
-                      className:
-                        "flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-600/90 hover:bg-rose-500 active:scale-95 text-white text-[11px] font-semibold shadow-lg backdrop-blur-md border border-rose-400/50 transition",
-                      title: "Golpe de Combate / Atacar (Espaço ou F)",
-                      children: [
-                        h.jsx(Xs, { className: "h-3.5 w-3.5 text-rose-200" }),
-                        h.jsx("span", { children: "Combate" }),
-                      ],
-                    }),
-                  !isDevMode &&
-                    h.jsxs("button", {
-                      id: "hud-floating-inventory-btn",
-                      onClick: V,
-                      className:
-                        "flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-600/90 hover:bg-amber-500 text-white text-[11px] font-semibold shadow-lg backdrop-blur-md border border-amber-400/40",
-                      title: `Abrir Inventário (Tecla I ou B) - ${je}/${we}`,
-                      children: [
-                        h.jsx(uo, { className: "h-3.5 w-3.5" }),
-                        h.jsx("span", { children: "Inventário" }),
-                        h.jsxs("span", {
-                          className: `text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full border ${Be === "mochila" ? "bg-indigo-950/90 border-indigo-400/60 text-indigo-200" : Be === "bolsa" ? "bg-emerald-950/90 border-emerald-400/60 text-emerald-200" : "bg-black/50 border-white/20 text-amber-200"}`,
-                          children: [je, "/", we],
-                        }),
-                      ],
-                    }),
-                ],
-              }),
-          ],
-        }),
-        !Ie &&
+          }),
+        !isImmersive &&
           h.jsxs(h.Fragment, {
             children: [
               h.jsxs("div", {
@@ -1094,7 +1064,7 @@
               ],
             }),
           }),
-        !Ie &&
+        !isImmersive &&
           h.jsxs("div", {
             className:
               "pointer-events-auto hidden md:flex items-center gap-1 absolute bottom-28 left-4 z-20",
@@ -1243,7 +1213,7 @@
                 }),
             ],
           }),
-        !Ie &&
+        !isImmersive &&
           (_ == null ? void 0 : _.cinto) &&
           h.jsxs("div", {
             id: "hud-belt-quickswap-bar",

@@ -24,9 +24,9 @@ window.Game = window.Game || {};
     } catch (e) {}
   }
 
-  // Sincroniza globais no escopo da janela
-  window.__devMode = getStoredBool("rpg2d_dev_mode", true);
-  window.__showColliders = getStoredBool("rpg2d_colliders", true);
+  // Sincroniza globais no escopo da janela (Modo Comum por padrão)
+  window.__devMode = getStoredBool("rpg2d_dev_mode", false);
+  window.__showColliders = getStoredBool("rpg2d_colliders", false);
   window.__godMode = getStoredBool("rpg2d_god_mode", false);
   window.__infiniteStamina = getStoredBool("rpg2d_infinite_stamina", false);
   window.__superSpeed = getStoredBool("rpg2d_super_speed", false);

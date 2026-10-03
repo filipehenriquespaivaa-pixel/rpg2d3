@@ -16,7 +16,14 @@
     b.style.background = window.__showColliders
       ? "rgba(22,163,74,0.92)"
       : "rgba(30,41,59,0.85)";
+    b.style.display = window.__devMode ? "block" : "none";
   }
+  window.updateColliderBtnVisibility = function () {
+    const b = document.getElementById("btn-colisores");
+    if (b) {
+      b.style.display = window.__devMode ? "block" : "none";
+    }
+  };
   function mk() {
     if (document.getElementById("btn-colisores")) return;
     const b = document.createElement("button");

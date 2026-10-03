@@ -3715,7 +3715,10 @@
             onCookingPot: kG,
             savedCampfire: $a,
             onUseBeltSlot: Ur,
-            devMode: props && props.devMode,
+            devMode:
+              typeof (props && props.devMode) === "boolean"
+                ? props.devMode
+                : Boolean(window.__devMode),
           }),
           h.jsx(InventoryModal, {
             isOpen: qr,
@@ -3736,6 +3739,79 @@
             onDropItem: rc,
             onMoveToBeltSlot: gn,
             onInvertBeltSlot: Ur,
+            devMode:
+              typeof (props && props.devMode) === "boolean"
+                ? props.devMode
+                : Boolean(window.__devMode),
+            onDevAddItem: (item, count = 1) => {
+              const maxSlots = ot(Da.current.mochila);
+              const isStackable =
+                item.stackCount !== undefined ||
+                item.categoryType === "material" ||
+                item.categoryType === "consumable";
+              ra((prev) => {
+                const idx = prev.findIndex((i) => i.name === item.name);
+                if (idx >= 0 && isStackable) {
+                  const next = [...prev];
+                  next[idx] = {
+                    ...next[idx],
+                    stackCount: (next[idx].stackCount || 1) + count,
+                  };
+                  return next;
+                }
+                if (prev.length >= maxSlots) {
+                  ve(`⚠️ Inventário cheio (${prev.length}/${maxSlots} slots)!`);
+                  return prev;
+                }
+                const newItem = {
+                  ...item,
+                  id: `dev_${item.id || "item"}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+                  stackCount: count,
+                };
+                return [...prev, newItem];
+              });
+              ve(`🛠️ [DEV] +${count}x ${item.name} adicionado!`);
+              m.current && m.current.playChestChime && m.current.playChestChime();
+            },
+            onDevEquipItem: (item) => {
+              if (item.isEquippable && item.slot) {
+                const newItem = {
+                  ...item,
+                  id: `dev_eq_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+                };
+                Wa((prev) => ({ ...prev, [item.slot]: newItem }));
+                ve(`🛠️ [DEV] Equipado: ${item.name}!`);
+                m.current && m.current.playEquipItem && m.current.playEquipItem();
+              }
+            },
+            onDevAddGold: (amount) => {
+              _t((prevGold) => prevGold + amount);
+              ve(`🛠️ [DEV] +${amount} Ouro adicionado!`);
+              m.current && m.current.playCoinPickup && m.current.playCoinPickup();
+            },
+            onDevClearBackpack: () => {
+              ra([]);
+              ve("🛠️ [DEV] Mochila esvaziada!");
+            },
+            onDevEquipBackpack: () => {
+              const mochilaItem = {
+                id: `dev_backpack_${Date.now()}`,
+                name: "Mochila de Couro Reforçada",
+                slot: "mochila",
+                isEquippable: true,
+                categoryType: "equipment",
+                rarity: "incomum",
+                description:
+                  "Mochila reforçada com correias resistentes. Concede +15 slots de itens (+15 slots anil, total 21)!",
+                stats: { defense: 3, staminaBonus: 35 },
+                icon: "Briefcase",
+                color: "#6366f1",
+                value: 90,
+              };
+              Wa((prev) => ({ ...prev, mochila: mochilaItem }));
+              ve("🛠️ [DEV] Mochila de Couro Reforçada (+15 slots) equipada!");
+              m.current && m.current.playEquipItem && m.current.playEquipItem();
+            },
           }),
           cookingModalOpen &&
             (() => {

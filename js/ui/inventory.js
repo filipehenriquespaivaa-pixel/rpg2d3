@@ -796,6 +796,429 @@
             }),
       });
     },
+    DevItemSidebar = ({
+      onAddItem,
+      onEquipItem,
+      onAddGold,
+      onClearBackpack,
+      onEquipBackpack,
+      backpackCount,
+      backpackMax,
+    }) => {
+      const [searchTerm, setSearchTerm] = J.useState(""),
+        [selectedCategory, setSelectedCategory] = J.useState("todos"),
+        [quickMsg, setQuickMsg] = J.useState(null);
+
+      const triggerMsg = (msg) => {
+        setQuickMsg(msg);
+        setTimeout(() => setQuickMsg(null), 2500);
+      };
+
+      const categories = [
+        { id: "todos", label: "Todos", icon: "📦" },
+        { id: "armas", label: "Armas", icon: "⚔️" },
+        { id: "armaduras", label: "Armaduras", icon: "🛡️" },
+        { id: "acessorios", label: "Acessórios", icon: "💍" },
+        { id: "recursos", label: "Recursos", icon: "🪵" },
+        { id: "consumiveis", label: "Consumíveis", icon: "🧪" },
+        { id: "ceramica", label: "Cerâmica", icon: "🏺" },
+        { id: "criaturas", label: "Criaturas", icon: "🐺" },
+      ];
+
+      const catalog =
+        window.DEV_ITEMS_CATALOG ||
+        (window.Game && window.Game.DEV_ITEMS_CATALOG) ||
+        [];
+
+      const filteredItems = J.useMemo(() => {
+        const query = searchTerm.trim().toLowerCase();
+        return catalog.filter((item) => {
+          const matchCat =
+            selectedCategory === "todos" || item.devCategory === selectedCategory;
+          if (!matchCat) return false;
+          if (!query) return true;
+          const name = (item.name || "").toLowerCase(),
+            slot = (item.slot || "").toLowerCase(),
+            desc = (item.description || "").toLowerCase(),
+            rarity = (item.rarity || "").toLowerCase();
+          return (
+            name.includes(query) ||
+            slot.includes(query) ||
+            desc.includes(query) ||
+            rarity.includes(query)
+          );
+        });
+      }, [catalog, searchTerm, selectedCategory]);
+
+      return h.jsxs("aside", {
+        id: "dev-inventory-sidebar",
+        className:
+          "w-full lg:w-84 xl:w-96 flex flex-col bg-slate-950/95 border-t lg:border-t-0 lg:border-l border-amber-500/30 text-slate-100 h-full max-h-[85vh] lg:max-h-full overflow-hidden shadow-2xl shrink-0",
+        children: [
+          // Header da Sidebar
+          h.jsxs("div", {
+            className:
+              "p-3 border-b border-amber-500/20 bg-slate-900/90 flex flex-col gap-2 shrink-0",
+            children: [
+              h.jsxs("div", {
+                className: "flex items-center justify-between",
+                children: [
+                  h.jsxs("div", {
+                    className: "flex items-center gap-2",
+                    children: [
+                      h.jsx("span", {
+                        className: "text-base select-none",
+                        children: "🛠️",
+                      }),
+                      h.jsxs("div", {
+                        children: [
+                          h.jsx("h3", {
+                            className:
+                              "text-xs font-bold font-serif uppercase tracking-wider text-amber-300",
+                            children: "Modo Dev: Itens de Teste",
+                          }),
+                          h.jsxs("span", {
+                            className: "text-[10px] text-slate-400 font-mono",
+                            children: [
+                              filteredItems.length,
+                              " de ",
+                              catalog.length,
+                              " itens",
+                            ],
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  h.jsx("span", {
+                    className:
+                      "text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 font-bold uppercase shadow-sm",
+                    children: "DEV ATIVO",
+                  }),
+                ],
+              }),
+
+              // Notificação rápida dentro da sidebar se houver
+              quickMsg &&
+                h.jsx("div", {
+                  className:
+                    "px-2 py-1 bg-amber-500/20 border border-amber-400/50 rounded text-[10px] text-amber-200 font-medium animate-pulse text-center",
+                  children: quickMsg,
+                }),
+
+              // Barra de Ações Rápidas
+              h.jsxs("div", {
+                className:
+                  "grid grid-cols-3 gap-1.5 pt-1 border-t border-white/5 text-[10px] font-bold font-mono",
+                children: [
+                  h.jsxs("button", {
+                    type: "button",
+                    onClick: () => {
+                      onAddGold && onAddGold(500);
+                      triggerMsg("💰 +500 Ouro adicionado!");
+                    },
+                    className:
+                      "px-2 py-1 rounded bg-amber-950/80 hover:bg-amber-900 border border-amber-500/40 text-amber-300 flex items-center justify-center gap-1 transition active:scale-95 cursor-pointer shadow-sm",
+                    title: "Adicionar +500 Ouro para testes",
+                    children: [
+                      h.jsx("span", { children: "💰" }),
+                      h.jsx("span", { children: "+500g" }),
+                    ],
+                  }),
+                  h.jsxs("button", {
+                    type: "button",
+                    onClick: () => {
+                      onEquipBackpack && onEquipBackpack();
+                      triggerMsg("🎒 Mochila +15 equipada (21 slots)!");
+                    },
+                    className:
+                      "px-2 py-1 rounded bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-300 flex items-center justify-center gap-1 transition active:scale-95 cursor-pointer shadow-sm",
+                    title: "Equipar Mochila de Couro Reforçada (+15 slots extras)",
+                    children: [
+                      h.jsx("span", { children: "🎒" }),
+                      h.jsx("span", { children: "Mochila" }),
+                    ],
+                  }),
+                  h.jsxs("button", {
+                    type: "button",
+                    onClick: () => {
+                      onClearBackpack && onClearBackpack();
+                      triggerMsg("🧹 Mochila esvaziada!");
+                    },
+                    className:
+                      "px-2 py-1 rounded bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-300 flex items-center justify-center gap-1 transition active:scale-95 cursor-pointer shadow-sm",
+                    title: "Limpar todos os itens da mochila",
+                    children: [
+                      h.jsx("span", { children: "🧹" }),
+                      h.jsx("span", { children: "Limpar" }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+
+          // Campo de busca e abas de categorias
+          h.jsxs("div", {
+            className:
+              "p-2.5 bg-slate-900/50 border-b border-white/5 flex flex-col gap-2 shrink-0",
+            children: [
+              h.jsxs("div", {
+                className: "relative w-full",
+                children: [
+                  h.jsx("input", {
+                    type: "text",
+                    placeholder: "🔍 Buscar nome, slot, efeito...",
+                    value: searchTerm,
+                    onChange: (ev) => setSearchTerm(ev.target.value),
+                    className:
+                      "w-full pl-2.5 pr-7 py-1.5 rounded-lg bg-black/60 border border-amber-500/30 text-xs text-amber-100 placeholder:text-slate-500 focus:outline-none focus:border-amber-400 font-sans shadow-inner",
+                  }),
+                  searchTerm &&
+                    h.jsx("button", {
+                      type: "button",
+                      onClick: () => setSearchTerm(""),
+                      className:
+                        "absolute right-2 top-1.5 text-xs text-slate-400 hover:text-white cursor-pointer",
+                      title: "Limpar busca",
+                      children: "×",
+                    }),
+                ],
+              }),
+              h.jsx("div", {
+                className:
+                  "flex items-center gap-1 overflow-x-auto pb-1 scrollbar-thin text-[10px]",
+                children: categories.map((cat) =>
+                  h.jsxs("button", {
+                    key: cat.id,
+                    type: "button",
+                    onClick: () => setSelectedCategory(cat.id),
+                    className: `px-2 py-1 rounded-md shrink-0 flex items-center gap-1 font-bold transition cursor-pointer ${
+                      selectedCategory === cat.id
+                        ? "bg-amber-600 text-white shadow-md border border-amber-400/60"
+                        : "bg-slate-900 text-slate-400 hover:text-slate-200 border border-white/5"
+                    }`,
+                    children: [
+                      h.jsx("span", { children: cat.icon }),
+                      h.jsx("span", { children: cat.label }),
+                    ],
+                  })
+                ),
+              }),
+            ],
+          }),
+
+          // Lista de Itens Rolável
+          h.jsx("div", {
+            className:
+              "flex-1 overflow-y-auto p-2.5 space-y-2 divide-y divide-white/5 scrollbar-thin",
+            children:
+              filteredItems.length === 0
+                ? h.jsxs("div", {
+                    className:
+                      "py-8 text-center text-slate-500 text-xs flex flex-col items-center gap-2",
+                    children: [
+                      h.jsx("span", { className: "text-2xl", children: "🔍" }),
+                      h.jsx("span", {
+                        children: "Nenhum item corresponde à busca.",
+                      }),
+                    ],
+                  })
+                : filteredItems.map((item) => {
+                    const rarityInfo = RARITIES[item.rarity] || RARITIES.comum;
+                    const slotLabel =
+                      item.slot && EQUIPMENT_SLOTS[item.slot]
+                        ? EQUIPMENT_SLOTS[item.slot].label
+                        : null;
+                    return h.jsxs("div", {
+                      key: item.id,
+                      className:
+                        "pt-2 first:pt-0 flex flex-col gap-1.5 p-2 rounded-xl bg-slate-900/40 hover:bg-slate-900/80 border border-white/5 hover:border-amber-500/30 transition group",
+                      children: [
+                        h.jsxs("div", {
+                          className: "flex items-start gap-2.5",
+                          children: [
+                            // Ícone
+                            h.jsx("div", {
+                              className:
+                                "w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 bg-slate-950 shadow-inner",
+                              style: {
+                                borderColor: item.color || "#38bdf8",
+                                boxShadow: `0 0 8px ${item.color || "#38bdf8"}30`,
+                              },
+                              children: h.jsx(ItemIcon, {
+                                item: item,
+                                size: 28,
+                              }),
+                            }),
+                            // Informações
+                            h.jsxs("div", {
+                              className: "flex-1 min-w-0",
+                              children: [
+                                h.jsxs("div", {
+                                  className:
+                                    "flex items-center justify-between gap-1",
+                                  children: [
+                                    h.jsx("h5", {
+                                      className:
+                                        "text-xs font-bold text-slate-100 truncate group-hover:text-amber-300 transition",
+                                      title: item.name,
+                                      children: item.name,
+                                    }),
+                                    h.jsx("span", {
+                                      className: `text-[9px] font-bold uppercase tracking-wider px-1 rounded ${rarityInfo.text}`,
+                                      children: item.rarity,
+                                    }),
+                                  ],
+                                }),
+                                h.jsxs("div", {
+                                  className:
+                                    "flex items-center gap-1.5 text-[9px] text-slate-400 mt-0.5",
+                                  children: [
+                                    slotLabel
+                                      ? h.jsxs("span", {
+                                          className:
+                                            "text-sky-300 font-semibold truncate",
+                                          children: ["📍 ", slotLabel],
+                                        })
+                                      : h.jsx("span", {
+                                          className:
+                                            "capitalize truncate text-slate-400",
+                                          children: item.categoryType,
+                                        }),
+                                    h.jsx("span", {
+                                      className: "text-slate-600",
+                                      children: "•",
+                                    }),
+                                    h.jsxs("span", {
+                                      className:
+                                        "text-amber-400 font-mono font-bold",
+                                      children: [item.value || 10, "g"],
+                                    }),
+                                  ],
+                                }),
+                                // Atributos
+                                item.stats &&
+                                  h.jsxs("div", {
+                                    className:
+                                      "flex flex-wrap items-center gap-1 mt-1 font-mono text-[9px]",
+                                    children: [
+                                      item.stats.attack
+                                        ? h.jsxs("span", {
+                                            className:
+                                              "px-1 rounded bg-rose-950/60 text-rose-300 border border-rose-500/30",
+                                            children: [
+                                              "⚔️ +",
+                                              item.stats.attack,
+                                            ],
+                                          })
+                                        : null,
+                                      item.stats.defense
+                                        ? h.jsxs("span", {
+                                            className:
+                                              "px-1 rounded bg-sky-950/60 text-sky-300 border border-sky-500/30",
+                                            children: [
+                                              "🛡️ +",
+                                              item.stats.defense,
+                                            ],
+                                          })
+                                        : null,
+                                      item.stats.speedBonusPercent
+                                        ? h.jsxs("span", {
+                                            className:
+                                              "px-1 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-500/30",
+                                            children: [
+                                              "💨 +",
+                                              item.stats.speedBonusPercent,
+                                              "%",
+                                            ],
+                                          })
+                                        : null,
+                                      item.stats.staminaBonus
+                                        ? h.jsxs("span", {
+                                            className:
+                                              "px-1 rounded bg-purple-950/60 text-purple-300 border border-purple-500/30",
+                                            children: [
+                                              "⚡ +",
+                                              item.stats.staminaBonus,
+                                            ],
+                                          })
+                                        : null,
+                                      item.stats.lightRadiusBonus
+                                        ? h.jsxs("span", {
+                                            className:
+                                              "px-1 rounded bg-amber-950/60 text-amber-300 border border-amber-500/30",
+                                            children: [
+                                              "💡 +",
+                                              item.stats.lightRadiusBonus,
+                                              "%",
+                                            ],
+                                          })
+                                        : null,
+                                    ],
+                                  }),
+                              ],
+                            }),
+                          ],
+                        }),
+                        // Botões de ação
+                        h.jsxs("div", {
+                          className:
+                            "flex items-center gap-1.5 justify-end pt-1 border-t border-white/5 text-[10px]",
+                          children: [
+                            h.jsxs("button", {
+                              type: "button",
+                              onClick: () => {
+                                onAddItem && onAddItem(item, 1);
+                                triggerMsg(`+1 ${item.name}!`);
+                              },
+                              className:
+                                "px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white border border-amber-500/30 font-bold transition active:scale-95 cursor-pointer shadow-sm",
+                              title: "Adicionar 1 unidade à mochila",
+                              children: [
+                                h.jsx("span", { children: "+" }),
+                                "1",
+                              ],
+                            }),
+                            h.jsxs("button", {
+                              type: "button",
+                              onClick: () => {
+                                onAddItem && onAddItem(item, 10);
+                                triggerMsg(`+10 ${item.name}!`);
+                              },
+                              className:
+                                "px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 hover:text-white border border-sky-500/30 font-bold transition active:scale-95 cursor-pointer shadow-sm",
+                              title: "Adicionar lote de 10 unidades à mochila",
+                              children: [
+                                h.jsx("span", { children: "+" }),
+                                "10",
+                              ],
+                            }),
+                            item.isEquippable &&
+                              item.slot &&
+                              h.jsxs("button", {
+                                type: "button",
+                                onClick: () => {
+                                  onEquipItem && onEquipItem(item);
+                                  triggerMsg(`Equipado: ${item.name}!`);
+                                },
+                                className:
+                                  "px-2.5 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold transition active:scale-95 cursor-pointer shadow-sm border border-amber-400/50 flex items-center gap-1",
+                                title: `Equipar diretamente no slot ${slotLabel || item.slot}`,
+                                children: [
+                                  h.jsx("span", { children: "⚡" }),
+                                  h.jsx("span", { children: "Equipar" }),
+                                ],
+                              }),
+                          ],
+                        }),
+                      ],
+                    });
+                  }),
+          }),
+        ],
+      });
+    },
     InventoryModal = ({
       isOpen: e,
       onClose: t,
@@ -815,8 +1238,83 @@
       onInvertBeltSlot: j,
       onCookingPot: Aa,
       onOpenCookingModal: Ra = null,
+      devMode: devModeProp = false,
+      onDevAddItem = null,
+      onDevEquipItem = null,
+      onDevAddGold = null,
+      onDevClearBackpack = null,
+      onDevEquipBackpack = null,
     }) => {
       var Sa, oa, ga;
+      const isDev = Boolean(
+        typeof devModeProp === "boolean"
+          ? devModeProp
+          : ((typeof window !== "undefined" && window.__devMode) ||
+            (typeof localStorage !== "undefined" &&
+              localStorage.getItem("rpg2d_dev_mode") === "1"))
+      );
+      const [devSidebarOpen, setDevSidebarOpen] = J.useState(true);
+
+      const handleDevAddItem = (item, count = 1) => {
+        if (onDevAddItem) {
+          onDevAddItem(item, count);
+        } else {
+          window.dispatchEvent(
+            new CustomEvent("rpg2d_dev_add_item", {
+              detail: { item, count },
+            })
+          );
+        }
+      };
+
+      const handleDevEquipItem = (item) => {
+        if (onDevEquipItem) {
+          onDevEquipItem(item);
+        } else if (u) {
+          u(item);
+        }
+      };
+
+      const handleDevAddGold = (amount) => {
+        if (onDevAddGold) {
+          onDevAddGold(amount);
+        } else {
+          window.dispatchEvent(
+            new CustomEvent("rpg2d_dev_add_gold", { detail: { amount } })
+          );
+        }
+      };
+
+      const handleDevClearBackpack = () => {
+        if (onDevClearBackpack) {
+          onDevClearBackpack();
+        } else {
+          window.dispatchEvent(new CustomEvent("rpg2d_dev_clear_backpack"));
+        }
+      };
+
+      const handleDevEquipBackpack = () => {
+        if (onDevEquipBackpack) {
+          onDevEquipBackpack();
+        } else {
+          const backpackItem = {
+            id: `dev_backpack_${Date.now()}`,
+            name: "Mochila de Couro Reforçada",
+            slot: "mochila",
+            isEquippable: true,
+            categoryType: "equipment",
+            rarity: "incomum",
+            description:
+              "Mochila reforçada com correias resistentes. Concede +15 slots de itens (+15 slots anil, total 21)!",
+            stats: { defense: 3, staminaBonus: 35 },
+            icon: "Briefcase",
+            color: "#6366f1",
+            value: 90,
+          };
+          if (u) u(backpackItem);
+        }
+      };
+
       const [P, A] = J.useState(null),
         [x, M] = J.useState("all"),
         [$, z] = J.useState("itens"),
@@ -1229,52 +1727,79 @@
         children: h.jsxs("div", {
           id: "inventory-panel",
           className:
-            "relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl border border-amber-500/30 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 text-slate-100 shadow-2xl overflow-hidden",
+            `relative w-full ${isDev && devSidebarOpen ? "max-w-6xl xl:max-w-7xl flex flex-col lg:flex-row" : "max-w-4xl flex flex-col"} max-h-[92vh] rounded-2xl border border-amber-500/30 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 text-slate-100 shadow-2xl overflow-hidden`,
           children: [
             h.jsxs("div", {
-              className:
-                "flex items-center justify-between px-4 sm:px-6 py-3 border-b border-amber-500/20 bg-slate-950/90",
+              className: "flex-1 flex flex-col min-w-0 overflow-hidden",
               children: [
                 h.jsxs("div", {
-                  className: "flex items-center gap-3",
-                  children: [
-                    h.jsx("div", {
-                      className:
-                        "flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20 border border-amber-400/40 text-amber-400",
-                      children: h.jsx(uo, { className: "h-4 w-4" }),
-                    }),
-                    h.jsx("div", {
-                      children: h.jsx("h2", {
-                        className:
-                          "text-sm sm:text-base font-bold text-amber-100 tracking-wider uppercase font-serif",
-                        children: "Inventário do Personagem & Forja",
-                      }),
-                    }),
-                  ],
-                }),
-                h.jsxs("div", {
-                  className: "flex items-center gap-3",
+                  className:
+                    "flex items-center justify-between px-4 sm:px-6 py-3 border-b border-amber-500/20 bg-slate-950/90",
                   children: [
                     h.jsxs("div", {
-                      className:
-                        "flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-950/60 border border-amber-500/40 text-amber-300 text-xs font-bold font-mono shadow-inner",
+                      className: "flex items-center gap-3",
                       children: [
-                        h.jsx(Iu, { className: "h-4 w-4 text-amber-400" }),
-                        h.jsxs("span", { children: [g, " Ouro"] }),
+                        h.jsx("div", {
+                          className:
+                            "flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20 border border-amber-400/40 text-amber-400",
+                          children: h.jsx(uo, { className: "h-4 w-4" }),
+                        }),
+                        h.jsx("div", {
+                          children: h.jsx("h2", {
+                            className:
+                              "text-sm sm:text-base font-bold text-amber-100 tracking-wider uppercase font-serif",
+                            children: "Inventário do Personagem & Forja",
+                          }),
+                        }),
                       ],
                     }),
-                    h.jsx("button", {
-                      id: "inventory-close-btn",
-                      onClick: t,
-                      className:
-                        "p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition border border-white/10",
-                      title: "Fechar (ESC ou [I])",
-                      children: h.jsx(mi, { className: "h-5 w-5" }),
+                    h.jsxs("div", {
+                      className: "flex items-center gap-3",
+                      children: [
+                        isDev &&
+                          h.jsxs("button", {
+                            type: "button",
+                            onClick: () => setDevSidebarOpen(!devSidebarOpen),
+                            className: `px-2.5 py-1 rounded-lg text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer border ${
+                              devSidebarOpen
+                                ? "bg-amber-500/20 text-amber-300 border-amber-400/50 shadow-inner"
+                                : "bg-slate-800 text-slate-400 border-white/10 hover:text-white"
+                            }`,
+                            title: "Alternar Sidebar de Itens (Modo Dev)",
+                            children: [
+                              h.jsx("span", { children: "🛠️" }),
+                              h.jsx("span", {
+                                className: "hidden sm:inline",
+                                children: "Sidebar Dev:",
+                              }),
+                              h.jsx("span", {
+                                className: devSidebarOpen
+                                  ? "text-emerald-400 font-bold"
+                                  : "text-slate-400",
+                                children: devSidebarOpen ? "ON" : "OFF",
+                              }),
+                            ],
+                          }),
+                        h.jsxs("div", {
+                          className:
+                            "flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-950/60 border border-amber-500/40 text-amber-300 text-xs font-bold font-mono shadow-inner",
+                          children: [
+                            h.jsx(Iu, { className: "h-4 w-4 text-amber-400" }),
+                            h.jsxs("span", { children: [g, " Ouro"] }),
+                          ],
+                        }),
+                        h.jsx("button", {
+                          id: "inventory-close-btn",
+                          onClick: t,
+                          className:
+                            "p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition border border-white/10 cursor-pointer",
+                          title: "Fechar (ESC ou [I])",
+                          children: h.jsx(mi, { className: "h-5 w-5" }),
+                        }),
+                      ],
                     }),
                   ],
                 }),
-              ],
-            }),
             h.jsxs("div", {
               className:
                 "grid grid-cols-5 gap-1.5 px-4 sm:px-6 py-2 bg-slate-950/60 border-b border-white/5 text-xs",
@@ -2503,8 +3028,21 @@
             }),
           ],
         }),
-      });
-    },
+        isDev &&
+          devSidebarOpen &&
+          h.jsx(DevItemSidebar, {
+            onAddItem: handleDevAddItem,
+            onEquipItem: handleDevEquipItem,
+            onAddGold: handleDevAddGold,
+            onClearBackpack: handleDevClearBackpack,
+            onEquipBackpack: handleDevEquipBackpack,
+            backpackCount: o.length,
+            backpackMax: I,
+          }),
+      ],
+    }),
+  });
+},
     o1 = ({
       spearItem: e,
       biomeName: t,
