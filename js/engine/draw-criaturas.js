@@ -452,27 +452,93 @@
       e.fillRect(0.4 * t, 1.5 * t, 0.6 * t, 1 * t));
   }
   function fb(e, t, l) {
-    ((e.fillStyle = "#1e293b"),
-      e.fillRect(-5.5 * t, -5 * t, 11 * t, 11 * t),
-      (e.fillStyle = "#334155"),
-      e.fillRect(-4 * t, -7.5 * t, 8 * t, 3 * t));
-    const o = 0.95;
-    ((e.strokeStyle = `rgba(249, 115, 22, ${o})`),
-      (e.lineWidth = 1.4 * t),
-      (e.lineCap = "round"),
-      e.beginPath(),
-      e.moveTo(-3.5 * t, -4 * t),
-      e.lineTo(-1 * t, -1 * t),
-      e.lineTo(2.5 * t, -2 * t),
-      e.lineTo(1 * t, 3.5 * t),
-      e.lineTo(-3 * t, 4.5 * t),
-      e.stroke(),
-      (e.strokeStyle = "#475569"),
-      (e.lineWidth = 1 * t),
-      e.strokeRect(-5.5 * t, -5 * t, 11 * t, 11 * t),
-      (e.fillStyle = "#fef08a"),
-      e.fillRect(-3 * t, -6.5 * t, 2 * t, 1.4 * t),
-      e.fillRect(1 * t, -6.5 * t, 2 * t, 1.4 * t));
+    // Sombra suave da base
+    e.fillStyle = "rgba(15, 23, 42, 0.45)";
+    e.beginPath();
+    e.ellipse(0, 4.5 * t, 7 * t, 2.6 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Ombreiras titânicas de basalto
+    e.fillStyle = "#18181b";
+    e.beginPath();
+    e.moveTo(-7.5 * t, -2.5 * t);
+    e.lineTo(-4.5 * t, -6 * t);
+    e.lineTo(4.5 * t, -6 * t);
+    e.lineTo(7.5 * t, -2.5 * t);
+    e.lineTo(5.5 * t, 3.5 * t);
+    e.lineTo(-5.5 * t, 3.5 * t);
+    e.closePath();
+    e.fill();
+    e.strokeStyle = "#3f3f46";
+    e.lineWidth = 0.8 * t;
+    e.stroke();
+
+    // Peitoral de rocha com núcleo incandescente
+    e.fillStyle = "#27272a";
+    e.beginPath();
+    e.moveTo(-4.5 * t, -3.5 * t);
+    e.lineTo(4.5 * t, -3.5 * t);
+    e.lineTo(3.5 * t, 2.5 * t);
+    e.lineTo(-3.5 * t, 2.5 * t);
+    e.closePath();
+    e.fill();
+
+    // Núcleo de lava no peito
+    const coreGrad = e.createRadialGradient(0, 0, 0.5 * t, 0, 0, 3 * t);
+    coreGrad.addColorStop(0, "#fef08a");
+    coreGrad.addColorStop(0.4, "#f97316");
+    coreGrad.addColorStop(1, "rgba(220, 38, 38, 0)");
+    e.fillStyle = coreGrad;
+    e.beginPath();
+    e.arc(0, 0, 3 * t, 0, Math.PI * 2);
+    e.fill();
+
+    // Fenda rúnica em Y no peito
+    e.strokeStyle = "#fef08a";
+    e.lineWidth = 1.3 * t;
+    e.lineCap = "round";
+    e.beginPath();
+    e.moveTo(-2.5 * t, -2 * t);
+    e.lineTo(0, 0);
+    e.lineTo(2.5 * t, -2 * t);
+    e.moveTo(0, 0);
+    e.lineTo(0, 2.5 * t);
+    e.stroke();
+
+    // Cabeça de rocha entalhada / Máscara
+    e.fillStyle = "#3f3f46";
+    e.beginPath();
+    e.moveTo(-3.5 * t, -8 * t);
+    e.lineTo(3.5 * t, -8 * t);
+    e.lineTo(4.8 * t, -4 * t);
+    e.lineTo(2.5 * t, -1.2 * t);
+    e.lineTo(-2.5 * t, -1.2 * t);
+    e.lineTo(-4.8 * t, -4 * t);
+    e.closePath();
+    e.fill();
+    e.strokeStyle = "#18181b";
+    e.lineWidth = 0.9 * t;
+    e.stroke();
+
+    // Placa de testa de obsidiana
+    e.fillStyle = "#18181b";
+    e.fillRect(-2.5 * t, -7.5 * t, 5 * t, 2 * t);
+
+    // Fenda incandescente na testa
+    e.strokeStyle = "#f97316";
+    e.lineWidth = 0.8 * t;
+    e.beginPath();
+    e.moveTo(0, -7.2 * t);
+    e.lineTo(0, -5.2 * t);
+    e.stroke();
+
+    // Olhos flamejantes de magma
+    e.fillStyle = "#fef08a";
+    e.fillRect(-3 * t, -4.8 * t, 1.8 * t, 1.3 * t);
+    e.fillRect(1.2 * t, -4.8 * t, 1.8 * t, 1.3 * t);
+    e.fillStyle = "#ffffff";
+    e.fillRect(-2.4 * t, -4.5 * t, 0.8 * t, 0.7 * t);
+    e.fillRect(1.6 * t, -4.5 * t, 0.8 * t, 0.7 * t);
   }
   function mb(e, t, l, o, u, m, c) {
     (e.save(), e.translate(t, l));

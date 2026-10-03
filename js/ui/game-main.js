@@ -1218,40 +1218,101 @@
         (E) => {
           const D = o.current,
             Q = BIOMES[E];
-          if ((c.current.reset(), Q.category === "cave" && !D.isUnderground)) {
+          if (!D || !Q) return;
+          c.current.reset();
+          const isCave = Q.category === "cave" || E.startsWith("CAVE_");
+          if (isCave && !D.isUnderground) {
             const ge = Math.floor(f.current.x / D.tileSize),
               re = Math.floor(f.current.y / D.tileSize);
-            (D.enterCave(ge, re, f.current.x, f.current.y),
-              m.current.playCaveEnter());
-          } else if (Q.category !== "cave" && D.isUnderground) {
+            D.enterCave(ge, re, f.current.x, f.current.y);
+            m.current.playCaveEnter();
+          } else if (!isCave && D.isUnderground) {
             const ge = D.exitCave();
-            ((f.current.x = ge.x),
-              (f.current.y = ge.y),
-              m.current.playCaveExit());
+            f.current.x = ge.x;
+            f.current.y = ge.y;
+            m.current.playCaveExit();
           }
-          let q = !1,
-            F = 0,
-            ie = 0;
-          for (let ge = 0; ge <= 650; ge += 15) {
-            for (let re = 0; re < Math.PI * 2; re += Math.PI / 12) {
-              const me = Math.round(Math.cos(re) * ge),
-                ce = Math.round(Math.sin(re) * ge),
-                Re = D.getTile(me, ce);
-              if (Re.biome.id === E && Re.biome.passable) {
-                ((F = me * D.tileSize), (ie = ce * D.tileSize), (q = !0));
-                break;
+          const isImpassable = !Q.passable;
+          const originTx = Math.floor(f.current.x / D.tileSize);
+          const originTy = Math.floor(f.current.y / D.tileSize);
+
+          let found = !1,
+            targetPixelX = 0,
+            targetPixelY = 0,
+            foundDist = 0;
+
+          const tiers = [
+            { minR: 0, maxR: 600, rStep: 10, arcStep: 12 },
+            { minR: 600, maxR: 2000, rStep: 20, arcStep: 20 },
+            { minR: 2000, maxR: 5000, rStep: 35, arcStep: 35 }
+          ];
+
+          for (const tier of tiers) {
+            for (let r = tier.minR; r <= tier.maxR; r += tier.rStep) {
+              if (r === 0) {
+                const tile = D.getTile(originTx, originTy);
+                if (tile.biome.id === E && (isImpassable || tile.biome.passable)) {
+                  targetPixelX = originTx * D.tileSize;
+                  targetPixelY = originTy * D.tileSize;
+                  foundDist = 0;
+                  found = !0;
+                  break;
+                }
+                continue;
               }
+              const steps = Math.max(16, Math.floor((2 * Math.PI * r) / tier.arcStep));
+              for (let i = 0; i < steps; i++) {
+                const angle = (i / steps) * 2 * Math.PI;
+                const me = Math.round(originTx + Math.cos(angle) * r);
+                const ce = Math.round(originTy + Math.sin(angle) * r);
+                const Re = D.getTile(me, ce);
+                if (Re.biome.id === E) {
+                  if (E === "CAVE_WALL") {
+                    let foundFloor = !1;
+                    for (let dx = -1; dx <= 1 && !foundFloor; dx++) {
+                      for (let dy = -1; dy <= 1 && !foundFloor; dy++) {
+                        const adj = D.getTile(me + dx, ce + dy);
+                        if (adj.biome.passable) {
+                          targetPixelX = (me + dx) * D.tileSize;
+                          targetPixelY = (ce + dy) * D.tileSize;
+                          foundFloor = !0;
+                        }
+                      }
+                    }
+                    if (!foundFloor) {
+                      targetPixelX = me * D.tileSize;
+                      targetPixelY = ce * D.tileSize;
+                    }
+                    foundDist = r;
+                    found = !0;
+                    break;
+                  }
+                  if (isImpassable || Re.biome.passable) {
+                    targetPixelX = me * D.tileSize;
+                    targetPixelY = ce * D.tileSize;
+                    foundDist = r;
+                    found = !0;
+                    break;
+                  }
+                }
+              }
+              if (found) break;
             }
-            if (q) break;
+            if (found) break;
           }
-          q
-            ? ((f.current.x = F),
-              (f.current.y = ie),
-              ve(`Teletransportado para ${Q.namePt}!`),
-              m.current.playShrineActivation())
-            : ve(`Explorando o reino procurando ${Q.namePt}...`);
+
+          if (found) {
+            f.current.x = targetPixelX;
+            f.current.y = targetPixelY;
+            Oa.current = { x: 0, y: 0 };
+            D.clearTileCache();
+            ve(`Teletransportado para ${Q.namePt} (${foundDist} blocos de distância)!`);
+            m.current.playShrineActivation();
+          } else {
+            ve(`Nenhum ${Q.namePt} localizado no raio de 5000 blocos.`);
+          }
         },
-        [ve, z],
+        [ve],
       ),
       ut = J.useCallback(
         (E, D) => {
@@ -3082,32 +3143,6 @@
             $e = g.current,
             da = y.current,
             Ye = Math.min(0.1, (Je - la) / 1e3);
-          if (window.__devMode) {
-            if (window.__godMode) {
-              he.hp = he.maxHp || 100;
-              he.isDead = !1;
-            }
-            if (window.__infiniteStamina) {
-              he.stamina = he.maxStamina || 100;
-              he.isExhausted = !1;
-            }
-            if (window.__superSpeed) {
-              he.speed = 6.8;
-            } else if (he.speed === 6.8) {
-              he.speed = 3.4;
-            }
-            if (window.__showTelemetry) {
-              window.__rpgTelemetry = {
-                x: Math.round(he.x),
-                y: Math.round(he.y),
-                tx: Math.floor(he.x / 32),
-                ty: Math.floor(he.y / 32),
-                biome: w?.name || "",
-                hp: Math.round(he.hp),
-                stamina: Math.round(he.stamina || 100),
-              };
-            }
-          }
           const isHoldingPebble = pebbleKeyRef.current.pressedAt > 0;
           const handHasPebble = [Da.current.mao_esquerda, Da.current.mao_direita].some((item) => {
             const name = (item?.name || "").toLowerCase();
@@ -3680,6 +3715,7 @@
             onCookingPot: kG,
             savedCampfire: $a,
             onUseBeltSlot: Ur,
+            devMode: props && props.devMode,
           }),
           h.jsx(InventoryModal, {
             isOpen: qr,

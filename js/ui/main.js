@@ -16,13 +16,10 @@ function App() {
     }
   });
 
-  // Atualiza flags globais e botão de colisores
+  // Atualiza flags globais
   J.useEffect(() => {
     window.__inGame = inGame;
     window.__devMode = devMode;
-    if (typeof window.updateColliderBtnVisibility === "function") {
-      window.updateColliderBtnVisibility();
-    }
   }, [inGame, devMode]);
 
   const handleStartGame = J.useCallback(() => {
@@ -38,7 +35,6 @@ function App() {
   }, []);
 
   const MenuComponent = window.MenuScreen || (window.Game && window.Game.MenuScreen);
-  const DevBarComponent = window.DevFloatingBar || (window.Game && window.Game.DevFloatingBar);
 
   return h.jsx("main", {
     className:
@@ -51,21 +47,17 @@ function App() {
               onReturnToMenu: handleReturnToMenu,
               devMode: devMode,
             }),
-            devMode && DevBarComponent
-              ? h.jsx(DevBarComponent, {
-                  onReturnToMenu: handleReturnToMenu,
-                })
-              : h.jsx("button", {
-                  type: "button",
-                  onClick: handleReturnToMenu,
-                  title: "Voltar ao Menu Principal (Esc)",
-                  className:
-                    "fixed top-[calc(112px+var(--sat,0px))] left-[calc(10px+var(--sal,0px))] z-40 px-3 py-1.5 bg-slate-900/85 hover:bg-slate-800 text-amber-300 hover:text-amber-200 text-xs font-bold rounded-xl border border-amber-500/40 backdrop-blur shadow-lg transition-all flex items-center gap-1.5 cursor-pointer pointer-events-auto active:scale-95",
-                  children: [
-                    h.jsx("span", { children: "🏰" }),
-                    h.jsx("span", { children: "Menu" }),
-                  ],
-                }),
+            h.jsx("button", {
+              type: "button",
+              onClick: handleReturnToMenu,
+              title: "Voltar ao Menu Principal (Esc)",
+              className:
+                "fixed top-[calc(112px+var(--sat,0px))] left-[calc(10px+var(--sal,0px))] z-40 px-3 py-1.5 bg-slate-900/85 hover:bg-slate-800 text-amber-300 hover:text-amber-200 text-xs font-bold rounded-xl border border-amber-500/40 backdrop-blur shadow-lg transition-all flex items-center gap-1.5 cursor-pointer pointer-events-auto active:scale-95",
+              children: [
+                h.jsx("span", { children: "🏰" }),
+                h.jsx("span", { children: "Menu" }),
+              ],
+            }),
           ],
         })
       : h.jsx(MenuComponent, {
