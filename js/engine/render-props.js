@@ -1899,58 +1899,58 @@
     e.fillStyle = "rgba(241, 245, 249, 0.22)";
     e.fillRect(leftX + 5 * t, platMidY - 2.7 * t, fullW - 10 * t, 1.2 * t);
 
-    // 4. Bordas / Escarpas nas laterais que dão para FORA do bioma (Norte, Oeste, Leste, Sul)
-    // Se o Norte é fora do bioma (!nT), desenha a escarpa traseira norte do platô elevado
+    // 4. Bordas / Escarpas fininhas nas laterais que dão para FORA do bioma (Norte, Oeste, Leste, Sul)
+    // Se o Norte é fora do bioma (!nT), desenha a escarpa traseira norte fininha do platô elevado
     if (!nT) {
-      const northCliffH = 12 * t;
-      const nGrad = e.createLinearGradient(0, platBackY - northCliffH, 0, platBackY + 4 * t);
+      const northCliffH = 6 * t;
+      const nGrad = e.createLinearGradient(0, platBackY - northCliffH, 0, platBackY + 2 * t);
       nGrad.addColorStop(0, "#0f172a");
       nGrad.addColorStop(0.7, "#334155");
       nGrad.addColorStop(1, "#475569");
       e.fillStyle = nGrad;
-      e.fillRect(leftX, platBackY - northCliffH, fullW, northCliffH + 2 * t);
+      e.fillRect(leftX, platBackY - northCliffH, fullW, northCliffH + 1 * t);
       // Crista iluminada norte do platô
       e.strokeStyle = "#e2e8f0";
-      e.lineWidth = 2.2 * t;
+      e.lineWidth = 1.8 * t;
       e.beginPath();
-      e.moveTo(leftX, platBackY + 1 * t);
-      e.lineTo(rightX, platBackY + 1 * t);
+      e.moveTo(leftX, platBackY + 0.5 * t);
+      e.lineTo(rightX, platBackY + 0.5 * t);
       e.stroke();
     }
 
-    // Se o Oeste é fora do bioma (!nL), desenha a escarpa lateral esquerda contínua
+    // Se o Oeste é fora do bioma (!nL), desenha a escarpa lateral esquerda fininha contínua
     if (!nL) {
-      const westCliffW = 12 * t;
-      const wGrad = e.createLinearGradient(leftX - westCliffW, 0, leftX + 3 * t, 0);
+      const westCliffW = 6 * t;
+      const wGrad = e.createLinearGradient(leftX - westCliffW, 0, leftX + 2 * t, 0);
       wGrad.addColorStop(0, "#0f172a");
       wGrad.addColorStop(0.65, "#334155");
       wGrad.addColorStop(1, "#475569");
       e.fillStyle = wGrad;
-      e.fillRect(leftX - westCliffW, platBackY, westCliffW + 2 * t, (nB ? platFrontY : baseY) - platBackY);
+      e.fillRect(leftX - westCliffW, platBackY, westCliffW + 1 * t, (nB ? platFrontY : baseY) - platBackY);
       // Crista iluminada esquerda do platô
       e.strokeStyle = "#e2e8f0";
-      e.lineWidth = 2.2 * t;
+      e.lineWidth = 1.8 * t;
       e.beginPath();
-      e.moveTo(leftX + 1 * t, platBackY);
-      e.lineTo(leftX + 1 * t, platFrontY);
+      e.moveTo(leftX + 0.5 * t, platBackY);
+      e.lineTo(leftX + 0.5 * t, platFrontY);
       e.stroke();
     }
 
-    // Se o Leste é fora do bioma (!nR), desenha a escarpa lateral direita contínua
+    // Se o Leste é fora do bioma (!nR), desenha a escarpa lateral direita fininha contínua
     if (!nR) {
-      const eastCliffW = 12 * t;
-      const eGrad = e.createLinearGradient(rightX - 3 * t, 0, rightX + eastCliffW, 0);
+      const eastCliffW = 6 * t;
+      const eGrad = e.createLinearGradient(rightX - 2 * t, 0, rightX + eastCliffW, 0);
       eGrad.addColorStop(0, "#475569");
       eGrad.addColorStop(0.35, "#1e293b");
       eGrad.addColorStop(1, "#0f172a");
       e.fillStyle = eGrad;
-      e.fillRect(rightX - 2 * t, platBackY, eastCliffW + 2 * t, (nB ? platFrontY : baseY) - platBackY);
+      e.fillRect(rightX - 1 * t, platBackY, eastCliffW + 1 * t, (nB ? platFrontY : baseY) - platBackY);
       // Crista direita do platô
       e.strokeStyle = "#cbd5e1";
-      e.lineWidth = 2 * t;
+      e.lineWidth = 1.8 * t;
       e.beginPath();
-      e.moveTo(rightX - 1 * t, platBackY);
-      e.lineTo(rightX - 1 * t, platFrontY);
+      e.moveTo(rightX - 0.5 * t, platBackY);
+      e.lineTo(rightX - 0.5 * t, platFrontY);
       e.stroke();
     }
 

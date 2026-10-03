@@ -1075,17 +1075,12 @@
       };
       if (K.id === BiomeId.MOUNTAIN_25D) {
         // Todo o bioma fica em um único nível uniforme (sem sub-níveis nem degraus internos),
-        // cercado apenas pelo paredão perimetral ao redor do bioma.
-        let isPerimeterBorder = !1;
-        for (let dy = -2; dy <= 2; dy++) {
-          for (let dx = -2; dx <= 2; dx++) {
-            if (Math.abs(dx) + Math.abs(dy) <= 2 && !this._isMountain25DBiomeAt(t + dx, l + dy)) {
-              isPerimeterBorder = !0;
-              break;
-            }
-          }
-          if (isPerimeterBorder) break;
-        }
+        // cercado apenas pelo paredão perimetral fininho (1 tile) ao redor do bioma.
+        const isPerimeterBorder =
+          !this._isMountain25DBiomeAt(t - 1, l) ||
+          !this._isMountain25DBiomeAt(t + 1, l) ||
+          !this._isMountain25DBiomeAt(t, l - 1) ||
+          !this._isMountain25DBiomeAt(t, l + 1);
         const isWall = isPerimeterBorder;
 
         se.mountainTier = 1;
