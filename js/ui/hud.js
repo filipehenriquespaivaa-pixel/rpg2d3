@@ -59,9 +59,9 @@
         ? devModeProp
         : (typeof window !== "undefined" && window.__devMode)
     );
-    const [be, Me] = J.useState(!1),
-      [Te, Fe] = J.useState(() => window.innerWidth > 768),
-      [_e, xe] = J.useState(() => window.innerWidth > 1024),
+    const [be, Me] = J.useState(() => isDevMode || !1),
+      [Te, Fe] = J.useState(() => isDevMode || window.innerWidth > 768),
+      [_e, xe] = J.useState(() => isDevMode || window.innerWidth > 1024),
       [Ue, $a] = J.useState(!0),
       [Ie, ee] = J.useState(!1),
       [He, Sa] = J.useState(!1),
@@ -317,13 +317,16 @@
       ]);
     J.useEffect(() => {
       const We = () => {
-        window.innerWidth < 768 && (Fe(!1), xe(!1));
+        if (!isDevMode && window.innerWidth < 768) {
+          Fe(!1);
+          xe(!1);
+        }
       };
       return (
         window.addEventListener("resize", We),
         () => window.removeEventListener("resize", We)
       );
-    }, []);
+    }, [isDevMode]);
     const Lo = () => {
         const We = (typeof Bb === "function" ? Bb : (typeof buildStandaloneHtml === "function" ? buildStandaloneHtml : () => ("")))({
             seed: l,
@@ -559,7 +562,7 @@
                       }),
                     ],
                   }),
-                  Te &&
+                  (Te || isDevMode) &&
                     h.jsxs("div", {
                       className:
                         "flex flex-col gap-1.5 pt-1.5 border-t border-white/10 text-xs animate-in fade-in duration-150",
@@ -968,6 +971,37 @@
                               className: `p-1 rounded text-xs transition ml-1 ${v ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"}`,
                               title: "Alternar Grade de Tiles",
                               children: h.jsx(zp, { className: "h-3 w-3" }),
+                            }),
+                          ],
+                        }),
+                        h.jsxs("div", {
+                          className:
+                            "flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-lg border border-sky-500/30 w-full justify-between",
+                          children: [
+                            h.jsxs("div", {
+                              className:
+                                "flex items-center gap-1 text-[10px] text-sky-300 font-semibold shrink-0",
+                              children: [
+                                h.jsx(Vp, { className: "h-3 w-3 text-sky-400" }),
+                                h.jsx("span", { children: "Bioma:" }),
+                              ],
+                            }),
+                            h.jsx("select", {
+                              id: "hud-dev-biome-select",
+                              value: (e && e.id) || "",
+                              onChange: (We) => {
+                                if (We.target.value && p) p(We.target.value);
+                              },
+                              className:
+                                "bg-slate-800 text-sky-100 text-[10px] font-medium rounded px-1.5 py-0.5 border border-sky-400/40 cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-400 max-w-[130px] truncate",
+                              title: "Teleportar para Bioma (Modo Desenvolvedor)",
+                              children: Object.values(BIOMES).map((We) =>
+                                h.jsx(
+                                  "option",
+                                  { value: We.id, children: We.namePt },
+                                  We.id,
+                                ),
+                              ),
                             }),
                           ],
                         }),
