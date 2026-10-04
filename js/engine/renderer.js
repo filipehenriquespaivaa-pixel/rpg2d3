@@ -1515,9 +1515,21 @@
           case "greek_furniture":
             drawGreekFurniture(c, f, t.subType || 0);
             break;
-          case "greek_door":
-            drawGreekDoor(c, f, t.subType === 1, !!t.opened);
+          case "greek_door": {
+            const eng = this.engine,
+              tx = u.tx,
+              ty = u.ty,
+              hasVertWalls =
+                !!eng.getTile(tx, ty - 1).isGreekWall ||
+                !!eng.getTile(tx, ty + 1).isGreekWall,
+              hasHorizWalls =
+                !!eng.getTile(tx - 1, ty).isGreekWall ||
+                !!eng.getTile(tx + 1, ty).isGreekWall,
+              isVertDoor =
+                t.subType === 1 || (hasVertWalls && !hasHorizWalls);
+            drawGreekDoor(c, f, isVertDoor, !!t.opened);
             break;
+          }
           case "greek_unfinished":
             drawGreekUnfinishedWork(c, f, t.subType || 0);
             break;

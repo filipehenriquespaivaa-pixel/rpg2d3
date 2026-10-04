@@ -1332,6 +1332,92 @@
 
   function drawGreekDoor(e, t, isVertical = !1, isOpen = !1) {
     e.save();
+    if (isVertical) {
+      // =======================================================================
+      // PORTA EM PAREDE ESQUERDA / DIREITA (Parede Vertical Norte-Sul):
+      // Alinhada na vertical conectando a parede de cima (y = -18*t) com a
+      // parede de baixo (y = +18*t), com passagem Leste-Oeste!
+      // =======================================================================
+      const half = 18 * t,
+        wallH = 26 * t,
+        baseY = 18 * t,
+        topBackY = -half - wallH;
+
+      // 1. Soleira de mármore no piso (orientada Norte-Sul sob o vão da parede vertical)
+      e.fillStyle = "#cbd5e1";
+      e.fillRect(-10 * t, -18 * t, 20 * t, 36 * t);
+      e.strokeStyle = "#64748b";
+      e.lineWidth = 1 * t;
+      e.strokeRect(-10 * t, -18 * t, 20 * t, 36 * t);
+
+      // 2. Pilar / Batente Norte de Mármore (conecta com a parede de cima em y = -18*t)
+      e.fillStyle = "#e2e8f0";
+      e.fillRect(-7 * t, -18 * t - wallH, 14 * t, 9 * t + wallH);
+      e.fillStyle = "#334155";
+      e.fillRect(-7 * t, topBackY, 14 * t, 9 * t);
+      e.strokeStyle = "#f8fafc";
+      e.lineWidth = 1.2 * t;
+      e.strokeRect(-6.5 * t, topBackY + 0.5 * t, 13 * t, 8 * t);
+
+      if (!isOpen) {
+        // 3. Folhas da Porta de Cedro e Bronze FECHADAS na vertical (bloqueando a passagem Leste-Oeste)
+        // Face lateral/frontal da porta vertical
+        e.fillStyle = "#78350f";
+        e.fillRect(-4.5 * t, -9 * t - wallH, 9 * t, 20 * t + wallH);
+        // Topo da folha da porta de madeira e bronze visto de cima
+        e.fillStyle = "#451a03";
+        e.fillRect(-4.5 * t, -9 * t - wallH, 9 * t, 20 * t);
+        // Travessas e cravos de bronze helênico ao longo da porta vertical
+        e.fillStyle = "#d97706";
+        e.fillRect(-5 * t, -4 * t - wallH * 0.65, 10 * t, 2.2 * t);
+        e.fillRect(-5 * t, 4 * t - wallH * 0.65, 10 * t, 2.2 * t);
+        e.fillRect(-5 * t, -2 * t - wallH * 0.25, 10 * t, 2.2 * t);
+        e.fillRect(-5 * t, 6 * t - wallH * 0.25, 10 * t, 2.2 * t);
+        // Argolas de bronze no centro
+        e.beginPath();
+        e.arc(0, -wallH * 0.45, 1.8 * t, 0, Math.PI * 2);
+        e.arc(0, 3.5 * t - wallH * 0.45, 1.8 * t, 0, Math.PI * 2);
+        e.fill();
+      } else {
+        // 3. Folhas da Porta ABERTAS (rebatidas para o lado Leste/Oeste, liberando a passagem no centro!)
+        e.fillStyle = "#78350f";
+        // Folha norte aberta para o lado
+        e.fillRect(4 * t, -11 * t - wallH * 0.85, 10 * t, 3.5 * t + wallH * 0.75);
+        // Folha sul aberta para o lado
+        e.fillRect(4 * t, 7.5 * t - wallH * 0.85, 10 * t, 3.5 * t + wallH * 0.75);
+        e.fillStyle = "#d97706";
+        e.fillRect(4 * t, -11 * t - wallH * 0.85, 10 * t, 1.5 * t);
+        e.fillRect(4 * t, 7.5 * t - wallH * 0.85, 10 * t, 1.5 * t);
+      }
+
+      // 4. Pilar / Batente Sul de Mármore (conecta com a parede de baixo em y = +18*t)
+      e.fillStyle = "#f1f5f9";
+      e.fillRect(-7 * t, 9 * t - wallH, 14 * t, 9 * t + wallH);
+      e.fillStyle = "#1e293b";
+      e.fillRect(-7 * t, baseY - 3.5 * t, 14 * t, 3.5 * t);
+      e.fillStyle = "#334155";
+      e.fillRect(-7 * t, 9 * t - wallH, 14 * t, 9 * t);
+      e.strokeStyle = "#f8fafc";
+      e.lineWidth = 1.2 * t;
+      e.strokeRect(-6.5 * t, 9.5 * t - wallH, 13 * t, 8 * t);
+
+      // 5. Lintel / Arquitrave Superior orientado na VERTICAL (Norte-Sul) ligando os dois batentes por cima!
+      e.fillStyle = "#334155";
+      e.fillRect(-8 * t, topBackY - 3 * t, 16 * t, 36 * t);
+      e.strokeStyle = "#f8fafc";
+      e.lineWidth = 1.4 * t;
+      e.strokeRect(-7 * t, topBackY - 2 * t, 14 * t, 34 * t);
+      e.strokeStyle = "#d97706";
+      e.lineWidth = 1 * t;
+      e.strokeRect(-5 * t, topBackY, 10 * t, 30 * t);
+
+      e.restore();
+      return;
+    }
+
+    // =========================================================================
+    // PORTA EM PAREDE DE CIMA / BAIXO (Parede Horizontal Leste-Oeste):
+    // =========================================================================
     // Soleira de mármore no chão
     e.fillStyle = "#cbd5e1";
     e.fillRect(-16 * t, -6 * t, 32 * t, 14 * t);
