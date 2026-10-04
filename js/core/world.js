@@ -944,12 +944,88 @@
       if (u) return u.biome.id === BiomeId.MOUNTAIN_25D;
       return this._computeSurfaceBaseBiome(t, l).id === BiomeId.MOUNTAIN_25D;
     }
+    _getMountain25DBounds(t, l) {
+      if (!this._mountainBoundsCache) {
+        this._mountainBoundsCache = new Map();
+      }
+      const key = `${t},${l}`;
+      if (this._mountainBoundsCache.has(key)) {
+        return this._mountainBoundsCache.get(key);
+      }
+      // Mede o tamanho horizontal e vertical do bioma a partir deste ponto (escaneia até a borda do bioma)
+      const maxScan = 160;
+      let minX = t,
+        maxX = t,
+        minY = l,
+        maxY = l;
+      while (t - minX < maxScan && this._isMountain25DBiomeAt(minX - 1, l)) minX--;
+      while (maxX - t < maxScan && this._isMountain25DBiomeAt(maxX + 1, l)) maxX++;
+      while (l - minY < maxScan && this._isMountain25DBiomeAt(t, minY - 1)) minY--;
+      while (maxY - l < maxScan && this._isMountain25DBiomeAt(t, maxY + 1)) maxY++;
+
+      // Refina o centro usando o meio da faixa horizontal e vertical para manter o 2º andar coeso
+      const midX = Math.round((minX + maxX) * 0.5),
+        midY = Math.round((minY + maxY) * 0.5);
+      let cMinX = midX,
+        cMaxX = midX,
+        cMinY = midY,
+        cMaxY = midY;
+      while (midX - cMinX < maxScan && this._isMountain25DBiomeAt(cMinX - 1, midY)) cMinX--;
+      while (cMaxX - midX < maxScan && this._isMountain25DBiomeAt(cMaxX + 1, midY)) cMaxX++;
+      while (midY - cMinY < maxScan && this._isMountain25DBiomeAt(midX, cMinY - 1)) cMinY--;
+      while (cMaxY - midY < maxScan && this._isMountain25DBiomeAt(midX, cMaxY + 1)) cMaxY++;
+
+      const biomeWidth = Math.max(1, cMaxX - cMinX + 1),
+        biomeHeight = Math.max(1, cMaxY - cMinY + 1),
+        centerX = (cMinX + cMaxX) * 0.5,
+        centerY = (cMinY + cMaxY) * 0.5,
+        // Pega o tamanho do bioma e divide em 2 para ser o tamanho do 2º andar em cima dele:
+        // (Para caber dentro de metade do tamanho do bioma, o raio a partir do centro é metade de halfSize = 0.25 * tamanho total,
+        // ou seja, a largura e altura totais do 2º andar são exatamente biomeWidth / 2 e biomeHeight / 2!)
+        secondFloorWidth = Math.max(6, biomeWidth * 0.5),
+        secondFloorHeight = Math.max(6, biomeHeight * 0.5),
+        rx = secondFloorWidth * 0.5,
+        ry = secondFloorHeight * 0.5;
+
+      const info = {
+        centerX,
+        centerY,
+        biomeWidth,
+        biomeHeight,
+        secondFloorWidth,
+        secondFloorHeight,
+        rx,
+        ry,
+      };
+      this._mountainBoundsCache.set(key, info);
+      return info;
+    }
     _getMountain25DInfo(t, l) {
       if (!this._isMountain25DBiomeAt(t, l)) {
         return { isMountain: !1, tier: 0, tierRaw: -1 };
       }
-      // Todo o bioma fica exatamente no mesmo nível de platô elevado (sem partes em níveis diferentes)
-      return { isMountain: !0, tier: 1, tierRaw: 1 };
+      // Pega o tamanho do bioma, divide por 2 e usa esse tamanho para criar um 2º andar de paredão em cima do bioma!
+      const b = this._getMountain25DBounds(t, l);
+      const nx = (t - b.centerX) / Math.max(3, b.rx);
+      const ny = (l - b.centerY) / Math.max(3, b.ry);
+      // Formato orgânico com exatamente metade do tamanho (largura/2 e altura/2) do bioma de 1º andar,
+      // garantindo também que fique pelo menos a 6 tiles para dentro da borda externa do 1º andar
+      let distToOuterEdge = 99;
+      for (let d = 1; d <= 6; d++) {
+        if (
+          !this._isMountain25DBiomeAt(t - d, l) ||
+          !this._isMountain25DBiomeAt(t + d, l) ||
+          !this._isMountain25DBiomeAt(t, l - d) ||
+          !this._isMountain25DBiomeAt(t, l + d)
+        ) {
+          distToOuterEdge = d;
+          break;
+        }
+      }
+      const inSecondFloor =
+        distToOuterEdge > 5 && nx * nx + ny * ny <= 1.0;
+      const tier = inSecondFloor ? 2 : 1;
+      return { isMountain: !0, tier, tierRaw: tier };
     }
     getSurfaceTile(t, l) {
       const o = this._tk(t, l, !1),
@@ -1074,28 +1150,37 @@
         detailHash: V,
       };
       if (K.id === BiomeId.MOUNTAIN_25D) {
-        // Todo o bioma fica em um único nível uniforme (sem sub-níveis nem degraus internos),
-        // cercado por um paredão 4 vezes maior (4 tiles de largura) onde o jogador consegue andar por cima do topo do paredão!
-        let isPerimeterBorder = !1;
+        // 1º Andar (tier = 1): O bioma inteiro cercado pelo paredão externo (4 tiles de espessura).
+        // 2º Andar (tier = 2): Criado em cima do bioma com metade do tamanho do bioma (tamanho / 2),
+        // cercado pelo seu próprio paredão 4x maior!
+        const info = this._getMountain25DInfo(t, l),
+          myTier = info.tier;
+        let isCliffBorder = !1;
         let isOuterFace = !1;
+        let minNeighborTier = myTier;
         for (let dy = -4; dy <= 4; dy++) {
           for (let dx = -4; dx <= 4; dx++) {
             if (dx === 0 && dy === 0) continue;
             const dist = Math.max(Math.abs(dx), Math.abs(dy));
-            if (dist <= 4 && !this._isMountain25DBiomeAt(t + dx, l + dy)) {
-              isPerimeterBorder = !0;
-              if (dist === 1) {
-                isOuterFace = !0;
+            if (dist <= 4) {
+              const nTier = this._getMountain25DInfo(t + dx, l + dy).tier;
+              if (nTier < myTier) {
+                isCliffBorder = !0;
+                if (dist === 1) {
+                  isOuterFace = !0;
+                  if (nTier < minNeighborTier) minNeighborTier = nTier;
+                }
               }
             }
           }
         }
-        const isWall = isPerimeterBorder;
+        const isWall = isCliffBorder;
 
-        se.mountainTier = 1;
-        se.lowerTier = isOuterFace ? 0 : 1;
+        se.mountainTier = myTier;
+        se.lowerTier = isOuterFace ? minNeighborTier : myTier;
         se.isElevatedBiome = !0;
-        se.isPerimeterCliff = isPerimeterBorder;
+        se.isPerimeterCliff = myTier === 1 && isCliffBorder;
+        se.isSecondFloorCliff = myTier === 2 && isCliffBorder;
         se.isOuterCliffEdge = isOuterFace;
         se.isCliffWall = isWall;
         se.isCliffRamp = !1;
@@ -1112,13 +1197,18 @@
           } else {
             se.prop = {
               kind: "cliff_wall",
-              subType: 1,
+              subType: myTier,
               offsetX: 0,
               offsetY: 0,
               scale: 1,
-              namePt: "Muralha Gigante do Platô (4x)",
+              namePt:
+                myTier === 2
+                  ? "Muralha do 2º Andar do Platô (Metade do Bioma)"
+                  : "Muralha do 1º Andar do Platô (4x)",
               descriptionPt:
-                "Paredão monumental 4x maior que cerca e eleva todo o bioma de Montanhas 2.5D. O topo do paredão é plano e caminhável.",
+                myTier === 2
+                  ? "Segundo andar de paredão erguido sobre o bioma com exatamente metade do tamanho do bioma."
+                  : "Paredão monumental 4x maior que cerca e eleva o 1º andar do bioma de Montanhas 2.5D.",
             };
           }
         }
@@ -1781,21 +1871,26 @@
       if (this.isUnderground) return !1;
       const ts = this.tileSize,
         tx = Math.floor(x / ts),
-        ty = Math.floor(y / ts),
-        isElev = (tile) =>
-          !!(tile && (tile.isCliffWall || tile.biome.id === BiomeId.MOUNTAIN_25D));
+        ty = Math.floor(y / ts);
 
       for (let dy = -4; dy <= 1; dy++) {
         for (let dx = -2; dx <= 2; dx++) {
           const t = this.getTile(tx + dx, ty + dy);
           if (!t || !t.isCliffWall) continue;
 
-          const cx = t.tx * ts + ts / 2,
+          const myTier = t.mountainTier || 1,
+            isSameOrHigherElev = (tile) =>
+              !!(
+                tile &&
+                tile.biome.id === BiomeId.MOUNTAIN_25D &&
+                (tile.mountainTier || 1) >= myTier
+              ),
+            cx = t.tx * ts + ts / 2,
             cy = t.ty * ts + ts / 2,
-            nL = isElev(this.getTile(t.tx - 1, t.ty)),
-            nR = isElev(this.getTile(t.tx + 1, t.ty)),
-            nT = isElev(this.getTile(t.tx, t.ty - 1)),
-            nB = isElev(this.getTile(t.tx, t.ty + 1)),
+            nL = isSameOrHigherElev(this.getTile(t.tx - 1, t.ty)),
+            nR = isSameOrHigherElev(this.getTile(t.tx + 1, t.ty)),
+            nT = isSameOrHigherElev(this.getTile(t.tx, t.ty - 1)),
+            nB = isSameOrHigherElev(this.getTile(t.tx, t.ty + 1)),
             leftX = cx + (nL ? -19.5 : -17.5),
             rightX = cx + (nR ? 19.5 : 17.5),
             platBackY = cy - 19.5,

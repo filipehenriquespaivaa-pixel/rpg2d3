@@ -303,8 +303,13 @@
             c.strokeStyle = "rgba(56,189,248,0.65)";
             c.strokeRect(t.tx * ts + 1, t.ty * ts + 1, ts - 2, ts - 2);
             // Partes escuras do paredão (proibido andar - vermelho no debug de colisores)
-            const isElev = (tile) =>
-              !!(tile && (tile.isCliffWall || tile.biome.id === BiomeId.MOUNTAIN_25D));
+            const myTier = t.mountainTier || 1,
+              isElev = (tile) =>
+                !!(
+                  tile &&
+                  tile.biome.id === BiomeId.MOUNTAIN_25D &&
+                  (tile.mountainTier || 1) >= myTier
+                );
             const cx = t.tx * ts + ts / 2,
               cy = t.ty * ts + ts / 2,
               nL = isElev(e.getTile(t.tx - 1, t.ty)),
@@ -1422,6 +1427,7 @@
             const eng = this.engine,
               tx = u.tx,
               ty = u.ty,
+              myTier = u.mountainTier || t.subType || 1,
               tL = eng.getTile(tx - 1, ty),
               tR = eng.getTile(tx + 1, ty),
               tT = eng.getTile(tx, ty - 1),
@@ -1431,7 +1437,11 @@
               tBL = eng.getTile(tx - 1, ty + 1),
               tBR = eng.getTile(tx + 1, ty + 1),
               isElevatedOrWall = (tile) =>
-                !!(tile && (tile.isCliffWall || tile.biome.id === BiomeId.MOUNTAIN_25D)),
+                !!(
+                  tile &&
+                  tile.biome.id === BiomeId.MOUNTAIN_25D &&
+                  (tile.mountainTier || 1) >= myTier
+                ),
               neighbors = {
                 left: isElevatedOrWall(tL),
                 right: isElevatedOrWall(tR),
@@ -1441,10 +1451,10 @@
                 topRight: isElevatedOrWall(tTR),
                 bottomLeft: isElevatedOrWall(tBL),
                 bottomRight: isElevatedOrWall(tBR),
-                wallLeft: !!(tL && tL.isCliffWall),
-                wallRight: !!(tR && tR.isCliffWall),
-                wallTop: !!(tT && tT.isCliffWall),
-                wallBottom: !!(tB && tB.isCliffWall),
+                wallLeft: !!(tL && tL.isCliffWall && (tL.mountainTier || 1) === myTier),
+                wallRight: !!(tR && tR.isCliffWall && (tR.mountainTier || 1) === myTier),
+                wallTop: !!(tT && tT.isCliffWall && (tT.mountainTier || 1) === myTier),
+                wallBottom: !!(tB && tB.isCliffWall && (tB.mountainTier || 1) === myTier),
               };
             // Só desenha sombra direcional quando o sul é externo (fora do platô elevado)
             if (!neighbors.bottom) {
