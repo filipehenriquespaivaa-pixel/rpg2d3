@@ -103,24 +103,31 @@
               V && G.prop)
             )
               if (
-                (G.prop.kind === "campfire" || G.prop.kind === "clay_oven") &&
+                (G.prop.kind === "campfire" ||
+                  G.prop.kind === "clay_oven" ||
+                  G.prop.kind === "corridor_torch") &&
                 G.prop.lit !== !1
               ) {
                 const de = G.prop.scale || 1,
-                  te =
-                    (this.engine.isUnderground ? 225 : 190) +
-                    (de - 1) * 85 +
-                    Math.sin(this.animTimer * 5 + ke * 3) *
-                      (6 * Math.min(2.5, de));
+                  isCorrTorch = G.prop.kind === "corridor_torch",
+                  te = isCorrTorch
+                    ? 165 + Math.sin(this.animTimer * 6 + ke * 3 + ne * 2) * 6
+                    : (this.engine.isUnderground ? 225 : 190) +
+                      (de - 1) * 85 +
+                      Math.sin(this.animTimer * 5 + ke * 3) *
+                        (6 * Math.min(2.5, de));
                 K.push({
                   x: ke * f + f / 2 + (G.prop.offsetX || 0),
                   y: ne * f + f / 2 + (G.prop.offsetY || 0),
                   radius: te,
-                  color:
-                    G.prop.kind === "clay_oven"
+                  color: isCorrTorch
+                    ? "rgba(251, 191, 36, 0.34)"
+                    : G.prop.kind === "clay_oven"
                       ? "rgba(249, 115, 22, 0.35)"
                       : "rgba(251, 146, 60, 0.32)",
-                  intensity: Math.min(1, 0.95 + (de - 1) * 0.05),
+                  intensity: isCorrTorch
+                    ? 0.92
+                    : Math.min(1, 0.95 + (de - 1) * 0.05),
                   isCampfire: !0,
                 });
               } else if (G.prop.kind === "shrine")
@@ -1532,6 +1539,9 @@
           }
           case "greek_unfinished":
             drawGreekUnfinishedWork(c, f, t.subType || 0);
+            break;
+          case "corridor_torch":
+            drawGreekCorridorTorch(c, f, !!t.lit, this.animTimer);
             break;
           case "cave_entrance":
             bg(c, f, this.animTimer, u.biome, !!t.isMerged, t.mergedCount || 1, !!t.isStaircase);

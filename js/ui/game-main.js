@@ -2116,6 +2116,39 @@
             Pe = (ce = Ge.prop) == null ? void 0 : ce.kind,
             aa = ((Re = Ge.prop) == null ? void 0 : Re.subType) ?? 0;
           if (
+            Pe === "corridor_torch" &&
+            ((Ce = Ge.prop) == null ? void 0 : Ce.lit) === !1
+          ) {
+            const hasTorchInHand = !!(
+              (Oe.mao_esquerda &&
+                ((Oe.mao_esquerda.id || "").toLowerCase().includes("torch") ||
+                  (Oe.mao_esquerda.name || "").toLowerCase().includes("tocha"))) ||
+              (Oe.mao_direita &&
+                ((Oe.mao_direita.id || "").toLowerCase().includes("torch") ||
+                  (Oe.mao_direita.name || "").toLowerCase().includes("tocha")))
+            );
+            if (hasTorchInHand) {
+              E.lightCorridorTorch(Ye.tx, Ye.ty);
+              m.current.playTorchIgnite();
+              const qe = Ye.tx * E.tileSize + E.tileSize / 2,
+                Ze = Ye.ty * E.tileSize + E.tileSize / 2;
+              c.current &&
+                c.current.scareMonstersNearFire &&
+                c.current.scareMonstersNearFire(qe, Ze, 110);
+              _t((xp) => xp + 25);
+              ve(
+                "🔥 Você acendeu o ponto de tocha do corredor com a tocha da sua mão! (+25 XP)",
+              );
+              return;
+            } else {
+              m.current.playPunchWhoosh();
+              ve(
+                "⚠️ Este ponto de tocha está apagado! Equipe uma Tocha na mão para acendê-lo.",
+              );
+              return;
+            }
+          }
+          if (
             Pe === "campfire" &&
             ((Ce = Ge.prop) == null ? void 0 : Ce.lit) === !1
           ) {

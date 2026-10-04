@@ -1504,6 +1504,88 @@
     }
     e.restore();
   }
+
+  function drawGreekCorridorTorch(e, t, isLit = !1, animTimer = 0) {
+    e.save();
+    // 1. Sombra no piso do corredor
+    e.fillStyle = "rgba(2, 6, 23, 0.36)";
+    e.beginPath();
+    e.ellipse(0, 3 * t, 6.5 * t, 3 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // 2. Pedestal de Mármore Helênico e Coluna de Bronze do Tocheiro
+    e.fillStyle = "#cbd5e1";
+    e.fillRect(-5 * t, 0, 10 * t, 3.2 * t);
+    e.fillStyle = "#f8fafc";
+    e.fillRect(-3.8 * t, -3.5 * t, 7.6 * t, 3.8 * t);
+    e.strokeStyle = "#64748b";
+    e.lineWidth = 0.8 * t;
+    e.strokeRect(-3.8 * t, -3.5 * t, 7.6 * t, 3.8 * t);
+
+    // Haste vertical de bronze/ferro forjado
+    e.fillStyle = "#78350f";
+    e.fillRect(-1.6 * t, -15.5 * t, 3.2 * t, 12.2 * t);
+    e.fillStyle = "#d97706";
+    e.fillRect(-2.4 * t, -9.5 * t, 4.8 * t, 1.4 * t);
+
+    // 3. Cesto / Braseiro da Tocha no topo
+    e.fillStyle = "#451a03";
+    e.beginPath();
+    e.moveTo(-4.8 * t, -19 * t);
+    e.lineTo(4.8 * t, -19 * t);
+    e.lineTo(2.8 * t, -14.5 * t);
+    e.lineTo(-2.8 * t, -14.5 * t);
+    e.closePath();
+    e.fill();
+    e.strokeStyle = "#f59e0b";
+    e.lineWidth = 1 * t;
+    e.stroke();
+
+    if (!isLit) {
+      // Estado APAGADO: Pavio e carvão escuro no topo aguardando ser aceso com uma tocha na mão
+      e.fillStyle = "#1c1917";
+      e.beginPath();
+      e.ellipse(0, -19.2 * t, 3.4 * t, 1.6 * t, 0, 0, Math.PI * 2);
+      e.fill();
+      e.fillStyle = "#44403c";
+      e.beginPath();
+      e.arc(-1 * t, -20 * t, 1.4 * t, 0, Math.PI * 2);
+      e.arc(1.2 * t, -19.8 * t, 1.2 * t, 0, Math.PI * 2);
+      e.fill();
+    } else {
+      // Estado ACESO: Halo luminoso e chama viva dançante!
+      const flicker = Math.sin(animTimer * 11) * 1.1 * t,
+        pulse = 1 + Math.cos(animTimer * 8) * 0.12;
+
+      const glow = e.createRadialGradient(0, -22 * t, 1 * t, 0, -22 * t, 16 * pulse * t);
+      glow.addColorStop(0, "rgba(254, 240, 138, 0.75)");
+      glow.addColorStop(0.45, "rgba(249, 115, 22, 0.35)");
+      glow.addColorStop(1, "rgba(249, 115, 22, 0)");
+      e.fillStyle = glow;
+      e.beginPath();
+      e.arc(0, -22 * t, 16 * pulse * t, 0, Math.PI * 2);
+      e.fill();
+
+      // Língua externa da chama (laranja-avermelhada)
+      e.fillStyle = "#f97316";
+      e.beginPath();
+      e.moveTo(-3.8 * t, -18.8 * t);
+      e.quadraticCurveTo(-4.5 * t, -24 * t, flicker, -28.5 * pulse * t);
+      e.quadraticCurveTo(4.5 * t, -24 * t, 3.8 * t, -18.8 * t);
+      e.closePath();
+      e.fill();
+
+      // Núcleo interno da chama (amarelo-ouro brilhante)
+      e.fillStyle = "#fef08a";
+      e.beginPath();
+      e.moveTo(-2 * t, -19 * t);
+      e.quadraticCurveTo(-2.2 * t, -22.5 * t, flicker * 0.5, -25.2 * pulse * t);
+      e.quadraticCurveTo(2.2 * t, -22.5 * t, 2 * t, -19 * t);
+      e.closePath();
+      e.fill();
+    }
+    e.restore();
+  }
   function getCaveBiomeTheme(biome) {
     const bId = (biome && biome.id) || "MEADOW";
     const groundCol = (biome && biome.groundColor) || "#5fa743";

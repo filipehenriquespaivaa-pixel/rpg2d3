@@ -741,16 +741,23 @@
           if (!S) {
             const p = this.getTile(w, v);
             p.prop &&
-              (p.prop.kind === "campfire" || p.prop.kind === "clay_oven") &&
+              (p.prop.kind === "campfire" ||
+                p.prop.kind === "clay_oven" ||
+                p.prop.kind === "corridor_torch") &&
               (S = p.prop);
           }
           if (
             S &&
-            (S.kind === "campfire" || S.kind === "clay_oven") &&
+            (S.kind === "campfire" ||
+              S.kind === "clay_oven" ||
+              S.kind === "corridor_torch") &&
             S.lit !== !1
           ) {
             const p = S.scale || 1,
-              P = (this.isUnderground ? 225 : 190) + (p - 1) * 85,
+              P =
+                S.kind === "corridor_torch"
+                  ? 165
+                  : (this.isUnderground ? 225 : 190) + (p - 1) * 85,
               A = w * this.tileSize + this.tileSize / 2 + (S.offsetX || 0),
               x = v * this.tileSize + this.tileSize / 2 + (S.offsetY || 0),
               M = Math.hypot(t - A, l - x);
@@ -774,6 +781,15 @@
     collectGroundItem(t, l) {
       const o = `${this.isUnderground ? "cave_" : "surf_"}${t},${l}`;
       (this.collectedGroundItems.add(o), this.invalidateTile(t, l));
+    }
+    lightCorridorTorch(t, l) {
+      const u = this.isUnderground ? `underground_${t},${l}` : `${t},${l}`,
+        p = `cave_${t},${l}`,
+        m = this.interactedProps.get(u) || this.interactedProps.get(p) || {};
+      this.interactedProps.set(u, { ...m, lit: !0 });
+      this.interactedProps.set(p, { ...m, lit: !0 });
+      this.closestCampfireCache.clear();
+      this.invalidateTile(t, l);
     }
     enterCave(t, l, o, u) {
       this.surfaceCoords = { x: o, y: u };
@@ -2207,6 +2223,25 @@
             subType: 0,
           };
         }
+        // Pontos de Tochas nas laterais dos Corredores Subterrâneos (a cada 8 blocos nas bordas do corredor,
+        // deixando o caminho central lx === 2 e ly === 2 100% livre e sem bloquear as portas em lx === 10 e ly === 22!):
+        const isHorizTorchSpot =
+          inHorizAvenue &&
+          (ly === 1 || ly === 3) &&
+          (lx === 6 || lx === 14 || lx === 21 || lx === 28);
+        const isVertTorchSpot =
+          inVertAvenue &&
+          (lx === 1 || lx === 3) &&
+          (ly === 6 || ly === 14 || ly === 20 || ly === 28);
+        if (isHorizTorchSpot || isVertTorchSpot) {
+          return {
+            role: "corridor_torch",
+            rx: inVertAvenue ? lx - 2 : 0,
+            ry: inHorizAvenue ? ly - 2 : 0,
+            roomName: "Grande Corredor Subterrâneo",
+            subType: isHorizTorchSpot ? (ly === 1 ? 0 : 1) : lx === 1 ? 2 : 3,
+          };
+        }
         return {
           role: "corridor",
           rx: inVertAvenue ? lx - 2 : 0,
@@ -2662,6 +2697,23 @@
             descriptionPt: intState.activated
               ? "O altar subterrâneo irradia a luz dourada do Olimpo!"
               : "Pressione [F] para despertar a bênção ancestral deste salão subterrâneo.",
+          };
+        } else if (sanctuary.role === "corridor_torch") {
+          const isLit = !!intState.lit;
+          sProp = {
+            kind: "corridor_torch",
+            subType: sanctuary.subType || 0,
+            lit: isLit,
+            offsetX: 0,
+            offsetY: -2,
+            scale: 1.05,
+            interactive: !isLit,
+            namePt: isLit
+              ? "Tocha do Corredor Subterrâneo (Acesa)"
+              : "Ponto de Tocha do Corredor (Apagada)",
+            descriptionPt: isLit
+              ? "O braseiro de bronze desta tocha ilumina o corredor de mármore com chamas douradas."
+              : "Um suporte de bronze helênico com tocha apagada no corredor. Equipe uma Tocha na mão e pressione [F] para acendê-lo!",
           };
         } else if (sanctuary.role === "chest") {
           const opened = !!intState.opened;
@@ -3266,6 +3318,21 @@
           message:
             "Você descansou junto à fogueira. Saúde e vigor completamente restaurados!",
           reward: "Descanso Revigorante",
+        };
+      }
+      if (o.prop.kind === "corridor_torch") {
+        if (o.prop.lit) {
+          return {
+            success: !0,
+            message: "Esta tocha do corredor já está acesa e iluminando o caminho!",
+            reward: "Tocha Acesa",
+          };
+        }
+        return {
+          success: !0,
+          action: "unlit_corridor_torch",
+          message:
+            "Este ponto de tocha está apagado. Segure uma Tocha na mão para acendê-lo!",
         };
       }
       if (o.prop.kind === "greek_door") {
