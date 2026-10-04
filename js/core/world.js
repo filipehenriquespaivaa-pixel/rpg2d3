@@ -978,24 +978,62 @@
       const biomeWidth = Math.max(1, cMaxX - cMinX + 1),
         biomeHeight = Math.max(1, cMaxY - cMinY + 1),
         centerX = (cMinX + cMaxX) * 0.5,
-        centerY = (cMinY + cMaxY) * 0.5,
-        // Pega o tamanho do bioma e divide em 2 para ser o tamanho do 2º andar em cima dele:
-        // (Para caber dentro de metade do tamanho do bioma, o raio a partir do centro é metade de halfSize = 0.25 * tamanho total,
-        // ou seja, a largura e altura totais do 2º andar são exatamente biomeWidth / 2 e biomeHeight / 2!)
-        secondFloorWidth = Math.max(6, biomeWidth * 0.5),
-        secondFloorHeight = Math.max(6, biomeHeight * 0.5),
-        rx = secondFloorWidth * 0.5,
-        ry = secondFloorHeight * 0.5;
+        centerY = (cMinY + cMaxY) * 0.5;
+
+      // Calcula os andares sucessivos dividindo o tamanho por 2 a cada andar (1º -> 2º -> 3º -> 4º...),
+      // parando no topo quando o andar atingir o limite mínimo de 10 blocos!
+      const floors = [];
+      let curW = biomeWidth * 0.5,
+        curH = biomeHeight * 0.5,
+        floorNum = 2;
+      while ((curW >= 10 || curH >= 10) && floorNum <= 12) {
+        const w = Math.max(10, curW),
+          h = Math.max(10, curH);
+        floors.push({
+          tier: floorNum,
+          width: w,
+          height: h,
+          rx: w * 0.5,
+          ry: h * 0.5,
+        });
+        if (curW <= 10 && curH <= 10) break;
+        const nextW = curW * 0.5,
+          nextH = curH * 0.5;
+        if (nextW < 10 && nextH < 10) {
+          // Se o andar atual ainda era maior que 10 blocos, cria o último andar do topo cravado no limite de 10 blocos
+          if (w > 10 || h > 10) {
+            floorNum++;
+            floors.push({
+              tier: floorNum,
+              width: 10,
+              height: 10,
+              rx: 5,
+              ry: 5,
+            });
+          }
+          break;
+        }
+        curW = nextW;
+        curH = nextH;
+        floorNum++;
+      }
+      // Caso o bioma seja pequeno mas ainda comporte pelo menos um 2º andar de 10 blocos no topo:
+      if (floors.length === 0 && biomeWidth >= 14 && biomeHeight >= 14) {
+        floors.push({
+          tier: 2,
+          width: 10,
+          height: 10,
+          rx: 5,
+          ry: 5,
+        });
+      }
 
       const info = {
         centerX,
         centerY,
         biomeWidth,
         biomeHeight,
-        secondFloorWidth,
-        secondFloorHeight,
-        rx,
-        ry,
+        floors,
       };
       this._mountainBoundsCache.set(key, info);
       return info;
@@ -1004,14 +1042,10 @@
       if (!this._isMountain25DBiomeAt(t, l)) {
         return { isMountain: !1, tier: 0, tierRaw: -1 };
       }
-      // Pega o tamanho do bioma, divide por 2 e usa esse tamanho para criar um 2º andar de paredão em cima do bioma!
+      // Cada andar divide o tamanho do andar anterior por 2 (1º -> 2º -> 3º -> 4º...) até o topo no limite de 10 blocos!
       const b = this._getMountain25DBounds(t, l);
-      const nx = (t - b.centerX) / Math.max(3, b.rx);
-      const ny = (l - b.centerY) / Math.max(3, b.ry);
-      // Formato orgânico com exatamente metade do tamanho (largura/2 e altura/2) do bioma de 1º andar,
-      // garantindo também que fique pelo menos a 6 tiles para dentro da borda externa do 1º andar
       let distToOuterEdge = 99;
-      for (let d = 1; d <= 6; d++) {
+      for (let d = 1; d <= 5; d++) {
         if (
           !this._isMountain25DBiomeAt(t - d, l) ||
           !this._isMountain25DBiomeAt(t + d, l) ||
@@ -1022,9 +1056,21 @@
           break;
         }
       }
-      const inSecondFloor =
-        distToOuterEdge > 5 && nx * nx + ny * ny <= 1.0;
-      const tier = inSecondFloor ? 2 : 1;
+      let tier = 1;
+      if (distToOuterEdge > 4 && b.floors && b.floors.length > 0) {
+        const dx = t - b.centerX,
+          dy = l - b.centerY;
+        for (let i = 0; i < b.floors.length; i++) {
+          const f = b.floors[i],
+            nx = dx / Math.max(5, f.rx),
+            ny = dy / Math.max(5, f.ry);
+          if (nx * nx + ny * ny <= 1.0) {
+            tier = f.tier;
+          } else {
+            break;
+          }
+        }
+      }
       return { isMountain: !0, tier, tierRaw: tier };
     }
     getSurfaceTile(t, l) {
@@ -1201,14 +1247,11 @@
               offsetX: 0,
               offsetY: 0,
               scale: 1,
-              namePt:
-                myTier === 2
-                  ? "Muralha do 2º Andar do Platô (Metade do Bioma)"
-                  : "Muralha do 1º Andar do Platô (4x)",
+              namePt: `Muralha do ${myTier}º Andar do Platô`,
               descriptionPt:
-                myTier === 2
-                  ? "Segundo andar de paredão erguido sobre o bioma com exatamente metade do tamanho do bioma."
-                  : "Paredão monumental 4x maior que cerca e eleva o 1º andar do bioma de Montanhas 2.5D.",
+                myTier === 1
+                  ? "Paredão monumental 4x maior que cerca e eleva o 1º andar do bioma de Montanhas 2.5D."
+                  : `Paredão do ${myTier}º andar erguido com metade do tamanho do ${myTier - 1}º andar (limite de 10 blocos no topo).`,
             };
           }
         }
