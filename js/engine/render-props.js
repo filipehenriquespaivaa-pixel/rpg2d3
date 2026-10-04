@@ -3787,78 +3787,92 @@
   function drawIronBarsGate(e, t = 1, isVert = !1, isOpened = !1) {
     t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
-    const half = 18 * t;
 
     if (isOpened) {
-      // Grade aberta (recolhida em perspectiva a 45 graus)
-      e.fillStyle = "rgba(2, 6, 23, 0.45)";
-      e.fillRect(-14 * t, -16 * t, 28 * t, 32 * t);
-
-      // Batentes laterais
+      // Grade de ferro aberta: batentes de cantaria e passagem central totalmente limpa
+      // Batente superior
       e.fillStyle = "#1e293b";
-      e.fillRect(-16 * t, -18 * t, 4 * t, 36 * t);
-      e.fillRect(12 * t, -18 * t, 4 * t, 36 * t);
+      e.fillRect(-16 * t, -16 * t, 6 * t, 6 * t);
+      e.strokeStyle = "#0f172a";
+      e.lineWidth = 1 * t;
+      e.strokeRect(-16 * t, -16 * t, 6 * t, 6 * t);
 
-      // Folha da grade aberta virada para a esquerda
+      // Batente inferior
+      e.fillStyle = "#1e293b";
+      e.fillRect(-16 * t, 10 * t, 6 * t, 6 * t);
+      e.strokeRect(-16 * t, 10 * t, 6 * t, 6 * t);
+
+      // Folha da grade dobrada e recolhida encostada na parede interna da cela
       e.strokeStyle = "#475569";
-      e.lineWidth = 2 * t;
+      e.lineWidth = 2.2 * t;
       e.beginPath();
-      e.moveTo(-14 * t, -16 * t);
-      e.lineTo(-6 * t, -12 * t);
-      e.lineTo(-6 * t, 14 * t);
-      e.lineTo(-14 * t, 16 * t);
-      e.closePath();
+      e.moveTo(-13 * t, -14 * t);
+      e.lineTo(-8 * t, -11 * t);
+      e.lineTo(-8 * t, 11 * t);
+      e.lineTo(-13 * t, 14 * t);
       e.stroke();
 
-      // Barras verticais da grade aberta
-      for (let i = 1; i <= 3; i++) {
-        const rx = -14 * t + i * 2 * t;
-        const ryTop = -16 * t + i * 1 * t;
-        const ryBot = 16 * t - i * 0.5 * t;
+      // Barras verticais da folha aberta (recuadas contra a parede)
+      e.strokeStyle = "#64748b";
+      e.lineWidth = 1.6 * t;
+      for (let i = 1; i <= 2; i++) {
+        const bx = -13 * t + i * 2.5 * t;
+        const byTop = -14 * t + i * 1.5 * t;
+        const byBot = 14 * t - i * 1.5 * t;
         e.beginPath();
-        e.moveTo(rx, ryTop);
-        e.lineTo(rx, ryBot);
+        e.moveTo(bx, byTop);
+        e.lineTo(bx, byBot);
         e.stroke();
       }
+
+      // Luz sutil no chão indicando passagem aberta e desimpedida
+      e.fillStyle = "rgba(255, 255, 255, 0.05)";
+      e.fillRect(-10 * t, -12 * t, 20 * t, 24 * t);
     } else {
       // Grade fechada e trancada
-      // Sombra
-      e.fillStyle = "rgba(2, 6, 23, 0.55)";
-      e.fillRect(-16 * t, -18 * t, 32 * t, 36 * t);
+      // Sombra na base
+      e.fillStyle = "rgba(2, 6, 23, 0.6)";
+      e.fillRect(-16 * t, -16 * t, 32 * t, 32 * t);
 
-      // Montantes de alvenaria e pilares laterais
+      // Montantes de alvenaria laterais
       e.fillStyle = "#1e293b";
-      e.fillRect(-17 * t, -20 * t, 4.5 * t, 38 * t);
-      e.fillRect(12.5 * t, -20 * t, 4.5 * t, 38 * t);
+      e.fillRect(-16 * t, -17 * t, 4.5 * t, 34 * t);
+      e.fillRect(11.5 * t, -17 * t, 4.5 * t, 34 * t);
 
       // Vigas horizontais da grade de ferro
       e.fillStyle = "#0f172a";
-      e.fillRect(-14 * t, -16 * t, 28 * t, 3.5 * t);
-      e.fillRect(-14 * t, -1 * t, 28 * t, 3.5 * t);
-      e.fillRect(-14 * t, 13 * t, 28 * t, 3.5 * t);
+      e.fillRect(-14 * t, -14 * t, 28 * t, 3 * t);
+      e.fillRect(-14 * t, -1 * t, 28 * t, 3 * t);
+      e.fillRect(-14 * t, 11 * t, 28 * t, 3 * t);
 
       // Barras verticais espessas com pontas afiadas
       e.fillStyle = "#334155";
-      for (let bx = -11; bx <= 11; bx += 4.5) {
-        e.fillRect((bx - 1) * t, -18 * t, 2.2 * t, 33 * t);
+      for (let bx = -10; bx <= 10; bx += 4) {
+        e.fillRect((bx - 1) * t, -16 * t, 2.2 * t, 29 * t);
         // Pontas afiadas no topo
         e.beginPath();
-        e.moveTo((bx - 1) * t, -18 * t);
-        e.lineTo(bx * t, -21 * t);
-        e.lineTo((bx + 1.2) * t, -18 * t);
+        e.moveTo((bx - 1) * t, -16 * t);
+        e.lineTo(bx * t, -19 * t);
+        e.lineTo((bx + 1.2) * t, -16 * t);
         e.closePath();
         e.fill();
       }
 
-      // Tranca e cadeado central de ferro enferrujado
+      // Tranca e cadeado central de ferro/bronze
       e.fillStyle = "#78350f";
-      e.fillRect(-3 * t, -3 * t, 6 * t, 7 * t);
-      e.strokeStyle = "#94a3b8";
-      e.lineWidth = 1.2 * t;
-      e.strokeRect(-3 * t, -3 * t, 6 * t, 7 * t);
+      e.fillRect(-3 * t, -3 * t, 6 * t, 6.5 * t);
+      e.strokeStyle = "#d97706";
+      e.lineWidth = 1 * t;
+      e.strokeRect(-3 * t, -3 * t, 6 * t, 6.5 * t);
       e.beginPath();
-      e.arc(0, -4 * t, 2.5 * t, Math.PI, 0);
+      e.arc(0, -3.5 * t, 2.2 * t, Math.PI, 0);
       e.stroke();
+      // Buraco da fechadura
+      e.fillStyle = "#0f172a";
+      e.beginPath();
+      e.arc(0, -0.5 * t, 0.9 * t, 0, Math.PI * 2);
+      e.fillRect(-0.6 * t, -0.5 * t, 1.2 * t, 2 * t);
+      e.fill();
     }
     e.restore();
   }
@@ -3866,58 +3880,122 @@
   function drawDungeonDoor(e, t = 1, isVert = !1, isOpened = !1) {
     t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
-    if (isOpened) {
-      // Porta de carvalho aberta
-      e.fillStyle = "#1e293b";
-      e.fillRect(-16 * t, -18 * t, 4 * t, 36 * t);
-      e.fillRect(12 * t, -18 * t, 4 * t, 36 * t);
 
-      e.fillStyle = "#451a03";
-      e.beginPath();
-      e.moveTo(-14 * t, -16 * t);
-      e.lineTo(-4 * t, -12 * t);
-      e.lineTo(-4 * t, 14 * t);
-      e.lineTo(-14 * t, 16 * t);
-      e.closePath();
-      e.fill();
-    } else {
-      // Porta fechada de carvalho maciço reforçada com faixas de ferro
-      e.fillStyle = "#1e293b";
-      e.fillRect(-16 * t, -19 * t, 32 * t, 37 * t);
+    if (isVert) {
+      // Porta em parede vertical (passagem Leste-Oeste entre corredor e salão)
+      if (isOpened) {
+        // Batente superior e inferior
+        e.fillStyle = "#1e293b";
+        e.fillRect(-4 * t, -16 * t, 8 * t, 5 * t);
+        e.fillRect(-4 * t, 11 * t, 8 * t, 5 * t);
 
-      // Pranchas de carvalho
-      e.fillStyle = "#5c2e0b";
-      e.fillRect(-13 * t, -17 * t, 26 * t, 33 * t);
+        // Folha da porta de madeira aberta, dobrada para dentro do salão
+        e.fillStyle = "#451a03";
+        e.fillRect(4 * t, -15 * t, 12 * t, 4 * t);
+        e.strokeStyle = "#1b0f0a";
+        e.lineWidth = 1 * t;
+        e.strokeRect(4 * t, -15 * t, 12 * t, 4 * t);
 
-      // Frisos entre as tábuas
-      e.strokeStyle = "#381c07";
-      e.lineWidth = 1 * t;
-      e.beginPath();
-      e.moveTo(-5 * t, -17 * t); e.lineTo(-5 * t, 16 * t);
-      e.moveTo(4 * t, -17 * t); e.lineTo(4 * t, 16 * t);
-      e.stroke();
+        // Ferragens na folha aberta
+        e.fillStyle = "#0f172a";
+        e.fillRect(6 * t, -15.5 * t, 2.5 * t, 5 * t);
+        e.fillRect(12 * t, -15.5 * t, 2.5 * t, 5 * t);
 
-      // Cintas de ferro forjado
-      e.fillStyle = "#0f172a";
-      e.fillRect(-13 * t, -12 * t, 26 * t, 3.5 * t);
-      e.fillRect(-13 * t, 8 * t, 26 * t, 3.5 * t);
+        // Piso desimpedido com luz sutil
+        e.fillStyle = "rgba(255, 255, 255, 0.05)";
+        e.fillRect(-12 * t, -10 * t, 24 * t, 20 * t);
+      } else {
+        // Porta fechada vista de cima/perfil na parede vertical
+        e.fillStyle = "rgba(2, 6, 23, 0.6)";
+        e.fillRect(-5 * t, -16 * t, 10 * t, 32 * t);
 
-      // Rebites
-      e.fillStyle = "#94a3b8";
-      for (const rx of [-9, -1, 7]) {
+        // Batentes superior e inferior
+        e.fillStyle = "#1e293b";
+        e.fillRect(-5 * t, -16 * t, 10 * t, 4 * t);
+        e.fillRect(-5 * t, 12 * t, 10 * t, 4 * t);
+
+        // Folha maciça de carvalho
+        e.fillStyle = "#5c2e0b";
+        e.fillRect(-3.5 * t, -12 * t, 7 * t, 24 * t);
+        e.strokeStyle = "#381c07";
+        e.lineWidth = 1 * t;
+        e.strokeRect(-3.5 * t, -12 * t, 7 * t, 24 * t);
+
+        // Cintas de ferro forjado e maçaneta
+        e.fillStyle = "#0f172a";
+        e.fillRect(-4 * t, -8 * t, 8 * t, 3 * t);
+        e.fillRect(-4 * t, 5 * t, 8 * t, 3 * t);
+
+        // Argola de ferro
+        e.strokeStyle = "#cbd5e1";
+        e.lineWidth = 1.3 * t;
         e.beginPath();
-        e.arc(rx * t, -10.2 * t, 1.2 * t, 0, Math.PI * 2);
-        e.arc(rx * t, 9.8 * t, 1.2 * t, 0, Math.PI * 2);
-        e.fill();
+        e.arc(0, 0, 2.5 * t, 0, Math.PI * 2);
+        e.stroke();
       }
+    } else {
+      // Porta em parede horizontal (passagem Norte-Sul)
+      if (isOpened) {
+        // Batentes laterais
+        e.fillStyle = "#1e293b";
+        e.fillRect(-16 * t, -4 * t, 5 * t, 8 * t);
+        e.fillRect(11 * t, -4 * t, 5 * t, 8 * t);
 
-      // Argola de puxar
-      e.strokeStyle = "#cbd5e1";
-      e.lineWidth = 1.3 * t;
-      e.beginPath();
-      e.arc(6 * t, 0, 3 * t, 0, Math.PI * 2);
-      e.stroke();
+        // Folha de madeira recolhida aberta contra a parede esquerda
+        e.fillStyle = "#451a03";
+        e.fillRect(-15 * t, 4 * t, 4 * t, 12 * t);
+        e.strokeStyle = "#1b0f0a";
+        e.lineWidth = 1 * t;
+        e.strokeRect(-15 * t, 4 * t, 4 * t, 12 * t);
+
+        // Passagem livre
+        e.fillStyle = "rgba(255, 255, 255, 0.05)";
+        e.fillRect(-10 * t, -12 * t, 20 * t, 24 * t);
+      } else {
+        // Porta fechada frontal
+        e.fillStyle = "rgba(2, 6, 23, 0.6)";
+        e.fillRect(-16 * t, -16 * t, 32 * t, 32 * t);
+
+        // Batentes
+        e.fillStyle = "#1e293b";
+        e.fillRect(-16 * t, -16 * t, 4 * t, 32 * t);
+        e.fillRect(12 * t, -16 * t, 4 * t, 32 * t);
+
+        // Folha de carvalho
+        e.fillStyle = "#5c2e0b";
+        e.fillRect(-12 * t, -15 * t, 24 * t, 30 * t);
+
+        // Frisos
+        e.strokeStyle = "#381c07";
+        e.lineWidth = 1 * t;
+        e.beginPath();
+        e.moveTo(-4 * t, -15 * t); e.lineTo(-4 * t, 15 * t);
+        e.moveTo(4 * t, -15 * t); e.lineTo(4 * t, 15 * t);
+        e.stroke();
+
+        // Cintas de ferro
+        e.fillStyle = "#0f172a";
+        e.fillRect(-12 * t, -10 * t, 24 * t, 3.5 * t);
+        e.fillRect(-12 * t, 7 * t, 24 * t, 3.5 * t);
+
+        // Rebites
+        e.fillStyle = "#94a3b8";
+        for (const rx of [-8, 0, 8]) {
+          e.beginPath();
+          e.arc(rx * t, -8.2 * t, 1.2 * t, 0, Math.PI * 2);
+          e.arc(rx * t, 8.8 * t, 1.2 * t, 0, Math.PI * 2);
+          e.fill();
+        }
+
+        // Fechadura e argola
+        e.strokeStyle = "#cbd5e1";
+        e.lineWidth = 1.3 * t;
+        e.beginPath();
+        e.arc(5 * t, 0, 2.8 * t, 0, Math.PI * 2);
+        e.stroke();
+      }
     }
+
     e.restore();
   }
 
@@ -4381,7 +4459,8 @@
     e.restore();
   }
 
-  function drawPedregulhos(e, t, subType = 0) {
+  function drawPedregulhos(e, t = 1, subType = 0) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     // Pilha de pedregulhos e cascalho da escavação
     const colors = ["#475569", "#334155", "#64748b", "#1e293b"];

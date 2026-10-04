@@ -2465,6 +2465,56 @@
                   : [...qe, De];
               }),
                 _t((qe) => qe + 5));
+            } else if (Ke.action === "collect_pebbles") {
+              m.current.playRockBreak && m.current.playRockBreak();
+              const De = pi("stone");
+              ra((qe) => {
+                const Ze = ot(Da.current.mochila);
+                return qe.length >= Ze
+                  ? (ve(`Inventário cheio (máximo ${Ze} itens)!`), qe)
+                  : [...qe, De];
+              });
+              ve("Você recolheu pedregulhos pontiagudos ao lado da muralha do calabouço!");
+            } else if (Ke.action === "collect_jailer_key") {
+              if (!Ke.alreadyCollected) {
+                m.current.playChestChime && m.current.playChestChime();
+                const keyItem = {
+                  id: `jailer_key_${Date.now()}`,
+                  name: "Chave do Carcereiro",
+                  icon: "🗝️",
+                  color: "#eab308",
+                  isEquippable: !1,
+                  categoryType: "material",
+                  rarity: "raro",
+                  value: 80,
+                  stackCount: 1,
+                  description:
+                    "Molho de pesadas chaves de ferro forjado do antigo carcereiro. Destranca as grades das celas da prisão do calabouço.",
+                };
+                ra((prev) => {
+                  const maxSlots = ot(Da.current.mochila);
+                  return prev.length >= maxSlots ? prev : [...prev, keyItem];
+                });
+                _t((xp) => xp + 60);
+              }
+              ve(Ke.message);
+            } else if (Ke.action === "locked_cell") {
+              const hasKey = Ve.some(
+                (it) =>
+                  (it.name || "").toLowerCase().includes("carcereiro") ||
+                  (it.name || "").toLowerCase().includes("chave") ||
+                  (it.id || "").toLowerCase().includes("jailer_key") ||
+                  (it.id || "").toLowerCase().includes("key"),
+              );
+              if (hasKey) {
+                E.unlockAndOpenGate(Ke.tx || Ye.tx, Ke.ty || Ye.ty);
+                m.current.playChestChime && m.current.playChestChime();
+                ve("🔓 Você usou a Chave do Carcereiro para abrir o pesado cadeado da cela!");
+              } else {
+                m.current.playPunchWhoosh && m.current.playPunchWhoosh();
+                ve(Ke.message);
+              }
+              return;
             } else if (Ke.action === "clay_still_drying")
               (m.current.playPunchWhoosh(), ve(Ke.message));
             else if (Ke.action === "collect_dried_clay") {

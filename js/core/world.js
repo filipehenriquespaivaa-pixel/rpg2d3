@@ -791,10 +791,18 @@
     lightCorridorTorch(t, l) {
       const u = this.isUnderground ? `underground_${t},${l}` : `${t},${l}`,
         p = `cave_${t},${l}`,
-        m = this.interactedProps.get(u) || this.interactedProps.get(p) || {};
+        d = `dungeon_${t},${l}`,
+        m = this.interactedProps.get(u) || this.interactedProps.get(p) || this.interactedProps.get(d) || {};
       this.interactedProps.set(u, { ...m, lit: !0 });
       this.interactedProps.set(p, { ...m, lit: !0 });
+      this.interactedProps.set(d, { ...m, lit: !0 });
       this.closestCampfireCache.clear();
+      this.invalidateTile(t, l);
+    }
+    unlockAndOpenGate(t, l) {
+      const pKey = `dungeon_${t},${l}`;
+      const m = this.interactedProps.get(pKey) || {};
+      this.interactedProps.set(pKey, { ...m, unlocked: !0, opened: !0 });
       this.invalidateTile(t, l);
     }
     enterCave(t, l, o, u) {
@@ -3050,6 +3058,14 @@
         return { role: "dungeon_floor", roomName: "Vestíbulo da Escadaria do Calabouço" };
       }
 
+      // Conexões superiores das muralhas externas entre o Vestíbulo e as Celas/Salões:
+      if (dy === 3 && dx >= -7 && dx <= -2) {
+        return { role: "dungeon_wall", roomName: "Muralha das Celas" };
+      }
+      if (dy === 3 && dx >= 2 && dx <= 13) {
+        return { role: "dungeon_wall", roomName: "Muralha do Posto do Carcereiro" };
+      }
+
       // 2. Corredor Longo do Calabouço: dx in [-1, 1], dy in [3, 37]
       if (dx >= -1 && dx <= 1 && dy >= 3 && dy <= 37) {
         if ((dx === -1 || dx === 1) && (dy === 8 || dy === 14 || dy === 20 || dy === 26 || dy === 32)) {
@@ -3058,12 +3074,12 @@
         return { role: "corridor_floor", roomName: "Grande Corredor das Masmorras" };
       }
 
-      // 3. Prisões Pequenas com Grades (Ala Oeste): dx in [-7, -2], dy in [3, 37]
-      if (dx >= -7 && dx <= -2 && dy >= 3 && dy <= 37) {
+      // 3. Prisões Pequenas com Grades (Ala Oeste): dx in [-7, -2], dy in [4, 37]
+      if (dx >= -7 && dx <= -2 && dy >= 4 && dy <= 37) {
         if (dx === -7) {
           return { role: "dungeon_wall", roomName: "Muralha Externa das Celas" };
         }
-        if (dy === 3 || dy === 37) {
+        if (dy === 37) {
           return { role: "dungeon_wall", roomName: "Muralha das Celas" };
         }
         const isPartition = dy === 8 || dy === 14 || dy === 20 || dy === 26 || dy === 32;
@@ -3073,12 +3089,12 @@
 
         // Frente voltada para o corredor (dx === -2)
         if (dx === -2) {
-          if (dy === 6) return { role: "iron_bars_gate", cellIndex: 1, defaultOpened: false, roomName: "Grade de Ferro da Cela 1" };
-          if (dy === 11) return { role: "iron_bars_gate", cellIndex: 2, defaultOpened: true, roomName: "Grade de Ferro da Cela 2" };
-          if (dy === 17) return { role: "iron_bars_gate", cellIndex: 3, defaultOpened: false, roomName: "Grade de Ferro da Cela 3" };
-          if (dy === 23) return { role: "iron_bars_gate", cellIndex: 4, defaultOpened: true, roomName: "Grade de Ferro da Cela 4" };
-          if (dy === 29) return { role: "iron_bars_gate", cellIndex: 5, defaultOpened: false, roomName: "Grade de Ferro da Cela 5" };
-          if (dy === 34) return { role: "iron_bars_gate", cellIndex: 6, defaultOpened: true, roomName: "Grade de Ferro da Cela 6" };
+          if (dy === 6) return { role: "iron_bars_gate", cellIndex: 1, defaultOpened: false, roomName: "Grade da Cela 1 (Trancada)" };
+          if (dy === 11) return { role: "iron_bars_gate", cellIndex: 2, defaultOpened: true, roomName: "Grade da Cela 2 (Aberta)" };
+          if (dy === 17) return { role: "iron_bars_gate", cellIndex: 3, defaultOpened: false, roomName: "Grade da Cela 3 (Trancada)" };
+          if (dy === 23) return { role: "iron_bars_gate", cellIndex: 4, defaultOpened: true, roomName: "Grade da Cela 4 (Aberta)" };
+          if (dy === 29) return { role: "iron_bars_gate", cellIndex: 5, defaultOpened: false, roomName: "Grade da Cela 5 (Trancada)" };
+          if (dy === 34) return { role: "iron_bars_gate", cellIndex: 6, defaultOpened: true, roomName: "Grade da Cela 6 (Aberta)" };
           return { role: "dungeon_wall", roomName: "Frontispício das Celas" };
         }
 
@@ -3100,9 +3116,9 @@
         return { role: "cell_floor", cellIndex: cellIdx, roomName: cellName };
       }
 
-      // 4. Salão 1: Posto do Carcereiro (dx in [2, 11], dy in [4, 12])
-      if (dx >= 2 && dx <= 11 && dy >= 4 && dy <= 12) {
-        if (dy === 4 || dy === 12 || dx === 11) {
+      // 4. Salão 1: Posto do Carcereiro (dx in [2, 13], dy in [4, 12])
+      if (dx >= 2 && dx <= 13 && dy >= 4 && dy <= 12) {
+        if (dy === 4 || dy === 12 || dx === 13) {
           return { role: "dungeon_wall", roomName: "Muralha do Posto do Carcereiro" };
         }
         if (dx === 2) {
@@ -3113,15 +3129,20 @@
         }
         const roomName = "Posto do Carcereiro das Masmorras";
         if (dx === 7 && dy === 8) return { role: "jailer_table", roomName };
-        if (dx === 9 && dy === 6) return { role: "weapon_rack", roomName };
+        if (dx === 10 && dy === 6) return { role: "weapon_rack", roomName };
         if (dx === 4 && dy === 6) return { role: "chest", roomName };
-        if (dx === 9 && dy === 10) return { role: "corridor_torch", roomName };
+        if (dx === 10 && dy === 10) return { role: "corridor_torch", roomName };
         return { role: "hall_floor", roomName };
       }
 
-      // 5. Salão 2: A SALA DE TORTURA (Apenas UMA sala de tortura! dx in [2, 14], dy in [14, 25])
-      if (dx >= 2 && dx <= 14 && dy >= 14 && dy <= 25) {
-        if (dy === 14 || dy === 25 || dx === 14) {
+      // Parede divisória entre Salão 1 e Salão 2
+      if (dy === 13 && dx >= 2 && dx <= 13) {
+        return { role: "dungeon_wall", roomName: "Muralha Divisória de Salão" };
+      }
+
+      // 5. Salão 2: A SALA DE TORTURA (Apenas UMA sala de tortura! dx in [2, 13], dy in [14, 25])
+      if (dx >= 2 && dx <= 13 && dy >= 14 && dy <= 25) {
+        if (dy === 14 || dy === 25 || dx === 13) {
           return { role: "dungeon_wall", roomName: "Muralha da Câmara de Tortura" };
         }
         if (dx === 2) {
@@ -3132,16 +3153,22 @@
         }
         const roomName = "Câmara de Tortura das Masmorras";
         if (dx === 8 && dy === 19) return { role: "torture_rack", roomName };
-        if (dx === 12 && dy === 17) return { role: "iron_maiden", roomName };
-        if (dx === 11 && dy === 22) return { role: "hanging_cage", roomName };
+        if (dx === 11 && dy === 17) return { role: "iron_maiden", roomName };
+        if (dx === 10 && dy === 22) return { role: "hanging_cage", roomName };
         if (dx === 5 && dy === 22) return { role: "torture_brazier", roomName };
         if (dx === 5 && dy === 16) return { role: "torture_tools", roomName };
         if (dx === 8 && dy === 15) return { role: "dungeon_skeleton", roomName };
         if (dx === 8 && dy === 24) return { role: "dungeon_straw", roomName };
+        if (dx === 11 && dy === 15) return { role: "corridor_torch", roomName };
         return { role: "torture_floor", roomName };
       }
 
-      // 6. Salão 3: SALÃO DA FOSSA (Banheiro medieval / Latrinas para ambientação: dx in [2, 13], dy in [27, 36])
+      // Parede divisória entre Salão 2 e Salão 3
+      if (dy === 26 && dx >= 2 && dx <= 13) {
+        return { role: "dungeon_wall", roomName: "Muralha Divisória de Salão" };
+      }
+
+      // 6. Salão 3: SALÃO DA FOSSA (Banheiro medieval / Latrinas: dx in [2, 13], dy in [27, 36])
       if (dx >= 2 && dx <= 13 && dy >= 27 && dy <= 36) {
         if (dy === 27 || dy === 36 || dx === 13) {
           return { role: "dungeon_wall", roomName: "Muralha da Câmara da Fossa" };
@@ -3157,28 +3184,33 @@
         if (dx === 11 && dy === 29) return { role: "dungeon_latrine_bench", roomName };
         if (dx === 11 && dy === 33) return { role: "dungeon_latrine_bench", roomName };
         if (dx === 4 && dy === 34) return { role: "dungeon_latrine_bench", roomName };
+        if (dx === 11 && dy === 35) return { role: "corridor_torch", roomName };
         return { role: "latrine_floor", roomName };
       }
 
-      // 7. Salão 4: Câmara de Provisões e Despojos (Final do Corredor: dx in [-5, 5], dy in [38, 46])
-      if (dx >= -5 && dx <= 5 && dy >= 38 && dy <= 46) {
-        if (dx === -5 || dx === 5 || dy === 46) {
-          return { role: "dungeon_wall", roomName: "Muralha do Depósito" };
+      // Muralha sul fechando o Salão 3
+      if (dy === 37 && dx >= 2 && dx <= 13) {
+        return { role: "dungeon_wall", roomName: "Muralha da Câmara da Fossa" };
+      }
+
+      // 7. Salão 4: Câmara de Provisões e Despojos (Final do Corredor fechado por porta: dx in [-4, 4], dy in [38, 45])
+      if (dx >= -4 && dx <= 4 && dy >= 38 && dy <= 45) {
+        if (dy === 38) {
+          if (dx === 0) {
+            return { role: "dungeon_door", doorVertical: false, defaultOpened: false, roomName: "Portão da Câmara de Despojos" };
+          }
+          return { role: "dungeon_wall", roomName: "Muralha Final do Corredor" };
         }
-        if (dy === 38 && (dx < -1 || dx > 1)) {
+        if (dx === -4 || dx === 4 || dy === 45) {
           return { role: "dungeon_wall", roomName: "Muralha do Depósito" };
         }
         const roomName = "Câmara de Provisões e Despojos do Calabouço";
-        if (dx === 0 && dy === 43) return { role: "chest", roomName };
-        if (dx === -3 && dy === 41) return { role: "dungeon_straw", roomName };
-        if (dx === 3 && dy === 41) return { role: "weapon_rack", roomName };
+        if (dx === 0 && dy === 42) return { role: "chest", roomName };
+        if (dx === -2 && dy === 41) return { role: "dungeon_straw", roomName };
+        if (dx === 2 && dy === 41) return { role: "weapon_rack", roomName };
+        if (dx === 0 && dy === 44) return { role: "corridor_torch", roomName };
         return { role: "hall_floor", roomName };
       }
-
-      if (dy === 3 && dx >= 2 && dx <= 3) return { role: "dungeon_wall", roomName: "Muralha" };
-      if (dy === 13 && dx === 2) return { role: "dungeon_wall", roomName: "Muralha" };
-      if (dy === 26 && dx === 2) return { role: "dungeon_wall", roomName: "Muralha" };
-      if (dy === 37 && dx >= 2 && dx <= 5) return { role: "dungeon_wall", roomName: "Muralha" };
 
       return null;
     }
@@ -3195,9 +3227,13 @@
     }
     getDungeonTile(t, l) {
       const u = this.hash2D(t, l, 98);
-      const stair = this.getDungeonEntranceStairForBiome(t, l);
-      const stairTx = stair ? stair.tx : (this.activeDungeonStairCoords ? this.activeDungeonStairCoords.tx : t);
-      const stairTy = stair ? stair.ty : (this.activeDungeonStairCoords ? this.activeDungeonStairCoords.ty : l);
+      let stair = this.activeDungeonStairCoords;
+      if (!stair) {
+        stair = this.getDungeonEntranceStairForBiome(t, l);
+        if (stair) this.activeDungeonStairCoords = { tx: stair.tx, ty: stair.ty };
+      }
+      const stairTx = stair ? stair.tx : t;
+      const stairTy = stair ? stair.ty : l;
       const dx = t - stairTx;
       const dy = l - stairTy;
 
@@ -3240,21 +3276,32 @@
             descriptionPt: `Escadaria robusta de pedra e ferro que sobe de volta para os salões do subsolo em [${stairTx}, ${stairTy}]. Pressione [F] para subir ao subsolo!`,
           };
         } else if (cell.role === "iron_bars_gate") {
-          const isOpen = intState.opened !== undefined ? !!intState.opened : !!cell.defaultOpened;
+          const isUnlocked = !!intState.unlocked;
+          const isDefaultOpened = !!cell.defaultOpened;
+          const isOpen = intState.opened !== undefined
+            ? !!intState.opened
+            : isDefaultOpened;
           isIronBars = !0;
           isIronBarsOpen = isOpen;
           sProp = {
             kind: "iron_bars_gate",
-            doorVertical: !1,
+            doorVertical: !0,
+            cellIndex: cell.cellIndex || 0,
+            defaultOpened: isDefaultOpened,
+            unlocked: isUnlocked || isDefaultOpened,
             opened: isOpen,
             scale: 1,
             interactive: !0,
             namePt: isOpen
-              ? `${cell.roomName} (Aberta / Arrombada)`
-              : `${cell.roomName} (Fechada)`,
+              ? `${cell.roomName} (Aberta)`
+              : isUnlocked || isDefaultOpened
+                ? `${cell.roomName} (Fechada)`
+                : `${cell.roomName} (Trancada)`,
             descriptionPt: isOpen
               ? "As pesadas barras de ferro forjado desta cela estão abertas. Pressione [F] para fechar a grade."
-              : "Uma grade pesada de barras verticais de ferro forjado e tranca enferrujada. Pressione [F] para abrir!",
+              : isUnlocked || isDefaultOpened
+                ? "Grade de ferro destrancada. Pressione [F] para abrir!"
+                : "Grade de ferro fechada com um pesado cadeado. Requer a Chave do Carcereiro para abrir!",
           };
         } else if (cell.role === "dungeon_door") {
           const isOpen = intState.opened !== undefined ? !!intState.opened : !!cell.defaultOpened;
@@ -3274,14 +3321,21 @@
               : `Porta maciça de madeira com ferragens forjadas dando acesso a: ${cell.roomName}. Pressione [F] para abrir!`,
           };
         } else if (cell.role === "corridor_torch") {
+          const isLit = !!intState.lit;
           sProp = {
             kind: "corridor_torch",
             subType: 0,
-            lit: !0,
+            lit: isLit,
+            offsetX: 0,
+            offsetY: -2,
             scale: 1.05,
-            interactive: !1,
-            namePt: "Tocha do Calabouço (Acesa)",
-            descriptionPt: "Braseiro de ferro negro ardendo em chamas, iluminando os corredores úmidos das masmorras.",
+            interactive: !isLit,
+            namePt: isLit
+              ? "Tocha do Calabouço (Acesa)"
+              : "Suporte de Tocha do Calabouço (Apagada)",
+            descriptionPt: isLit
+              ? "Tocha de ferro ardendo em chamas, iluminando as masmorras sombrias."
+              : "Um suporte de tocha apagado na parede do calabouço. Pressione [F] com uma tocha equipada para acendê-la!",
           };
         } else if (cell.role === "torture_rack") {
           sProp = {
@@ -3347,13 +3401,17 @@
             descriptionPt: "Bancos rústicos de pedra com orifícios talhados conduzindo à fossa subterrânea.",
           };
         } else if (cell.role === "jailer_table") {
+          const hasKey = !!intState.collectedKey;
           sProp = {
             kind: "jailer_table",
             subType: 0,
+            hasKey: !hasKey,
             scale: 1.2,
             interactive: !0,
             namePt: "Mesa do Carcereiro",
-            descriptionPt: "Mesa pesada de madeira carcomida com um diário de prisioneiros, garrafa de rum e molho de chaves de ferro.",
+            descriptionPt: hasKey
+              ? "Mesa pesada de madeira carcomida com um diário de registros de antigos prisioneiros esquecidos."
+              : "Mesa pesada de madeira com um livro de registros e um molho de chaves de ferro pendurado! Pressione [F] para pegar a Chave do Carcereiro.",
           };
         } else if (cell.role === "weapon_rack") {
           sProp = {
@@ -3427,10 +3485,11 @@
       }
 
       // FORA DA CONSTRUÇÃO DO CALABOUÇO: CAVERNA COMUM
+      const isNearWall = this._isNearDungeonWall(dx, dy);
       const m = Math.abs(this.caveWallNoise.noise2D(t * 0.07, l * 0.07)),
         c = this.caveRoomNoise.noise2D(t * 0.04, l * 0.04),
         f = this.caveDetailNoise.noise2D(t * 0.07 + 77, l * 0.07 + 77);
-      const isOpen = m < 0.15 || Math.abs(f) < 0.14 || c > 0.46;
+      const isOpen = isNearWall || m < 0.15 || Math.abs(f) < 0.14 || c > 0.46;
 
       if (!isOpen) {
         return {
@@ -3446,7 +3505,6 @@
       }
 
       // Caverna comum aberta: verifica se está junto às paredes de construção para colocar PEDREGULHOS!
-      const isNearWall = this._isNearDungeonWall(dx, dy);
       let caveProp = null;
       let isPedregulhos = !1;
 
@@ -3455,6 +3513,8 @@
         caveProp = {
           kind: "pedregulhos",
           subType: Math.abs(t * 17 + l * 23) % 4,
+          offsetX: 0,
+          offsetY: 0,
           scale: 1.15,
           interactive: !0,
           namePt: "Pedregulhos e Cascalho da Escavação",
@@ -3503,6 +3563,12 @@
             descriptionPt: "Coluna cônica de calcário erguida pelo gotejamento secular das águas da caverna.",
           };
         }
+      }
+
+      if (caveProp) {
+        if (caveProp.offsetX === undefined) caveProp.offsetX = 0;
+        if (caveProp.offsetY === undefined) caveProp.offsetY = 0;
+        if (caveProp.scale === undefined) caveProp.scale = 1;
       }
 
       return {
@@ -3702,14 +3768,26 @@
           reward: "Retorno ao Subsolo",
         };
       if (o.prop.kind === "iron_bars_gate") {
-        const nextOpen = !o.prop.opened;
         const pKey = `dungeon_${t},${l}`;
+        const isLocked = !o.prop.opened && o.prop.defaultOpened === false && !m.unlocked;
+        if (isLocked) {
+          return {
+            success: !1,
+            action: "locked_cell",
+            tx: t,
+            ty: l,
+            message: "🔒 Esta cela está trancada com um pesado cadeado de ferro! Você precisa da Chave do Carcereiro (no Posto do Carcereiro) para destrancá-la.",
+            reward: "Cela Trancada",
+          };
+        }
+        const nextOpen = !o.prop.opened;
         this.interactedProps.set(pKey, { ...m, opened: nextOpen });
         this.invalidateTile(t, l);
         return {
           success: !0,
+          action: "toggle_gate",
           message: nextOpen
-            ? "Você empurrou a pesada grade de ferro da prisão: o portão se abriu com um rangido metálico!"
+            ? "Você empurrou a pesada grade de ferro da prisão: o portão rangeu e se recolheu!"
             : "Você fechou as grades de ferro da cela.",
           reward: nextOpen ? "Grade Aberta" : "Grade Fechada",
         };
@@ -3777,10 +3855,18 @@
         };
       }
       if (o.prop.kind === "jailer_table") {
+        const pKey = `dungeon_${t},${l}`;
+        const hasKey = !!m.collectedKey;
+        this.interactedProps.set(pKey, { ...m, collectedKey: !0 });
+        this.invalidateTile(t, l);
         return {
           success: !0,
-          message: "A mesa do carcereiro guarda um livro de registros com nomes de antigos prisioneiros esquecidos e uma caneca de estanho.",
-          reward: "Registros da Prisão (+50 XP)",
+          action: "collect_jailer_key",
+          alreadyCollected: hasKey,
+          message: hasKey
+            ? "A mesa do carcereiro guarda o livro de registros com nomes de antigos prisioneiros esquecidos."
+            : "Você revistou a mesa do carcereiro e pegou o pesado Molho de Chaves do Carcereiro! Agora você pode destrancar as celas da prisão.",
+          reward: hasKey ? "Registros do Carcereiro" : "Chave do Carcereiro (+60 XP)",
         };
       }
       if (o.prop.kind === "weapon_rack") {
