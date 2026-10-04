@@ -1599,7 +1599,7 @@
             drawDungeonStaircase(c, f, !0, this.animTimer);
             break;
           case "iron_bars_gate":
-            drawIronBarsGate(c, f, !1, !!t.opened);
+            drawIronBarsGate(c, f, t.doorVertical !== undefined ? !!t.doorVertical : !0, !!t.opened);
             break;
           case "dungeon_door":
             drawDungeonDoor(c, f, !!t.doorVertical, !!t.opened);
