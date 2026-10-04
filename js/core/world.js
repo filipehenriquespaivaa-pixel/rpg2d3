@@ -1613,9 +1613,9 @@
               role = "vase";
             }
           } else if (inSE) {
-            roomName = isHall ? "Câmara Sudeste (Assembleia e Guarda)" : "4º Cômodo da Casa (Sala de Ofícios e Arca)";
+            roomName = isHall ? "Câmara Sudeste (Assembleia e Guarda)" : "4º Cômodo da Casa (Sala de Ofícios)";
             if (rx === midRoomX && ry === midRoomYSouth) {
-              role = isUnfinished ? "unfinished_work" : "chest";
+              role = isUnfinished ? "unfinished_work" : isHall ? "chest" : "vase";
               subType = 1;
             } else if (rx === midRoomX - 2 && ry === midRoomYSouth) {
               role = "furniture";
@@ -2832,24 +2832,7 @@
               "Esporos fosforescentes muito tênues crescendo na rocha úmida.",
           };
         else if (y.id === BiomeId.CAVE_FLOOR)
-          if (v < 0.008) {
-            const j = (S == null ? void 0 : S.opened) ?? !1;
-            w = {
-              kind: "chest",
-              subType: 1,
-              offsetX: 0,
-              offsetY: 0,
-              scale: 1,
-              interactive: !j,
-              opened: j,
-              namePt: j
-                ? "Baú do Mineiro Perdido (Aberto)"
-                : "Baú do Mineiro Perdido",
-              descriptionPt: j
-                ? "Você já pegou os tesouros deste baú subterrâneo!"
-                : "Pressione [F] para destrancar este tesouro oculto nas profundezas!",
-            };
-          } else if (v >= 0.008 && v < 0.035) {
+          if (v >= 0.008 && v < 0.035) {
             const j = Math.floor(this.hash2D(t, l, 11) * 3),
               P = [
                 "Filão de Ouro Maciço",
@@ -2985,22 +2968,7 @@
               : "Pressione [F] ou Interagir para despertar a bênção mágica do santuário.",
         };
       // Fogueiras não aparecem mais naturalmente pelo mapa — são criadas exclusivamente pelo jogador via receita!
-      if (g > 0.0035 && g < 0.0055 && o.category === "land") {
-        const S = (f == null ? void 0 : f.opened) ?? !1;
-        return {
-          kind: "chest",
-          subType: 0,
-          offsetX: 0,
-          offsetY: 0,
-          scale: 1,
-          interactive: !S,
-          opened: S,
-          namePt: S ? "Baú de Relíquias (Aberto)" : "Baú de Relíquias Antigo",
-          descriptionPt: S
-            ? "Você já recolheu o tesouro deste baú!"
-            : "Pressione [F] ou Interagir para abrir o baú e obter tesouros!",
-        };
-      }
+      // Baús também não aparecem espalhados pelo mundo — surgem APENAS dentro dos salões das construções!
       if (
         g > 0.0055 &&
         g < 0.0075 &&
