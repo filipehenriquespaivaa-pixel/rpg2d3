@@ -809,6 +809,14 @@
         return this.rawCaveCandidateCache.get(key);
 
       let res = null;
+      const isBlockedUndergroundWallOrDoor = (tx, ty) => {
+        const lx = ((tx % 32) + 32) % 32,
+          ly = ((ty % 32) + 32) % 32;
+        if (lx === 0 || lx === 4 || ly === 0 || ly === 4 || ly === 17) return !0;
+        if (lx === 13 || lx === 15 || lx === 16 || lx === 20 || lx === 22 || lx === 24) return !0;
+        if (ly === 5 || ly === 16 || ly === 18 || ly === 31) return !0;
+        return !1;
+      };
       if (t === 10 && l === 8) {
         const b10 = this._computeSurfaceBaseBiome(10, 8);
         const isRuins10 = !!(b10 && b10.id === BiomeId.MEADOW);
@@ -828,10 +836,18 @@
       } else {
         const b = this._computeSurfaceBaseBiome(t, l);
         if (b && !b.hasWater && b.category === "land") {
+          const gCell = this._getGreekRuinCellAt(t, l);
+          const isBlockedByRuinWallOrDoor =
+            gCell &&
+            (gCell.role === "wall" ||
+              gCell.role === "rubble_wall" ||
+              gCell.role === "door" ||
+              gCell.role === "column");
+
           // 1. Garante uma Escadaria para o Subsolo na praça de entrada de cada Cidade de Ruínas Gregas!
           if (b.id === BiomeId.MEADOW) {
             const city = this._getMeadowCityDistrict(t, l);
-            if (city && t === city.stairTx && l === city.stairTy && !this._getGreekRuinCellAt(t, l)) {
+            if (city && t === city.stairTx && l === city.stairTy && !isBlockedByRuinWallOrDoor) {
               res = {
                 tx: t,
                 ty: l,
@@ -845,8 +861,13 @@
             }
           }
 
-          // 2. Demais entradas pelo mundo (não geradas em cima das paredes das construções gregas)
-          if (!res && !this._getGreekRuinCellAt(t, l)) {
+          // 2. Demais entradas pelo mundo (podem surgir tanto ao ar livre quanto DENTRO dos Salões na superfície,
+          //    desde que não fiquem em cima de paredes ou portas nem na superfície nem no subsolo!)
+          if (
+            !res &&
+            !isBlockedByRuinWallOrDoor &&
+            !(b.id === BiomeId.MEADOW && isBlockedUndergroundWallOrDoor(t, l))
+          ) {
             const g = this.hash2D(t, l, 99);
             const isPotentialRange =
               (g > 0.0075 && g < 0.0135) ||
@@ -871,7 +892,9 @@
                   subType: 2,
                   isStaircase: !0,
                   scale: 1.35,
-                  namePt: "Escadaria para o Subsolo",
+                  namePt: gCell
+                    ? "Escadaria Interna do Salão para o Subsolo"
+                    : "Escadaria para o Subsolo",
                   descriptionPt:
                     "Uma escadaria monumental de mármore helênico que desce em degraus profundos até as galerias do subsolo. Pressione [F] para descer!",
                 };
@@ -988,29 +1011,6 @@
       return mergedRes;
     }
     getCaveEntranceAt(t, l) {
-      if (
-        this.isUnderground &&
-        this.activeCaveEntranceCoords &&
-        this.activeCaveEntranceCoords.tx === t &&
-        this.activeCaveEntranceCoords.ty === l
-      ) {
-        const surfB = this._computeSurfaceBaseBiome(t, l);
-        const isStair = !!(
-          surfB &&
-          (surfB.id === BiomeId.MEADOW || surfB.id === BiomeId.MEADOW_LAKE)
-        );
-        return {
-          kind: "cave_entrance",
-          namePt: isStair ? "Escadaria para o Subsolo" : "Entrada da Caverna",
-          subType: isStair ? 2 : 0,
-          isStaircase: isStair,
-          isMerged: !1,
-          mergedCount: 1,
-          scale: 1.35,
-          tx: t,
-          ty: l,
-        };
-      }
       if (!this.knownCaveEntrances) this.knownCaveEntrances = new Map();
       const key = (t + 1048576) * 2097152 + (l + 1048576);
       if (this.knownCaveEntrances.has(key))
@@ -1948,7 +1948,8 @@
         se.greekRuinRy = greekRuin.ry;
         se.greekRoomName = greekRuin.roomName;
         se.greekFloorFailed = !!greekRuin.floorFailed;
-        const canKeepCustom = this.customPlacedProps.has(O);
+        const canKeepCustom =
+          this.customPlacedProps.has(O) || (_ && _.kind === "cave_entrance");
         if (!canKeepCustom) {
           const intState =
             this.interactedProps.get(O) || this.interactedProps.get(`${t},${l}`) || {};
@@ -2132,7 +2133,7 @@
       if (!isUnderMeadow) return null;
 
       // Se a borda do bioma MEADOW estiver a 1 bloco de distância de outro bioma,
-      // fecha com parede intacta de mármore (e portas nos eixos dos corredores) para isolar a estrutura das cavernas normais!
+      // fecha com parede intacta de mármore para isolar a estrutura das cavernas normais (sem portas soltas em corredores)!
       const isMeadowAt = (nx, ny) => {
         const nb = this._computeSurfaceBaseBiome(nx, ny);
         return !!(nb && (nb.id === BiomeId.MEADOW || nb.id === BiomeId.MEADOW_LAKE));
@@ -2142,91 +2143,38 @@
         borderW = !isMeadowAt(t - 1, l),
         borderE = !isMeadowAt(t + 1, l);
       if (borderN || borderS || borderW || borderE) {
-        const cellSize = 20,
-          cx = Math.floor((t + 10) / cellSize) * cellSize,
-          cy = Math.floor((l + 10) / cellSize) * cellSize,
-          rx = t - cx,
-          ry = l - cy;
-        if (((borderN || borderS) && rx === 0) || ((borderW || borderE) && ry === 0)) {
-          return {
-            role: "door",
-            rx,
-            ry,
-            roomName: "Portal de Fronteira do Palácio Subterrâneo",
-            subType: borderW || borderE ? 1 : 0,
-            doorVertical: borderW || borderE,
-          };
-        }
         return {
           role: "wall",
-          rx,
-          ry,
+          rx: 0,
+          ry: 0,
           roomName: "Muralha Externa do Palácio Subterrâneo",
           subType: 0,
         };
       }
 
-      // Se houver uma saída de escadaria nas proximidades, garante um Átrio Real Intacto ao redor dela
-      // e um corredor reto conectando esse Átrio diretamente à malha de Corredores Principais!
-      const nearExit = this.getNearbyCaveExit(t, l, 6.5);
+      // Se este tile for uma Escadaria de Saída (ou imediatamente ao lado dela, dist <= 1),
+      // garante piso de mosaico real aberto para nunca prender o jogador ao descer/subir!
+      const nearExit = this.getNearbyCaveExit(t, l, 1.5);
       if (nearExit) {
-        const dx = Math.round(-nearExit.dx),
-          dy = Math.round(-nearExit.dy),
-          adx = Math.abs(dx),
-          ady = Math.abs(dy);
-        if (adx <= 4 && ady <= 4) {
-          const isExitBorder = adx === 4 || ady === 4;
-          const isDoorCenter = (adx === 4 && dy === 0) || (ady === 4 && dx === 0);
-          const isCorridorOpening = adx <= 1 || ady <= 1;
-          if (isDoorCenter) {
-            return {
-              role: "door",
-              rx: dx,
-              ry: dy,
-              roomName: "Átrio da Escadaria Subterrânea",
-              subType: adx === 4 ? 1 : 0,
-              doorVertical: adx === 4,
-            };
-          }
-          if (isExitBorder && !isCorridorOpening) {
-            return {
-              role: "wall",
-              rx: dx,
-              ry: dy,
-              roomName: "Átrio da Escadaria Subterrânea",
-              subType: 0,
-              doorVertical: !1,
-            };
-          }
-          if (adx === 2 && ady === 2) {
-            return {
-              role: "column",
-              rx: dx,
-              ry: dy,
-              roomName: "Átrio da Escadaria Subterrânea",
-              subType: 0,
-            };
-          }
-          return {
-            role: adx <= 1 && ady <= 1 ? "mosaic_center" : "temple_floor",
-            rx: dx,
-            ry: dy,
-            roomName: "Átrio da Escadaria Subterrânea",
-            subType: 0,
-          };
-        }
+        return {
+          role: "mosaic_center",
+          rx: Math.round(-nearExit.dx),
+          ry: Math.round(-nearExit.dy),
+          roomName: "Pátio da Escadaria Subterrânea",
+          subType: 0,
+        };
       }
 
       // =========================================================================
       // ARQUITETURA SUBTERRÂNEA HELÊNICA (100% Intacta — Sem Rochedos Naturais!):
       // 1. REDE DE CORREDORES PRINCIPAIS CONTÍNUOS (Avenidas Subterrâneas de 3 blocos
-      //    de largura que cruzam o subsolo em linha reta, sem serem interrompidas!).
+      //    de largura totalmente livres — ZERO portas no meio dos corredores!).
       // 2. ALAS DE SALÕES CONECTADOS (1, 2 ou até 3 Salões de tamanhos variados):
-      //    - O SALÃO 1 (Salão de Entrada) fica ao lado do Corredor Principal e é o
-      //      ÚNICO conectado ao corredor por uma Porta.
-      //    - O SALÃO 2 e o SALÃO 3 (quando a ala tem 2 ou 3 salões) ficam conectados
-      //      diretamente um no outro (Salão 1 -> Porta -> Salão 2 -> Porta -> Salão 3)
-      //      e NÃO têm nenhuma porta para o corredor principal!
+      //    - Portas existem EXCLUSIVAMENTE para entrar nos Salões:
+      //      * Do Corredor Principal para o SALÃO 1 (Salão de Entrada).
+      //      * Do SALÃO 1 para o SALÃO 2 (Porta Interna).
+      //      * Do SALÃO 2 para o SALÃO 3 (Porta Interna).
+      //    - O SALÃO 2 e o SALÃO 3 NÃO têm porta para o corredor!
       // =========================================================================
       const blockSize = 32;
       const bx = Math.floor(t / blockSize),
@@ -2241,12 +2189,9 @@
 
       // -------------------------------------------------------------------------
       // A. CORREDORES PRINCIPAIS CONTÍNUOS (lx in 0..4 e ly in 0..4):
-      //    - Piso do corredor contínuo: lx in 1..3 ou ly in 1..3
-      //    - Paredes do corredor: lx === 0, lx === 4, ly === 0, ly === 4
-      //    - Apenas 2 Portas por quadra ligando o Corredor Principal ao SALÃO 1
-      //      de cada Ala (nunca ao Salão 2 nem ao Salão 3!):
-      //      * Ala Superior/Oeste entram pela porta no Corredor Norte: (lx === 10, ly === 4)
-      //      * Ala Inferior/Leste entram pela porta no Corredor Oeste: (lx === 4, ly === 10)
+      //    - Piso do corredor contínuo: lx in 1..3 ou ly in 1..3 (100% livre, sem portas no meio!)
+      //    - Paredes laterais do corredor: lx === 0, lx === 4, ly === 0, ly === 4
+      //    - Nas paredes laterais do corredor ficam APENAS as portas que entram no SALÃO 1!
       // -------------------------------------------------------------------------
       const inHorizAvenue = ly >= 1 && ly <= 3;
       const inVertAvenue = lx >= 1 && lx <= 3;
@@ -2260,17 +2205,6 @@
             ry: ly - 2,
             roomName: "Encruzilhada do Grande Corredor Subterrâneo",
             subType: 0,
-          };
-        }
-        // Portais monumentais ao longo do corredor principal (a cada 32 blocos, em lx === 18 ou ly === 18)
-        if ((inHorizAvenue && lx === 18 && ly === 2) || (inVertAvenue && ly === 18 && lx === 2)) {
-          return {
-            role: "door",
-            rx: inHorizAvenue ? lx - 18 : lx - 2,
-            ry: inHorizAvenue ? ly - 2 : ly - 18,
-            roomName: "Portal do Corredor Principal",
-            subType: inHorizAvenue ? 1 : 0,
-            doorVertical: inHorizAvenue,
           };
         }
         return {
