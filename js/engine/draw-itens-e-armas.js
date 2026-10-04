@@ -18,6 +18,16 @@
       (drawWhipIcon(e, c, f, g, u, S), e.restore());
       return;
     }
+    if (
+      y.includes("estilingue") ||
+      w.includes("estilingue") ||
+      w.includes("slingshot") ||
+      v === "crosshair" ||
+      v === "slingshot"
+    ) {
+      (drawSlingshotIcon(e, c, f, g, u, S), e.restore());
+      return;
+    }
     if (w.includes("galho") || y.includes("galho") || v === "🪵") {
       (Xu.render(e, c, f, g * 1.05, u), e.restore());
       return;
@@ -368,6 +378,120 @@
       return;
     }
     (rb(e, c, f, g, u, S), e.restore());
+  }
+  function drawSlingshotIcon(e, t, l, o, u = 0, m = "#84cc16") {
+    e.save();
+    e.translate(t, l);
+    e.rotate(-0.22);
+    const pull = Math.sin(u * 2.6) * 0.8 * o;
+
+    // Sombra suave de fundo
+    e.fillStyle = "rgba(0, 0, 0, 0.25)";
+    e.beginPath();
+    e.ellipse(0.5 * o, 1.5 * o, 7.5 * o, 9.5 * o, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Tira elástica traseira (da haste direita até a bolsa de couro)
+    e.strokeStyle = "#3f6212";
+    e.lineWidth = 2.4 * o;
+    e.lineCap = "round";
+    e.beginPath();
+    e.moveTo(5.2 * o, -6.2 * o);
+    e.quadraticCurveTo(4.2 * o, -1.2 * o + pull * 0.5, 2.2 * o, 2.2 * o + pull);
+    e.stroke();
+
+    e.strokeStyle = "#84cc16";
+    e.lineWidth = 1.3 * o;
+    e.beginPath();
+    e.moveTo(5.2 * o, -6.2 * o);
+    e.quadraticCurveTo(4.2 * o, -1.2 * o + pull * 0.5, 2.2 * o, 2.2 * o + pull);
+    e.stroke();
+
+    // Forquilha de madeira em "Y" (contorno escuro + cerne de madeira)
+    e.lineCap = "round";
+    e.lineJoin = "round";
+    const drawYWood = (width, color) => {
+      e.strokeStyle = color;
+      e.lineWidth = width;
+      e.beginPath();
+      // Cabo inferior até a bifurcação
+      e.moveTo(0, 9.5 * o);
+      e.lineTo(0, 0.8 * o);
+      // Haste esquerda do Y
+      e.moveTo(0, 1.2 * o);
+      e.quadraticCurveTo(-4.2 * o, -1.5 * o, -5.4 * o, -7.2 * o);
+      // Haste direita do Y
+      e.moveTo(0, 1.2 * o);
+      e.quadraticCurveTo(4.2 * o, -1.5 * o, 5.4 * o, -7.2 * o);
+      e.stroke();
+    };
+    drawYWood(4.6 * o, "#451a03");
+    drawYWood(3.1 * o, "#854d0e");
+    drawYWood(1.3 * o, "#b45309");
+
+    // Empunhadura trançada no cabo inferior
+    e.fillStyle = "#d97706";
+    e.strokeStyle = "#78350f";
+    e.lineWidth = 0.8 * o;
+    for (let i = 0; i < 3; i++) {
+      const gy = (3.0 + i * 1.9) * o;
+      e.beginPath();
+      e.roundRect(-2.1 * o, gy, 4.2 * o, 1.5 * o, 0.6 * o);
+      e.fill();
+      e.stroke();
+    }
+
+    // Amarras das tiras elásticas nas pontas do Y
+    for (const sx of [-5.2 * o, 5.2 * o]) {
+      e.fillStyle = "#365314";
+      e.beginPath();
+      e.roundRect(sx - 1.9 * o, -7.1 * o, 3.8 * o, 2.1 * o, 0.8 * o);
+      e.fill();
+      e.fillStyle = "#a3e635";
+      e.fillRect(sx - 1.4 * o, -6.5 * o, 2.8 * o, 0.9 * o);
+    }
+
+    // Bolsa de couro com um seixo encaixado
+    const pouchX = 0.6 * o,
+      pouchY = 2.4 * o + pull;
+    // Seixo arredondado dentro da bolsa
+    e.fillStyle = "#94a3b8";
+    e.strokeStyle = "#334155";
+    e.lineWidth = 0.9 * o;
+    e.beginPath();
+    e.arc(pouchX, pouchY - 0.6 * o, 2.4 * o, 0, Math.PI * 2);
+    e.fill();
+    e.stroke();
+    e.fillStyle = "#e2e8f0";
+    e.beginPath();
+    e.arc(pouchX - 0.7 * o, pouchY - 1.2 * o, 0.9 * o, 0, Math.PI * 2);
+    e.fill();
+
+    // Tira de couro que abraça o seixo
+    e.fillStyle = "#78350f";
+    e.strokeStyle = "#451a03";
+    e.lineWidth = 0.9 * o;
+    e.beginPath();
+    e.ellipse(pouchX, pouchY + 0.4 * o, 3.1 * o, 1.7 * o, -0.15, 0, Math.PI * 2);
+    e.fill();
+    e.stroke();
+
+    // Tira elástica frontal (da haste esquerda até a bolsa de couro)
+    e.strokeStyle = "#3f6212";
+    e.lineWidth = 2.5 * o;
+    e.beginPath();
+    e.moveTo(-5.2 * o, -6.2 * o);
+    e.quadraticCurveTo(-3.4 * o, -0.8 * o + pull * 0.5, pouchX - 1.8 * o, pouchY + 0.2 * o);
+    e.stroke();
+
+    e.strokeStyle = "#a3e635";
+    e.lineWidth = 1.4 * o;
+    e.beginPath();
+    e.moveTo(-5.2 * o, -6.2 * o);
+    e.quadraticCurveTo(-3.4 * o, -0.8 * o + pull * 0.5, pouchX - 1.8 * o, pouchY + 0.2 * o);
+    e.stroke();
+
+    e.restore();
   }
   function zg(e, t, l, o, u) {
     (e.save(),

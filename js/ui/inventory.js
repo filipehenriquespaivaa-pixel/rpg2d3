@@ -894,10 +894,30 @@
                       }),
                     ],
                   }),
-                  h.jsx("span", {
-                    className:
-                      "text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 font-bold uppercase shadow-sm",
-                    children: "DEV ATIVO",
+                  h.jsxs("div", {
+                    className: "flex items-center gap-1.5",
+                    children: [
+                      h.jsx("span", {
+                        className:
+                          "text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 font-bold uppercase shadow-sm",
+                        children: "DEV ATIVO",
+                      }),
+                      onCloseModal &&
+                        h.jsxs("button", {
+                          type: "button",
+                          onClick: onCloseModal,
+                          className:
+                            "px-2 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-800 text-rose-200 hover:text-white transition border border-rose-500/40 cursor-pointer flex items-center gap-1 text-xs font-bold shadow-sm",
+                          title: "Fechar Inventário (ESC ou [I])",
+                          children: [
+                            h.jsx(mi, { className: "h-4 w-4" }),
+                            h.jsx("span", {
+                              className: "text-[10px] font-mono",
+                              children: "Fechar",
+                            }),
+                          ],
+                        }),
+                    ],
                   }),
                 ],
               }),

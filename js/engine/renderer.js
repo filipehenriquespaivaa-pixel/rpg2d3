@@ -2537,6 +2537,51 @@
           o = ((t == null ? void 0 : t.name) || "").toLowerCase(),
           u = ((t == null ? void 0 : t.id) || "").toLowerCase();
         if (isWhipItemX(t)) drawWhipHeldX(l, t, this.animTimer);
+        else if (
+          o.includes("estilingue") ||
+          u.includes("estilingue") ||
+          u.includes("slingshot")
+        ) {
+          // Forquilha de madeira em Y na mão do personagem + elástico verde e bolsa de couro
+          l.save();
+          l.lineCap = "round";
+          l.lineJoin = "round";
+          l.strokeStyle = "#451a03";
+          l.lineWidth = 3.2;
+          l.beginPath();
+          l.moveTo(0, 2);
+          l.lineTo(0, -6);
+          l.moveTo(0, -5.5);
+          l.lineTo(-4.2, -12.5);
+          l.moveTo(0, -5.5);
+          l.lineTo(4.2, -12.5);
+          l.stroke();
+
+          l.strokeStyle = "#854d0e";
+          l.lineWidth = 2;
+          l.beginPath();
+          l.moveTo(0, 2);
+          l.lineTo(0, -6);
+          l.moveTo(0, -5.5);
+          l.lineTo(-4.2, -12.5);
+          l.moveTo(0, -5.5);
+          l.lineTo(4.2, -12.5);
+          l.stroke();
+
+          // Tiras elásticas verdes e bolsa de couro
+          l.strokeStyle = "#84cc16";
+          l.lineWidth = 1.4;
+          l.beginPath();
+          l.moveTo(-4.2, -12);
+          l.quadraticCurveTo(0, -8.5, 4.2, -12);
+          l.stroke();
+
+          l.fillStyle = "#78350f";
+          l.beginPath();
+          l.ellipse(0, -9.8, 2.2, 1.3, 0, 0, Math.PI * 2);
+          l.fill();
+          l.restore();
+        }
         else if (o.includes("galho"))
           ((l.fillStyle = "#5c3a21"),
             l.fillRect(-1.5, -16, 3, 19),
