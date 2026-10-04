@@ -995,7 +995,10 @@
         this.activeCaveEntranceCoords.ty === l
       ) {
         const surfB = this._computeSurfaceBaseBiome(t, l);
-        const isStair = !!(this.enteredViaStaircase || (surfB && surfB.id === BiomeId.MEADOW));
+        const isStair = !!(
+          surfB &&
+          (surfB.id === BiomeId.MEADOW || surfB.id === BiomeId.MEADOW_LAKE)
+        );
         return {
           kind: "cave_entrance",
           namePt: isStair ? "Escadaria para o Subsolo" : "Entrada da Caverna",
@@ -2119,19 +2122,52 @@
       return (this.tileCache.set(o, se), se);
     }
     _getUndergroundGreekSanctuaryCellAt(t, l) {
-      // Verifica se este ponto subterrâneo está abaixo do bioma de Ruínas Gregas (MEADOW)
-      // ou dentro do grande complexo subterrâneo conectado à escadaria pela qual o jogador desceu!
+      // Verifica se este ponto subterrâneo está ESTRITAMENTE abaixo do bioma que tem Ruínas Gregas (MEADOW).
+      // Cavernas abaixo de quaisquer outros biomas continuam sendo cavernas naturais normais!
       const surfB = this._computeSurfaceBaseBiome(t, l);
-      const isUnderMeadow = !!(surfB && surfB.id === BiomeId.MEADOW && !surfB.hasWater);
-      const nearActiveStair =
-        this.enteredViaStaircase &&
-        this.activeCaveEntranceCoords &&
-        Math.hypot(t - this.activeCaveEntranceCoords.tx, l - this.activeCaveEntranceCoords.ty) <= 78;
+      const isUnderMeadow = !!(
+        surfB &&
+        (surfB.id === BiomeId.MEADOW || surfB.id === BiomeId.MEADOW_LAKE)
+      );
+      if (!isUnderMeadow) return null;
 
-      if (!isUnderMeadow && !nearActiveStair) return null;
+      // Se a borda do bioma MEADOW estiver a 1 bloco de distância de outro bioma,
+      // fecha com parede intacta de mármore (e portas nos eixos dos corredores) para isolar a estrutura das cavernas normais!
+      const isMeadowAt = (nx, ny) => {
+        const nb = this._computeSurfaceBaseBiome(nx, ny);
+        return !!(nb && (nb.id === BiomeId.MEADOW || nb.id === BiomeId.MEADOW_LAKE));
+      };
+      const borderN = !isMeadowAt(t, l - 1),
+        borderS = !isMeadowAt(t, l + 1),
+        borderW = !isMeadowAt(t - 1, l),
+        borderE = !isMeadowAt(t + 1, l);
+      if (borderN || borderS || borderW || borderE) {
+        const cellSize = 20,
+          cx = Math.floor((t + 10) / cellSize) * cellSize,
+          cy = Math.floor((l + 10) / cellSize) * cellSize,
+          rx = t - cx,
+          ry = l - cy;
+        if (((borderN || borderS) && rx === 0) || ((borderW || borderE) && ry === 0)) {
+          return {
+            role: "door",
+            rx,
+            ry,
+            roomName: "Portal de Fronteira do Palácio Subterrâneo",
+            subType: borderW || borderE ? 1 : 0,
+            doorVertical: borderW || borderE,
+          };
+        }
+        return {
+          role: "wall",
+          rx,
+          ry,
+          roomName: "Muralha Externa do Palácio Subterrâneo",
+          subType: 0,
+        };
+      }
 
       // Se houver uma saída de escadaria nas proximidades, garante um Átrio Real Intacto ao redor dela
-      // conectado diretamente à malha de corredores!
+      // conectado diretamente à malha de corredores com Portas Helênicas!
       const nearExit = this.getNearbyCaveExit(t, l, 6.5);
       if (nearExit) {
         const dx = Math.round(-nearExit.dx),
@@ -2140,7 +2176,18 @@
           ady = Math.abs(dy);
         if (adx <= 5 && ady <= 5) {
           const isExitBorder = adx === 5 || ady === 5;
+          const isDoorCenter = (adx === 5 && dy === 0) || (ady === 5 && dx === 0);
           const isCorridorOpening = adx <= 1 || ady <= 1;
+          if (isDoorCenter) {
+            return {
+              role: "door",
+              rx: dx,
+              ry: dy,
+              roomName: "Átrio da Escadaria Subterrânea",
+              subType: adx === 5 ? 1 : 0,
+              doorVertical: adx === 5,
+            };
+          }
           if (isExitBorder && !isCorridorOpening) {
             return {
               role: "wall",
@@ -2171,14 +2218,16 @@
       }
 
       // =========================================================================
-      // GRANDE COMPLEXO SUBTERRÂNEO HELÊNICO (100% Intacto — Zero Paredes Quebradas
-      // e Zero Piso Falhado!) cheio de Corredores e Salões de Tamanhos Diferentes!
+      // GRANDE COMPLEXO SUBTERRÂNEO HELÊNICO (100% Intacto — Zero Paredes Quebradas,
+      // Zero Rochedos Naturais e Zero Piso Falhado!)
+      // Cheio de Corredores, Portas e Salões de Tamanhos Diferentes!
       // =========================================================================
       // Cada setor de 20x20 blocos possui:
-      // - Um Salão de Tamanho Variado (Grande: 17x15, Médio: 13x11, Longo Horizontal: 17x9,
+      // - Um Salão Principal de Tamanho Variado (Grande: 17x15, Médio: 13x11, Longo Horizontal: 17x9,
       //   Longo Vertical: 11x15 ou Câmara Compacta: 9x9)
       // - Corredores largos (3 blocos de largura) conectando os 4 pontos cardeais (N, S, L, O)
-      //   para que todos os salões e escadarias formem um único Palácio Subterrâneo contínuo!
+      // - Câmaras e Aposentos Laterais nos cantos dos setores maiores (no espaço entre os corredores),
+      //   de modo que 100% da estrutura seja arquitetura helênica intacta (sem rochedos de caverna!).
       const cellSize = 20;
       const gx = Math.floor((t + 10) / cellSize),
         gy = Math.floor((l + 10) / cellSize),
@@ -2211,41 +2260,27 @@
       ];
       const roomName = hallNames[sizeType];
 
-      // 1. Verifica se está dentro do Salão deste setor (-W..W, -H..H)
+      // 1. Verifica se está dentro do Salão Principal deste setor (-W..W, -H..H)
       if (arx <= W && ary <= H) {
         const isNorthSouthWall = ary === H;
         const isEastWestWall = arx === W;
         const isOuterWall = isNorthSouthWall || isEastWestWall;
 
-        // Aberturas dos corredores que chegam nas 4 direções:
-        // - Passagem central aberta (rx === 0 ou ry === 0) com Porta Grega intacta
-        // - Passagens largas nos Grandes Salões (arx <= 1 ou ary <= 1)
+        // Portas Helênicas Intactas nas 4 entradas cardeais de todos os salões!
         const isDoorCenter = (isNorthSouthWall && rx === 0) || (isEastWestWall && ry === 0);
-        const isWideArchway =
-          sizeType === 0 && ((isNorthSouthWall && arx === 1) || (isEastWestWall && ary === 1));
 
         if (isDoorCenter) {
-          // Alguns portais têm Portas de Cedro e Bronze intactas, outros são arcos livres
-          if ((gx + gy) % 2 === 0) {
-            return {
-              role: "door",
-              rx,
-              ry,
-              roomName,
-              subType: isEastWestWall ? 1 : 0,
-              doorVertical: isEastWestWall,
-            };
-          }
           return {
-            role: "temple_floor",
+            role: "door",
             rx,
             ry,
             roomName,
-            subType: 0,
+            subType: isEastWestWall ? 1 : 0,
+            doorVertical: isEastWestWall,
           };
         }
 
-        if (isOuterWall && !isWideArchway) {
+        if (isOuterWall) {
           return {
             role: "wall",
             rx,
@@ -2277,6 +2312,28 @@
           };
         }
 
+        // Subdivisão interna para o Salão Médio (sizeType === 1):
+        // divisória norte com porta central para o Adyton (Santuário Interno)
+        if (sizeType === 1 && ry === -2 && arx <= W - 1) {
+          if (rx === 0) {
+            return {
+              role: "door",
+              rx,
+              ry,
+              roomName: "Adyton do Salão Médio",
+              subType: 0,
+              doorVertical: !1,
+            };
+          }
+          return {
+            role: "wall",
+            rx,
+            ry,
+            roomName,
+            subType: 0,
+          };
+        }
+
         // Mobiliário, Colunas Dóricas Intactas, Estátuas, Altares, Vasos e Arcas no interior de cada Salão:
         if (rx === 0 && ry === 0) {
           if (sizeType === 0) {
@@ -2291,8 +2348,8 @@
         // Colunatas internas intactas conforme o tamanho do salão
         if (
           (sizeType === 0 && arx === 2 && (ary === 3 || ary === 5)) ||
-          (sizeType === 1 && arx === 3 && ary === 3) ||
-          (sizeType === 2 && ( arx === 3 || arx === 6 ) && ary === 2) ||
+          (sizeType === 1 && arx === 3 && ary === 2) ||
+          (sizeType === 2 && (arx === 3 || arx === 6) && ary === 2) ||
           (sizeType === 3 && arx === 3 && (ary === 3 || ary === 5))
         ) {
           return { role: "column", rx, ry, roomName, subType: 0 };
@@ -2309,7 +2366,7 @@
             rx,
             ry,
             roomName,
-            subType: (Math.abs(gx + gy) % 2),
+            subType: Math.abs(gx + gy) % 2,
           };
         }
 
@@ -2346,16 +2403,26 @@
         };
       }
 
-      // 2. Fora do Salão: Corredores Monumentais conectando os Salões nas 4 direções!
-      // - Corredor Vertical Norte-Sul: arx <= 1 (paredes laterais intactas em arx === 2)
-      // - Corredor Horizontal Leste-Oeste: ary <= 1 (paredes laterais intactas em ary === 2)
-      // - Galeria Perimetral secundária em alguns setores para criar múltiplos caminhos e encruzilhadas!
+      // 2. Fora do Salão Principal: Corredores Monumentais + Salas de Canto (Aposentos Laterais)
+      // Transforma todo o espaço restante em corredores e salas menores interligadas por portas,
+      // eliminando 100% qualquer rochedo ou parede natural de caverna!
       const inVerticalCorridor = arx <= 1 && ary > H;
       const inHorizontalCorridor = ary <= 1 && arx > W;
       const isVerticalCorridorWall = arx === 2 && ary > H;
       const isHorizontalCorridorWall = ary === 2 && arx > W;
 
       if (inVerticalCorridor || inHorizontalCorridor) {
+        // Portas nas divisas entre setores (arx === 10 && ry === 0 ou ary === 10 && rx === 0)
+        if ((arx === 10 && ry === 0) || (ary === 10 && rx === 0)) {
+          return {
+            role: "door",
+            rx,
+            ry,
+            roomName: "Portal do Corredor Subterrâneo",
+            subType: arx === 10 ? 1 : 0,
+            doorVertical: arx === 10,
+          };
+        }
         return {
           role: "corridor",
           rx,
@@ -2366,6 +2433,19 @@
       }
 
       if (isVerticalCorridorWall || isHorizontalCorridorWall) {
+        // Portas de acesso dos corredores para as Câmaras de Canto (Aposentos Laterais)
+        const isCornerRoomDoorV = isVerticalCorridorWall && ary === H + 2 && H <= 6;
+        const isCornerRoomDoorH = isHorizontalCorridorWall && arx === W + 2 && W <= 6;
+        if (isCornerRoomDoorV || isCornerRoomDoorH) {
+          return {
+            role: "door",
+            rx,
+            ry,
+            roomName: "Aposento Lateral do Palácio Subterrâneo",
+            subType: isVerticalCorridorWall ? 1 : 0,
+            doorVertical: isVerticalCorridorWall,
+          };
+        }
         return {
           role: "wall",
           rx,
@@ -2375,12 +2455,46 @@
         };
       }
 
-      // Rocha maciça ao redor das paredes externas dos salões e corredores
+      // 3. Quadrantes entre os Corredores (arx > 2 e ary > 2 fora do Salão Principal):
+      // Em vez de rochedos de caverna, forma Câmaras de Canto e Galerias Laterais com paredes de mármore!
+      const isSectorBorder = arx === 10 || ary === 10;
+      if (isSectorBorder) {
+        // Portas conectando as galerias laterais entre setores vizinhos
+        if ((arx === 10 && ary === 6) || (ary === 10 && arx === 6)) {
+          return {
+            role: "door",
+            rx,
+            ry,
+            roomName: "Galeria Lateral Subterrânea",
+            subType: arx === 10 ? 1 : 0,
+            doorVertical: arx === 10,
+          };
+        }
+        return {
+          role: "wall",
+          rx,
+          ry,
+          roomName: "Muralha da Galeria Lateral",
+          subType: 0,
+        };
+      }
+
+      // Interior das Câmaras de Canto / Galerias Laterais (piso de terracota/mármore intacto e mobiliário ocasional)
+      if (arx === 6 && ary === 6 && decorHash < 0.45) {
+        return {
+          role: decorHash < 0.18 ? "chest" : decorHash < 0.32 ? "furniture" : "vase",
+          rx,
+          ry,
+          roomName: "Aposento Lateral do Palácio Subterrâneo",
+          subType: Math.floor(decorHash * 3) % 2,
+        };
+      }
+
       return {
-        role: "solid_rock",
+        role: "house_floor",
         rx,
         ry,
-        roomName: "Rocha Subterrânea",
+        roomName: "Aposento Lateral do Palácio Subterrâneo",
         subType: 0,
       };
     }
@@ -2392,8 +2506,9 @@
         const isStair = !!(
           thisCave.isStaircase ||
           thisCave.subType === 2 ||
-          this.enteredViaStaircase ||
-          (surfBiome && surfBiome.id === BiomeId.MEADOW)
+          (surfBiome &&
+            (surfBiome.id === BiomeId.MEADOW ||
+              surfBiome.id === BiomeId.MEADOW_LAKE))
         );
         const cleanName = thisCave.namePt
           .replace("Entrada da ", "")
@@ -2434,159 +2549,16 @@
           detailHash: u,
         };
       }
-      const nearExit = this.getNearbyCaveExit(t, l, 3.5);
-      const nearConnector = this.getNearbyCaveExit(t, l, 6.5);
-      const isConnectorHall =
-        nearConnector &&
-        (Math.abs(nearConnector.dx) <= 1.4 ||
-          Math.abs(nearConnector.dy) <= 1.4);
-      const m = Math.abs(this.caveWallNoise.noise2D(t * 0.07, l * 0.07)),
-        c = this.caveRoomNoise.noise2D(t * 0.04, l * 0.04),
-        f = this.caveDetailNoise.noise2D(t * 0.07 + 77, l * 0.07 + 77),
-        fDetail = this.caveDetailNoise.noise2D(t * 0.08, l * 0.08);
-      const isOpen =
-        !!nearExit ||
-        isConnectorHall ||
-        m < 0.15 ||
-        Math.abs(f) < 0.14 ||
-        c > 0.46;
-      if (!isOpen)
-        return {
-          tx: t,
-          ty: l,
-          elevation: 0.9,
-          moisture: 0.2,
-          temperature: 0.4,
-          biome: BIOMES[BiomeId.CAVE_WALL],
-          prop: null,
-          detailHash: u,
-        };
-      let y = BIOMES[BiomeId.CAVE_FLOOR];
-      fDetail < -0.45 && c > 0.35
-        ? (y = BIOMES[BiomeId.CAVE_LAKE])
-        : fDetail > 0.45 && c > 0.35
-          ? (y = BIOMES[BiomeId.CAVE_CRYSTAL])
-          : c > 0.42 && fDetail < -0.15 && (y = BIOMES[BiomeId.CAVE_MUSHROOM]);
-      let w = null;
-      if (nearExit && nearExit.dist > 1.8 && u < 0.08) {
-        w = {
-          kind: "stalagmite",
-          subType: 0,
-          offsetX: u * 8 - 4,
-          offsetY: ((u * 13) % 8) - 4,
-          scale: 0.85,
-        };
-      }
-      const v = this.hash2D(t, l, 77),
-        T = `underground_${t},${l}`,
-        S = this.interactedProps.get(T);
-      if (!nearExit && y.id !== BiomeId.CAVE_LAKE) {
-        if (y.id === BiomeId.CAVE_CRYSTAL && v < 0.09) {
-          const j = Math.floor(this.hash2D(t, l, 88) * 4),
-            P = (S == null ? void 0 : S.opened) ?? !1,
-            A = ["Ametista", "Safira", "Rubi", "Esmeralda"];
-          w = {
-            kind: "crystal_cluster",
-            subType: j,
-            offsetX: (this.hash2D(t, l, 91) - 0.5) * 8,
-            offsetY: (this.hash2D(t, l, 93) - 0.5) * 8,
-            scale: 0.95 + this.hash2D(t, l, 95) * 0.25,
-            interactive: !P,
-            opened: P,
-            namePt: P ? "Formação Mineral (Minerada)" : `Drusa de ${A[j]}`,
-            descriptionPt: P
-              ? "Esta formação rochosa já foi minerada."
-              : "Pressione [F] ou Interagir para extrair minerais!",
-          };
-        } else if (y.id === BiomeId.CAVE_MUSHROOM && v < 0.07)
-          w = {
-            kind: "glowing_mushroom",
-            subType: Math.floor(this.hash2D(t, l, 82) * 2),
-            offsetX: (this.hash2D(t, l, 84) - 0.5) * 8,
-            offsetY: (this.hash2D(t, l, 86) - 0.5) * 8,
-            scale: 0.85 + this.hash2D(t, l, 87) * 0.25,
-            interactive: !0,
-            namePt: "Fungo das Profundezas",
-            descriptionPt:
-              "Esporos fosforescentes muito tênues crescendo na rocha úmida.",
-          };
-        else if (y.id === BiomeId.CAVE_FLOOR)
-          if (v < 0.008) {
-            const j = (S == null ? void 0 : S.opened) ?? !1;
-            w = {
-              kind: "chest",
-              subType: 1,
-              offsetX: 0,
-              offsetY: 0,
-              scale: 1,
-              interactive: !j,
-              opened: j,
-              namePt: j
-                ? "Baú do Mineiro Perdido (Aberto)"
-                : "Baú do Mineiro Perdido",
-              descriptionPt: j
-                ? "Você já pegou os tesouros deste baú subterrâneo!"
-                : "Pressione [F] para destrancar este tesouro oculto nas profundezas!",
-            };
-          } else if (v >= 0.008 && v < 0.035) {
-            const j = Math.floor(this.hash2D(t, l, 11) * 3),
-              P = [
-                "Filão de Ouro Maciço",
-                "Filão de Mitril Ancestral",
-                "Veio de Ferro Cristalino",
-              ],
-              A = (S == null ? void 0 : S.opened) ?? !1;
-            w = {
-              kind: "ore_vein",
-              subType: j,
-              offsetX: (this.hash2D(t, l, 15) - 0.5) * 6,
-              offsetY: (this.hash2D(t, l, 17) - 0.5) * 6,
-              scale: 0.95,
-              interactive: !A,
-              opened: A,
-              namePt: A ? `${P[j]} (Extraído)` : P[j],
-              descriptionPt: A
-                ? "Este veio mineral já foi completamente explorado."
-                : "Pressione [F] para extrair minérios nobres das profundezas!",
-            };
-          } else
-            v >= 0.035 && v < 0.045
-              ? (w = {
-                  kind: "miner_cart",
-                  subType: 0,
-                  offsetX: 0,
-                  offsetY: 0,
-                  scale: 1,
-                  interactive: !0,
-                  namePt: "Vagão de Mineração Abandonado",
-                  descriptionPt:
-                    "Um antigo carrinho de mina esquecido nos túneis.",
-                })
-              : v >= 0.045 &&
-                v < 0.16 &&
-                (w = {
-                  kind: "stalagmite",
-                  subType: Math.floor(this.hash2D(t, l, 21) * 3),
-                  offsetX: (this.hash2D(t, l, 23) - 0.5) * 8,
-                  offsetY: (this.hash2D(t, l, 25) - 0.5) * 8,
-                  scale: 0.85 + this.hash2D(t, l, 27) * 0.4,
-                });
-      }
+
+      // =========================================================================
+      // PRIORIDADE MÁXIMA NO SUBSOLO DO BIOMA DE RUÍNAS (MEADOW):
+      // Avalia a grande estrutura temática de Corredores, Salões de Tamanhos
+      // Diferentes e Portas ANTES do gerador de rochedos de caverna!
+      // Assim NUNCA surgem rochedos (CAVE_WALL / stalagmites) neste subsolo!
+      // =========================================================================
       const p = `cave_${t},${l}`;
       const sanctuary = this._getUndergroundGreekSanctuaryCellAt(t, l);
       if (sanctuary) {
-        if (sanctuary.role === "solid_rock") {
-          return {
-            tx: t,
-            ty: l,
-            elevation: 0.9,
-            moisture: 0.2,
-            temperature: 0.4,
-            biome: BIOMES[BiomeId.CAVE_WALL],
-            prop: null,
-            detailHash: u,
-          };
-        }
         const intState =
           this.interactedProps.get(p) ||
           this.interactedProps.get(`underground_${t},${l}`) ||
@@ -2738,6 +2710,145 @@
           prop: sProp,
           detailHash: u,
         };
+      }
+
+      const nearExit = this.getNearbyCaveExit(t, l, 3.5);
+      const nearConnector = this.getNearbyCaveExit(t, l, 6.5);
+      const isConnectorHall =
+        nearConnector &&
+        (Math.abs(nearConnector.dx) <= 1.4 ||
+          Math.abs(nearConnector.dy) <= 1.4);
+      const m = Math.abs(this.caveWallNoise.noise2D(t * 0.07, l * 0.07)),
+        c = this.caveRoomNoise.noise2D(t * 0.04, l * 0.04),
+        f = this.caveDetailNoise.noise2D(t * 0.07 + 77, l * 0.07 + 77),
+        fDetail = this.caveDetailNoise.noise2D(t * 0.08, l * 0.08);
+      const isOpen =
+        !!nearExit ||
+        isConnectorHall ||
+        m < 0.15 ||
+        Math.abs(f) < 0.14 ||
+        c > 0.46;
+      if (!isOpen)
+        return {
+          tx: t,
+          ty: l,
+          elevation: 0.9,
+          moisture: 0.2,
+          temperature: 0.4,
+          biome: BIOMES[BiomeId.CAVE_WALL],
+          prop: null,
+          detailHash: u,
+        };
+      let y = BIOMES[BiomeId.CAVE_FLOOR];
+      fDetail < -0.45 && c > 0.35
+        ? (y = BIOMES[BiomeId.CAVE_LAKE])
+        : fDetail > 0.45 && c > 0.35
+          ? (y = BIOMES[BiomeId.CAVE_CRYSTAL])
+          : c > 0.42 && fDetail < -0.15 && (y = BIOMES[BiomeId.CAVE_MUSHROOM]);
+      let w = null;
+      if (nearExit && nearExit.dist > 1.8 && u < 0.08) {
+        w = {
+          kind: "stalagmite",
+          subType: 0,
+          offsetX: u * 8 - 4,
+          offsetY: ((u * 13) % 8) - 4,
+          scale: 0.85,
+        };
+      }
+      const v = this.hash2D(t, l, 77),
+        T = `underground_${t},${l}`,
+        S = this.interactedProps.get(T);
+      if (!nearExit && y.id !== BiomeId.CAVE_LAKE) {
+        if (y.id === BiomeId.CAVE_CRYSTAL && v < 0.09) {
+          const j = Math.floor(this.hash2D(t, l, 88) * 4),
+            P = (S == null ? void 0 : S.opened) ?? !1,
+            A = ["Ametista", "Safira", "Rubi", "Esmeralda"];
+          w = {
+            kind: "crystal_cluster",
+            subType: j,
+            offsetX: (this.hash2D(t, l, 91) - 0.5) * 8,
+            offsetY: (this.hash2D(t, l, 93) - 0.5) * 8,
+            scale: 0.95 + this.hash2D(t, l, 95) * 0.25,
+            interactive: !P,
+            opened: P,
+            namePt: P ? "Formação Mineral (Minerada)" : `Drusa de ${A[j]}`,
+            descriptionPt: P
+              ? "Esta formação rochosa já foi minerada."
+              : "Pressione [F] ou Interagir para extrair minerais!",
+          };
+        } else if (y.id === BiomeId.CAVE_MUSHROOM && v < 0.07)
+          w = {
+            kind: "glowing_mushroom",
+            subType: Math.floor(this.hash2D(t, l, 82) * 2),
+            offsetX: (this.hash2D(t, l, 84) - 0.5) * 8,
+            offsetY: (this.hash2D(t, l, 86) - 0.5) * 8,
+            scale: 0.85 + this.hash2D(t, l, 87) * 0.25,
+            interactive: !0,
+            namePt: "Fungo das Profundezas",
+            descriptionPt:
+              "Esporos fosforescentes muito tênues crescendo na rocha úmida.",
+          };
+        else if (y.id === BiomeId.CAVE_FLOOR)
+          if (v < 0.008) {
+            const j = (S == null ? void 0 : S.opened) ?? !1;
+            w = {
+              kind: "chest",
+              subType: 1,
+              offsetX: 0,
+              offsetY: 0,
+              scale: 1,
+              interactive: !j,
+              opened: j,
+              namePt: j
+                ? "Baú do Mineiro Perdido (Aberto)"
+                : "Baú do Mineiro Perdido",
+              descriptionPt: j
+                ? "Você já pegou os tesouros deste baú subterrâneo!"
+                : "Pressione [F] para destrancar este tesouro oculto nas profundezas!",
+            };
+          } else if (v >= 0.008 && v < 0.035) {
+            const j = Math.floor(this.hash2D(t, l, 11) * 3),
+              P = [
+                "Filão de Ouro Maciço",
+                "Filão de Mitril Ancestral",
+                "Veio de Ferro Cristalino",
+              ],
+              A = (S == null ? void 0 : S.opened) ?? !1;
+            w = {
+              kind: "ore_vein",
+              subType: j,
+              offsetX: (this.hash2D(t, l, 15) - 0.5) * 6,
+              offsetY: (this.hash2D(t, l, 17) - 0.5) * 6,
+              scale: 0.95,
+              interactive: !A,
+              opened: A,
+              namePt: A ? `${P[j]} (Extraído)` : P[j],
+              descriptionPt: A
+                ? "Este veio mineral já foi completamente explorado."
+                : "Pressione [F] para extrair minérios nobres das profundezas!",
+            };
+          } else
+            v >= 0.035 && v < 0.045
+              ? (w = {
+                  kind: "miner_cart",
+                  subType: 0,
+                  offsetX: 0,
+                  offsetY: 0,
+                  scale: 1,
+                  interactive: !0,
+                  namePt: "Vagão de Mineração Abandonado",
+                  descriptionPt:
+                    "Um antigo carrinho de mina esquecido nos túneis.",
+                })
+              : v >= 0.045 &&
+                v < 0.16 &&
+                (w = {
+                  kind: "stalagmite",
+                  subType: Math.floor(this.hash2D(t, l, 21) * 3),
+                  offsetX: (this.hash2D(t, l, 23) - 0.5) * 8,
+                  offsetY: (this.hash2D(t, l, 25) - 0.5) * 8,
+                  scale: 0.85 + this.hash2D(t, l, 27) * 0.4,
+                });
       }
       if (this.customPlacedProps.has(p)) {
         w = { ...this.customPlacedProps.get(p) };
