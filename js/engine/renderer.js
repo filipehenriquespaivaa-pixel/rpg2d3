@@ -617,24 +617,59 @@
             (g.globalAlpha = 1));
         const T = t.detailHash;
         if (t.isDungeonWall) {
-          // Fundação e base maciça da muralha do calabouço
-          g.fillStyle = "#090d16";
-          g.fillRect(l, o, u, u);
-          g.fillStyle = "#1e293b";
-          g.fillRect(l + 1, o + 1, u - 2, u - 2);
-          g.strokeStyle = "rgba(15, 23, 42, 0.9)";
-          g.lineWidth = 1;
-          g.strokeRect(l + 0.5, o + 0.5, u - 1, u - 1);
+          if (t.dungeonRole === "cave_tunnel_wall" || t.dungeonRole === "bone_cavern_wall") {
+            // Parede natural de caverna rochosa escura e irregular
+            g.fillStyle = "#070a10";
+            g.fillRect(l, o, u, u);
+            g.fillStyle = "#111827";
+            g.fillRect(l + 1, o + 1, u - 2, u - 2);
+            g.strokeStyle = "rgba(2, 6, 23, 0.95)";
+            g.lineWidth = 1;
+            g.strokeRect(l + 0.5, o + 0.5, u - 1, u - 1);
+            if (T > 0.5) {
+              g.fillStyle = "rgba(71, 85, 105, 0.25)";
+              g.fillRect(l + 3, o + 3, u - 6, 2);
+            }
+          } else {
+            // Fundação e base maciça da muralha do calabouço
+            g.fillStyle = "#090d16";
+            g.fillRect(l, o, u, u);
+            g.fillStyle = "#1e293b";
+            g.fillRect(l + 1, o + 1, u - 2, u - 2);
+            g.strokeStyle = "rgba(15, 23, 42, 0.9)";
+            g.lineWidth = 1;
+            g.strokeRect(l + 0.5, o + 0.5, u - 1, u - 1);
+          }
         } else if (t.isDungeonFloor) {
-          // Lajes maciças de pedra escura do calabouço
-          const isAlt = (Math.abs(t.tx + t.ty) % 2) === 0;
-          g.fillStyle = isAlt ? "#1e293b" : "#172033";
-          g.fillRect(l, o, u, u);
+          if (t.dungeonRole === "bone_cavern_floor" || t.dungeonRole === "cave_tunnel_floor") {
+            // Piso natural de caverna úmida e pedregosa com fragmentos de ossos
+            const isAlt = (Math.abs(t.tx * 7 + t.ty * 13) % 2) === 0;
+            g.fillStyle = isAlt ? "#141923" : "#0f141c";
+            g.fillRect(l, o, u, u);
+            // Cascalho miúdo e fragmentos de ossos no piso
+            if (T > 0.35) {
+              g.fillStyle = "rgba(203, 213, 225, 0.22)";
+              g.beginPath();
+              g.arc(l + u * 0.35, o + u * 0.65, 1.4, 0, Math.PI * 2);
+              g.arc(l + u * 0.75, o + u * 0.3, 1.1, 0, Math.PI * 2);
+              g.fill();
+            }
+            if (T > 0.65) {
+              g.strokeStyle = "rgba(2, 6, 23, 0.6)";
+              g.lineWidth = 0.8;
+              g.strokeRect(l + 2, o + 2, u - 4, u - 4);
+            }
+          } else {
+            // Lajes maciças de pedra escura do calabouço
+            const isAlt = (Math.abs(t.tx + t.ty) % 2) === 0;
+            g.fillStyle = isAlt ? "#1e293b" : "#172033";
+            g.fillRect(l, o, u, u);
 
-          // Borda de argamassa escura / rejunte entre as lajes
-          g.strokeStyle = "rgba(2, 6, 23, 0.75)";
-          g.lineWidth = 1.2;
-          g.strokeRect(l + 0.5, o + 0.5, u - 1, u - 1);
+            // Borda de argamassa escura / rejunte entre as lajes
+            g.strokeStyle = "rgba(2, 6, 23, 0.75)";
+            g.lineWidth = 1.2;
+            g.strokeRect(l + 0.5, o + 0.5, u - 1, u - 1);
+          }
 
           // Detalhes por sala
           if (t.dungeonRole === "torture_floor") {
@@ -1633,6 +1668,9 @@
             break;
           case "dungeon_skeleton":
             drawDungeonSkeleton(c, f);
+            break;
+          case "bone_pile":
+            drawBonePile(c, f, t.subType || 0);
             break;
           case "dungeon_straw":
             drawDungeonStraw(c, f);

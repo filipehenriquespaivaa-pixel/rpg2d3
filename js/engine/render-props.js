@@ -4699,3 +4699,173 @@
 
     e.restore();
   }
+
+  function drawBonePile(e, t = 1, subType = 0) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
+    e.save();
+
+    // 1. Sombra macabra projetada no piso da caverna
+    e.fillStyle = "rgba(2, 6, 23, 0.55)";
+    e.beginPath();
+    e.ellipse(0, 4 * t, 15 * t, 8 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // 2. Base de terra escura, pó de osso e fragmentos
+    e.fillStyle = "rgba(15, 23, 42, 0.7)";
+    e.beginPath();
+    e.ellipse(0, 2 * t, 13 * t, 6.5 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // 3. Fêmures e ossos compridos cruzados na base
+    e.strokeStyle = "#94a3b8";
+    e.fillStyle = "#cbd5e1";
+    e.lineWidth = 2 * t;
+    e.lineCap = "round";
+
+    // Fêmur cruzado diagonal esquerda
+    e.beginPath();
+    e.moveTo(-11 * t, 3 * t);
+    e.lineTo(10 * t, -3 * t);
+    e.stroke();
+    e.beginPath();
+    e.arc(-11 * t, 3 * t, 1.8 * t, 0, Math.PI * 2);
+    e.arc(10 * t, -3 * t, 1.8 * t, 0, Math.PI * 2);
+    e.fill();
+
+    // Fêmur cruzado diagonal direita
+    e.beginPath();
+    e.moveTo(-9 * t, -3 * t);
+    e.lineTo(11 * t, 3 * t);
+    e.stroke();
+    e.beginPath();
+    e.arc(-9 * t, -3 * t, 1.8 * t, 0, Math.PI * 2);
+    e.arc(11 * t, 3 * t, 1.8 * t, 0, Math.PI * 2);
+    e.fill();
+
+    // 4. Caixa torácica / costelas curvadas abraçando a pilha
+    e.strokeStyle = "#cbd5e1";
+    e.lineWidth = 1.3 * t;
+    for (let r = -2; r <= 2; r++) {
+      const rx = r * 3.5 * t;
+      const ry = (2 - Math.abs(r)) * 1.5 * t;
+      e.beginPath();
+      e.arc(rx - 2 * t, ry + 2 * t, 3.5 * t, Math.PI * 0.2, Math.PI * 0.9);
+      e.stroke();
+      e.beginPath();
+      e.arc(rx + 2 * t, ry + 2 * t, 3.5 * t, Math.PI * 0.1, Math.PI * 0.8, !0);
+      e.stroke();
+    }
+
+    // 5. Camada intermediária de crânios envelhecidos
+    const skulls = [
+      { x: -6 * t, y: 1 * t, r: 2.8 * t, a: -0.2 },
+      { x: 5 * t, y: 1.5 * t, r: 2.8 * t, a: 0.25 },
+      { x: -2.5 * t, y: -2 * t, r: 3.2 * t, a: -0.1 },
+      { x: 3 * t, y: -2.5 * t, r: 3 * t, a: 0.15 },
+    ];
+
+    for (const s of skulls) {
+      e.fillStyle = "#e2e8f0";
+      e.strokeStyle = "#475569";
+      e.lineWidth = 0.8 * t;
+      e.beginPath();
+      e.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      e.fill();
+      e.stroke();
+
+      // Cavidades oculares pretas
+      e.fillStyle = "#090d16";
+      e.beginPath();
+      e.ellipse(s.x - s.r * 0.35, s.y - s.r * 0.1, s.r * 0.22, s.r * 0.3, s.a, 0, Math.PI * 2);
+      e.ellipse(s.x + s.r * 0.35, s.y - s.r * 0.1, s.r * 0.22, s.r * 0.3, s.a, 0, Math.PI * 2);
+      e.fill();
+      // Cavidade nasal
+      e.beginPath();
+      e.moveTo(s.x, s.y + s.r * 0.2);
+      e.lineTo(s.x - 0.6 * t, s.y + s.r * 0.45);
+      e.lineTo(s.x + 0.6 * t, s.y + s.r * 0.45);
+      e.closePath();
+      e.fill();
+    }
+
+    // 6. Crânio Central / Superior no topo da pilha (destaque macabro)
+    const topY = -7 * t;
+    const topR = 4 * t;
+
+    e.fillStyle = "#f8fafc";
+    e.strokeStyle = "#334155";
+    e.lineWidth = 1 * t;
+    e.beginPath();
+    e.arc(0, topY, topR, 0, Math.PI * 2);
+    e.fill();
+    e.stroke();
+
+    // Mandíbula e dentes
+    e.fillStyle = "#e2e8f0";
+    e.fillRect(-2 * t, topY + topR * 0.6, 4 * t, 2.5 * t);
+    e.strokeRect(-2 * t, topY + topR * 0.6, 4 * t, 2.5 * t);
+    e.strokeStyle = "#475569";
+    e.lineWidth = 0.7 * t;
+    for (let d = -1.2; d <= 1.2; d += 0.8) {
+      e.beginPath();
+      e.moveTo(d * t, topY + topR * 0.6);
+      e.lineTo(d * t, topY + topR * 0.6 + 2.5 * t);
+      e.stroke();
+    }
+
+    // Olhos profundos com fulgor sutil
+    e.fillStyle = "#090d16";
+    e.beginPath();
+    e.ellipse(-1.5 * t, topY - 0.5 * t, 1.1 * t, 1.4 * t, -0.1, 0, Math.PI * 2);
+    e.ellipse(1.5 * t, topY - 0.5 * t, 1.1 * t, 1.4 * t, 0.1, 0, Math.PI * 2);
+    e.fill();
+
+    // Nariz
+    e.beginPath();
+    e.moveTo(0, topY + 0.8 * t);
+    e.lineTo(-0.8 * t, topY + 2 * t);
+    e.lineTo(0.8 * t, topY + 2 * t);
+    e.closePath();
+    e.fill();
+
+    // Detalhes por subType:
+    if (subType === 0) {
+      // Chifres ancestrais de besta saindo do crânio do topo
+      e.strokeStyle = "#78350f";
+      e.lineWidth = 2.2 * t;
+      e.beginPath();
+      e.moveTo(-3 * t, topY - 2 * t);
+      e.quadraticCurveTo(-9 * t, topY - 7 * t, -7 * t, topY - 11 * t);
+      e.stroke();
+      e.beginPath();
+      e.moveTo(3 * t, topY - 2 * t);
+      e.quadraticCurveTo(9 * t, topY - 7 * t, 7 * t, topY - 11 * t);
+      e.stroke();
+    } else if (subType === 1) {
+      // Vários crânios menores rodeando o topo
+      e.fillStyle = "#cbd5e1";
+      e.beginPath();
+      e.arc(-5.5 * t, topY + 2 * t, 2.5 * t, 0, Math.PI * 2);
+      e.arc(5.5 * t, topY + 2 * t, 2.5 * t, 0, Math.PI * 2);
+      e.fill();
+    } else if (subType === 2) {
+      // Espinha dorsal longa e vértebras
+      e.strokeStyle = "#94a3b8";
+      e.lineWidth = 1.6 * t;
+      for (let v = 0; v < 6; v++) {
+        e.beginPath();
+        e.arc(-6 * t + v * 2.5 * t, 6 * t, 1.4 * t, 0, Math.PI * 2);
+        e.stroke();
+      }
+    } else if (subType === 3) {
+      // Vela com chaminha espectral azulada na pilha
+      e.fillStyle = "#ca8a04";
+      e.fillRect(-1 * t, topY - 6 * t, 2 * t, 5 * t);
+      e.fillStyle = "rgba(56, 189, 248, 0.85)";
+      e.beginPath();
+      e.ellipse(0, topY - 7.5 * t, 1.2 * t, 2.2 * t, 0, 0, Math.PI * 2);
+      e.fill();
+    }
+
+    e.restore();
+  }

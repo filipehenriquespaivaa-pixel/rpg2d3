@@ -3362,6 +3362,9 @@
           return { role: "dungeon_wall", roomName: "Muralha Frontal do Santuário" };
         }
         if (dx === -6 || dx === 6 || dy === 118) {
+          if (dy === 118 && dx === 0) {
+            return { role: "dungeon_door", doorVertical: false, defaultOpened: false, roomName: "Porta Rústica para o Túnel da Caverna" };
+          }
           return { role: "dungeon_wall", roomName: "Muralha do Santuário das Profundezas" };
         }
         const roomName = "Grande Santuário e Tesouro do Calabouço";
@@ -3374,13 +3377,98 @@
         return { role: "hall_floor", roomName };
       }
 
+      // 14. Túnel Estreito para a Caverna Subterrânea (dy in [119, 129], dx in [-3, 3])
+      if (dy >= 119 && dy <= 129 && dx >= -3 && dx <= 3) {
+        if (dx === -1 || dx === 0) {
+          const roomName = "Túnel Estreito da Caverna Subterrânea";
+          if (dy === 122 && dx === -1) return { role: "corridor_torch", roomName };
+          if (dy === 125 && dx === 0) return { role: "dungeon_skeleton", roomName };
+          if (dy === 128 && dx === -1) return { role: "bone_pile", subType: 1, scale: 1.15, roomName };
+          return { role: "cave_tunnel_floor", roomName };
+        }
+        return { role: "cave_tunnel_wall", roomName: "Paredão Rochoso do Túnel da Caverna" };
+      }
+
+      // 15. Transição e Abertura do Túnel para o Grande Salão (dy in [130, 131])
+      if (dy === 130 && dx >= -5 && dx <= 5) {
+        if (dx >= -2 && dx <= 1) {
+          return { role: "cave_tunnel_floor", roomName: "Entrada da Caverna dos Ossos" };
+        }
+        return { role: "bone_cavern_wall", roomName: "Paredão Rochoso da Caverna dos Ossos" };
+      }
+      if (dy === 131 && dx >= -9 && dx <= 9) {
+        if (dx >= -4 && dx <= 3) {
+          return { role: "bone_cavern_floor", roomName: "Entrada da Caverna dos Ossos" };
+        }
+        return { role: "bone_cavern_wall", roomName: "Paredão Rochoso da Caverna dos Ossos" };
+      }
+
+      // 16. Grande Salão da Caverna dos Ossos (dx in [-9, 9], dy in [132, 154])
+      if (dx >= -9 && dx <= 9 && dy >= 132 && dy <= 154) {
+        if (dy === 154) {
+          return { role: "bone_cavern_wall", roomName: "Fundo Rochoso da Caverna dos Ossos" };
+        }
+        if (dx === -9 || dx === 9) {
+          return { role: "bone_cavern_wall", roomName: "Paredão Lateral da Caverna dos Ossos" };
+        }
+        if (dy === 132 && (dx <= -5 || dx >= 4)) {
+          return { role: "bone_cavern_wall", roomName: "Paredão Norte da Caverna dos Ossos" };
+        }
+
+        const roomName = "Grande Salão da Caverna dos Ossos";
+
+        // Pilhas de Ossos ancestrais distribuídas pelo salão
+        if (dx === 0 && dy === 143) return { role: "bone_pile", subType: 0, scale: 1.6, roomName };
+        if (dx === -5 && dy === 136) return { role: "bone_pile", subType: 1, scale: 1.35, roomName };
+        if (dx === 5 && dy === 136) return { role: "bone_pile", subType: 2, scale: 1.35, roomName };
+        if (dx === -6 && dy === 144) return { role: "bone_pile", subType: 3, scale: 1.4, roomName };
+        if (dx === 6 && dy === 144) return { role: "bone_pile", subType: 1, scale: 1.4, roomName };
+        if (dx === -3 && dy === 150) return { role: "bone_pile", subType: 2, scale: 1.3, roomName };
+        if (dx === 3 && dy === 150) return { role: "bone_pile", subType: 0, scale: 1.3, roomName };
+        if (dx === 0 && dy === 135) return { role: "bone_pile", subType: 3, scale: 1.25, roomName };
+        if (dx === -7 && dy === 148) return { role: "bone_pile", subType: 1, scale: 1.2, roomName };
+        if (dx === 7 && dy === 148) return { role: "bone_pile", subType: 2, scale: 1.2, roomName };
+
+        // Esqueletos caídos encostados nas rochas
+        if (dx === -8 && dy === 135) return { role: "dungeon_skeleton", roomName };
+        if (dx === 8 && dy === 135) return { role: "dungeon_skeleton", roomName };
+        if (dx === -8 && dy === 141) return { role: "dungeon_skeleton", roomName };
+        if (dx === 8 && dy === 141) return { role: "dungeon_skeleton", roomName };
+        if (dx === -7 && dy === 152) return { role: "dungeon_skeleton", roomName };
+        if (dx === 7 && dy === 152) return { role: "dungeon_skeleton", roomName };
+        if (dx === -2 && dy === 142) return { role: "dungeon_skeleton", roomName };
+        if (dx === 2 && dy === 142) return { role: "dungeon_skeleton", roomName };
+
+        // Gaiolas com ossos penduradas do teto da caverna
+        if (dx === -4 && dy === 140) return { role: "hanging_cage", roomName };
+        if (dx === 4 && dy === 140) return { role: "hanging_cage", roomName };
+        if (dx === 0 && dy === 148) return { role: "hanging_cage", roomName };
+
+        // Braseiros espectrais
+        if (dx === -3 && dy === 146) return { role: "torture_brazier", roomName };
+        if (dx === 3 && dy === 146) return { role: "torture_brazier", roomName };
+
+        // Tochas nas paredes da caverna
+        if (dx === -8 && dy === 138) return { role: "corridor_torch", roomName };
+        if (dx === 8 && dy === 138) return { role: "corridor_torch", roomName };
+        if (dx === -8 && dy === 148) return { role: "corridor_torch", roomName };
+        if (dx === 8 && dy === 148) return { role: "corridor_torch", roomName };
+        if (dx === -4 && dy === 153) return { role: "corridor_torch", roomName };
+        if (dx === 4 && dy === 153) return { role: "corridor_torch", roomName };
+
+        // Baú guardado no fundo do salão
+        if (dx === 0 && dy === 152) return { role: "chest", roomName };
+
+        return { role: "bone_cavern_floor", roomName };
+      }
+
       return null;
     }
     _isNearDungeonWall(dx, dy) {
       for (let ndy = -2; ndy <= 2; ndy++) {
         for (let ndx = -2; ndx <= 2; ndx++) {
           const cell = this._getDungeonCellAt(dx + ndx, dy + ndy);
-          if (cell && cell.role === "dungeon_wall") {
+          if (cell && (cell.role === "dungeon_wall" || cell.role === "cave_tunnel_wall" || cell.role === "bone_cavern_wall")) {
             return true;
           }
         }
@@ -3418,14 +3506,14 @@
 
         if (this.customPlacedProps.has(pKey)) {
           sProp = { ...this.customPlacedProps.get(pKey) };
-        } else if (cell.role === "dungeon_wall") {
+        } else if (cell.role === "dungeon_wall" || cell.role === "cave_tunnel_wall" || cell.role === "bone_cavern_wall") {
           isDungeonWall = !0;
           sProp = {
             kind: "dungeon_wall",
             subType: 0,
             scale: 1,
-            namePt: "Muralha de Cantaria do Calabouço",
-            descriptionPt: `Muralha sólida e maciça de granito escuro selando o interior de: ${cell.roomName}.`,
+            namePt: cell.role === "dungeon_wall" ? "Muralha de Cantaria do Calabouço" : "Paredão de Rocha da Caverna",
+            descriptionPt: `Paredão maciço e intransponível de rocha selando o interior de: ${cell.roomName}.`,
           };
         } else if (cell.role === "dungeon_staircase_up") {
           sProp = {
@@ -3592,6 +3680,15 @@
             interactive: !0,
             namePt: "Ossadas de Prisioneiro Acorrentado",
             descriptionPt: "Restos mortais de um prisioneiro cujos pulsos ainda permanecem presos a grilhões chumbados na rocha.",
+          };
+        } else if (cell.role === "bone_pile") {
+          sProp = {
+            kind: "bone_pile",
+            subType: cell.subType || 0,
+            scale: cell.scale || 1.35,
+            interactive: !0,
+            namePt: "Pilha de Ossos e Crânios Ancestrais",
+            descriptionPt: "Montes macabros de ossadas humanas e de feras antigas, crânios rachados e costelas fossilizadas empilhados nas profundezas da caverna.",
           };
         } else if (cell.role === "dungeon_straw") {
           sProp = {
@@ -4029,6 +4126,13 @@
           reward: "Palha Úmida",
         };
       }
+      if (o.prop.kind === "bone_pile") {
+        return {
+          success: !0,
+          message: "Montes de ossos antigos, crânios humanos e ossadas de feras misteriosas acumulados no fundo da caverna ao longo de séculos.",
+          reward: "Ossada Ancestral (+45 XP)",
+        };
+      }
       if (o.prop.kind === "pedregulhos") {
         return {
           success: !0,
@@ -4347,7 +4451,8 @@
           o.prop.kind === "iron_maiden" ||
           o.prop.kind === "dungeon_latrine_pit" ||
           o.prop.kind === "jailer_table" ||
-          o.prop.kind === "weapon_rack")
+          o.prop.kind === "weapon_rack" ||
+          o.prop.kind === "bone_pile")
       )
         return !1;
       // Permite subir e andar livremente em cima de todo o paredão (isCliffWall)!
