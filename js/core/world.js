@@ -2073,24 +2073,28 @@
                 "Escultura clássica de mármore pario sobre pedestal com inscrições em grego antigo. Pressione [F] para contemplar!",
             };
           } else if (greekRuin.role === "vase" || greekRuin.role === "amphora_cluster") {
-            const vType = greekRuin.subType ?? (Math.abs(t * 3 + l) % 3);
-            const vNames = [
-              "Ânforas Gregas de Figuras Negras",
-              "Cratera (Krater) de Cerâmica de Banquete",
-              "Pithos e Jarros de Azeite de Terracota",
-            ];
-            se.prop = {
-              kind: "greek_vase",
-              subType: vType,
-              offsetX: 0,
-              offsetY: 0,
-              scale: 1.08,
-              interactive: !0,
-              opened: !!intState.opened,
-              namePt: vNames[vType % vNames.length],
-              descriptionPt:
-                "Vasos de cerâmica grega pintados com cenas mitológicas e padrão de meandro. Pressione [F] para vasculhar o interior!",
-            };
+            const isCol = !!intState.collected;
+            if (isCol) {
+              se.prop = null;
+            } else {
+              const vType = greekRuin.subType ?? (Math.abs(t * 3 + l) % 3);
+              const vNames = [
+                "Ânfora Grega Antiga",
+                "Cratera de Cerâmica das Ruínas",
+                "Pote de Terracota das Ruínas",
+              ];
+              se.prop = {
+                kind: "greek_vase",
+                subType: vType,
+                offsetX: 0,
+                offsetY: 0,
+                scale: 1.08,
+                interactive: !0,
+                namePt: vNames[vType % vNames.length],
+                descriptionPt:
+                  "Jarro e pote de cerâmica clássica preservado nas ruínas. Pressione [F] para coletar para seu inventário!",
+              };
+            }
           } else if (greekRuin.role === "furniture") {
             const fType = greekRuin.subType ?? (Math.abs(t + l * 7) % 4);
             const fNames = [
@@ -2795,22 +2799,27 @@
             descriptionPt: `Escultura helênica preservada em estado impecável no interior de: ${sanctuary.roomName}. Pressione [F] para examinar.`,
           };
         } else if (sanctuary.role === "vase") {
-          const opened = !!intState.opened;
-          sProp = {
-            kind: "greek_vase",
-            subType: sanctuary.subType || 0,
-            offsetX: 0,
-            offsetY: -2,
-            scale: 1.05,
-            interactive: !0,
-            opened: opened,
-            namePt: opened
-              ? "Ânforas Reais do Subsolo (Examinadas)"
-              : "Ânforas e Crateras de Cerâmica Grega",
-            descriptionPt: opened
-              ? "Vasos de figuras negras preservados no complexo subterrâneo."
-              : `Cerâmicas intactas guardadas em: ${sanctuary.roomName}. Pressione [F] para inspecionar!`,
-          };
+          const isCol = !!intState.collected;
+          if (isCol) {
+            sProp = null;
+          } else {
+            const vNames = [
+              "Ânfora Grega do Santuário",
+              "Cratera de Cerâmica do Santuário",
+              "Pote de Terracota Subterrâneo",
+            ];
+            const vType = sanctuary.subType || 0;
+            sProp = {
+              kind: "greek_vase",
+              subType: vType,
+              offsetX: 0,
+              offsetY: -2,
+              scale: 1.05,
+              interactive: !0,
+              namePt: vNames[vType % vNames.length],
+              descriptionPt: `Jarro e pote cerâmico preservado em: ${sanctuary.roomName}. Pressione [F] para coletar para seu inventário!`,
+            };
+          }
         } else if (sanctuary.role === "furniture") {
           sProp = {
             kind: "greek_furniture",
@@ -4405,21 +4414,63 @@
         };
       }
       if (o.prop.kind === "greek_vase") {
-        if (m.opened) {
+        if (m.collected) {
           return {
-            success: !0,
-            message:
-              "As ânforas de terracota exibem pinturas de figuras negras retratando heróis, trirremes e atletas olímpicos.",
-            reward: "Cerâmica Ática Examinada",
+            success: !1,
+            message: "Este jarro já foi recolhido das ruínas.",
           };
         }
-        this.interactedProps.set(u, { ...m, opened: !0 });
+        const vType = o.prop.subType || 0;
+        let itemData;
+        if (vType === 0) {
+          itemData = {
+            id: `item_anfora_grega_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            name: "Ânfora Grega Antiga",
+            categoryType: "consumable",
+            isEquippable: !1,
+            rarity: "incomum",
+            value: 65,
+            stackCount: 1,
+            icon: "🏺",
+            color: "#ea580c",
+            description: "Ânfora cerâmica clássica de figuras negras coletada nas ruínas. Pode ser usada na beira da água para coletar água fresca (+75 Stamina ao beber), armazenar azeite ou usar em receitas.",
+          };
+        } else if (vType === 1) {
+          itemData = {
+            id: `item_cratera_grega_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            name: "Cratera de Cerâmica das Ruínas",
+            categoryType: "consumable",
+            isEquippable: !1,
+            rarity: "raro",
+            value: 80,
+            stackCount: 1,
+            icon: "🏺",
+            color: "#d97706",
+            description: "Grande vaso cerâmico de banquete das ruínas helênicas. Excelente recipiente para coletar água pura (+90 Stamina ao beber) ou preparar infusões.",
+          };
+        } else {
+          itemData = {
+            id: `item_jarro_ruinas_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            name: "Pote de Terracota das Ruínas",
+            categoryType: "consumable",
+            isEquippable: !1,
+            rarity: "comum",
+            value: 50,
+            stackCount: 1,
+            icon: "🏺",
+            color: "#c2410c",
+            description: "Jarro e pote resistente de terracota recolhido das ruínas antigas. Pode ser levado à água para coletar água fresca (+60 Stamina ao beber) ou guardar líquidos.",
+          };
+        }
+
+        this.interactedProps.set(u, { ...m, collected: !0, opened: !0 });
         this.invalidateTile(t, l);
         return {
           success: !0,
-          message:
-            "Você vasculhou as antigas ânforas e crateras gregas de cerâmica e encontrou dracmas e essências!",
-          reward: "Dracmas de Prata & Azeite (+65 XP)",
+          action: "collect_greek_vase",
+          item: itemData,
+          message: `🏺 Você recolheu: ${itemData.name}! O item foi adicionado ao seu inventário.`,
+          reward: `${itemData.name} (+55 XP)`,
         };
       }
       if (o.prop.kind === "greek_furniture") {

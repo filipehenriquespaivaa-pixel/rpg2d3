@@ -599,20 +599,22 @@
               stackCount: 1,
               description: `Frasco cerâmico abastecido com água límpida e fresca de ${ge}. Pressione [Usar] para beber e restaurar +40 de Stamina. O frasco ficará vazio e reutilizável.`,
             };
-          else if (me.includes("jarra"))
+          else if (me.includes("jarra") || me.includes("jarro") || me.includes("ânfora") || me.includes("anfora") || me.includes("cratera")) {
+            const isAnfora = me.includes("ânfora") || me.includes("anfora");
+            const isCratera = me.includes("cratera");
             ce = {
               id: `water_jarra_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
-              name: "Jarra com Água Fresca",
+              name: isAnfora ? "Ânfora com Água Fresca" : isCratera ? "Cratera com Água Fresca" : "Jarro com Água Fresca",
               categoryType: "consumable",
               isEquippable: !1,
-              rarity: "incomum",
+              rarity: isCratera ? "raro" : "incomum",
               icon: "🏺",
               color: "#0ea5e9",
-              value: 50,
+              value: isCratera ? 85 : isAnfora ? 70 : 50,
               stackCount: 1,
-              description: `Jarra bojuda cheia de água pura e refrescante de ${ge}. Pressione [Usar] para saciar a sede e restaurar +70 de Stamina. A jarra ficará vazia e reutilizável.`,
+              description: `Vaso cerâmico das ruínas cheio de água pura e refrescante de ${ge}. Pressione [Usar] para saciar a sede e restaurar ${isCratera ? "+90" : isAnfora ? "+75" : "+60"} de Stamina. O recipiente ficará vazio e reutilizável.`,
             };
-          else if (me.includes("pote"))
+          } else if (me.includes("pote"))
             ce = {
               id: `water_pote_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
               name: "Pote de Barro com Água",
@@ -711,13 +713,34 @@
               me = "#ea580c",
               ce =
                 "Frasco cerâmico torneado em pura argila e seco ao sol. Pode ser usado na beira da água para coletar água fresca (+40 Stamina ao beber).";
-            (D.includes("jarra")
-              ? ((ie = 70),
-                (ge = "Jarra de Barro Vazia"),
+            (D.includes("ânfora") || D.includes("anfora")
+              ? ((ie = 75),
+                (ge = "Ânfora Grega Antiga"),
                 (re = "🏺"),
-                (me = "#d97706"),
+                (me = "#ea580c"),
                 (ce =
-                  "Jarra cerâmica com alça e bico torneada em argila pura. Pode ser mergulhada na água para coletar água fresca (+70 Stamina ao beber)."))
+                  "Ânfora cerâmica clássica recolhida das ruínas. Pode ser usada na água para coletar água fresca (+75 Stamina ao beber)."))
+              : D.includes("cratera")
+                ? ((ie = 90),
+                  (ge = "Cratera de Cerâmica das Ruínas"),
+                  (re = "🏺"),
+                  (me = "#d97706"),
+                  (ce =
+                    "Grande vaso cerâmico de banquete das ruínas. Pode ser usado para coletar água fresca (+90 Stamina ao beber)."))
+                : D.includes("jarro")
+                  ? ((ie = 60),
+                    (ge = "Pote de Terracota das Ruínas"),
+                    (re = "🏺"),
+                    (me = "#c2410c"),
+                    (ce =
+                      "Jarro e pote resistente de terracota recolhido das ruínas antigas (+60 Stamina ao beber)."))
+                  : D.includes("jarra")
+                    ? ((ie = 70),
+                      (ge = "Jarra de Barro Vazia"),
+                      (re = "🏺"),
+                      (me = "#d97706"),
+                      (ce =
+                        "Jarra cerâmica com alça e bico torneada em argila pura. Pode ser mergulhada na água para coletar água fresca (+70 Stamina ao beber)."))
               : D.includes("pote")
                 ? ((ie = 55),
                   (ge = "Pote de Barro Vazio"),
@@ -2488,6 +2511,25 @@
                 _t((xp) => xp + 60);
               }
               ve(Ke.message);
+            } else if (Ke.action === "collect_greek_vase") {
+              const maxSlots = ot(Da.current.mochila);
+              if (Ve.length >= maxSlots) {
+                const pKey = E.isUnderground ? `underground_${Ye.tx},${Ye.ty}` : `${Ye.tx},${Ye.ty}`;
+                const prev = E.interactedProps.get(pKey) || {};
+                E.interactedProps.set(pKey, { ...prev, collected: !1 });
+                E.invalidateTile(Ye.tx, Ye.ty);
+                m.current.playPunchWhoosh && m.current.playPunchWhoosh();
+                ve(`⚠️ Inventário cheio (máximo ${maxSlots} itens)! Libere espaço para coletar o jarro/pote.`);
+                return;
+              }
+              m.current.playItemPickup && m.current.playItemPickup();
+              const item = Ke.item;
+              if (item) {
+                ra((prev) => [...prev, item]);
+              }
+              _t((xp) => xp + 55);
+              ve(Ke.message || `🏺 Você recolheu: ${item ? item.name : "Jarro Antigo"}!`);
+              return;
             } else if (Ke.action === "locked_cell") {
               const hasKey = Ve.some(
                 (it) =>
