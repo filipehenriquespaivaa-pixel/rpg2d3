@@ -968,7 +968,7 @@
     e.fill();
     e.restore();
   }
-  function drawGreekRuinWall25D(e, t, subType = 0, neighbors = null) {
+  function drawGreekRuinWall25D(e, t, subType = 0, neighbors = null, wallHeightState = 0) {
     e.save();
     const nL = !!(neighbors && neighbors.left),
       nR = !!(neighbors && neighbors.right),
@@ -978,89 +978,443 @@
       leftX = nL ? -half - 1 * t : -half + 1 * t,
       rightX = nR ? half + 1 * t : half - 1 * t,
       w = rightX - leftX,
-      wallH = 26 * t,
+      // Altura variável: 0 = completa (26*t), 1 = topo irregular quebrado (22*t), 2 = meia parede (14*t), 3 = base baixa inacabada/ruína (7*t)
+      wallH =
+        wallHeightState === 3
+          ? 7.5 * t
+          : wallHeightState === 2
+            ? 14.5 * t
+            : wallHeightState === 1
+              ? 22 * t
+              : 26 * t,
       baseY = 18 * t,
       topFrontY = baseY - wallH,
       topBackY = -half - wallH;
 
-    // Sombra projetada no piso se não houver parede ao sul
+    // Sombra forte projetada no piso ao redor da base da parede para destacar o volume 3D
     if (!nB) {
-      e.fillStyle = "rgba(15, 23, 42, 0.32)";
-      e.fillRect(leftX, baseY - 2 * t, w, 7 * t);
+      e.fillStyle = "rgba(2, 6, 23, 0.58)";
+      e.fillRect(leftX - 1 * t, baseY - 2 * t, w + 2 * t, (wallHeightState >= 2 ? 6 : 9.5) * t);
     }
 
-    // Face Frontal 2.5D de blocos de mármore helênico
+    // Face Frontal 2.5D de blocos de Mármore Branco Pario (bem clara, contrastando com o piso terracota/ocre escuro)
     const frontGrad = e.createLinearGradient(0, topFrontY, 0, baseY);
-    frontGrad.addColorStop(0, "#f1f5f9");
-    frontGrad.addColorStop(0.45, "#e2e8f0");
+    frontGrad.addColorStop(0, "#ffffff");
+    frontGrad.addColorStop(0.55, "#f1f5f9");
     frontGrad.addColorStop(1, "#cbd5e1");
     e.fillStyle = frontGrad;
-    e.fillRect(leftX, topFrontY, w, wallH);
 
-    // Juntas dos blocos de cantaria de mármore
-    e.strokeStyle = "rgba(100, 116, 139, 0.45)";
-    e.lineWidth = 1 * t;
+    if (wallHeightState === 0) {
+      // Parede de topo completo
+      e.fillRect(leftX, topFrontY, w, wallH);
+    } else {
+      // Topo irregular com blocos em degraus quebrados / incompletos!
+      e.beginPath();
+      e.moveTo(leftX, baseY);
+      e.lineTo(leftX, topFrontY + (subType === 1 ? 4 * t : 1 * t));
+      e.lineTo(leftX + w * 0.28, topFrontY + (subType === 1 ? 4 * t : 1 * t));
+      e.lineTo(leftX + w * 0.32, topFrontY - (subType === 2 ? 2.5 * t : -3.5 * t));
+      e.lineTo(leftX + w * 0.68, topFrontY - (subType === 2 ? 2.5 * t : -3.5 * t));
+      e.lineTo(leftX + w * 0.72, topFrontY + (subType === 0 ? 3.5 * t : 0));
+      e.lineTo(rightX, topFrontY + (subType === 0 ? 3.5 * t : 0));
+      e.lineTo(rightX, baseY);
+      e.closePath();
+      e.fill();
+    }
+
+    // Rodapé (Ortostato) escuro na base da parede onde ela toca o piso (separa 100% a parede do chão!)
+    e.fillStyle = "#1e293b";
+    e.fillRect(leftX, baseY - 3.8 * t, w, 3.8 * t);
+    e.fillStyle = "#d97706";
+    e.fillRect(leftX, baseY - 4.8 * t, w, 1.1 * t);
+
+    // Juntas dos blocos de cantaria de mármore (isódomo grego)
+    e.strokeStyle = "rgba(51, 65, 85, 0.65)";
+    e.lineWidth = 1.2 * t;
     e.beginPath();
-    e.moveTo(leftX, topFrontY + 8.5 * t);
-    e.lineTo(rightX, topFrontY + 8.5 * t);
-    e.moveTo(leftX, topFrontY + 17 * t);
-    e.lineTo(rightX, topFrontY + 17 * t);
-    e.moveTo(0, topFrontY + 8.5 * t);
-    e.lineTo(0, topFrontY + 17 * t);
-    e.moveTo(-7 * t, topFrontY + 17 * t);
-    e.lineTo(-7 * t, baseY);
-    e.moveTo(7 * t, topFrontY);
-    e.lineTo(7 * t, topFrontY + 8.5 * t);
+    if (wallHeightState <= 1) {
+      e.moveTo(leftX, topFrontY + 8.5 * t);
+      e.lineTo(rightX, topFrontY + 8.5 * t);
+      e.moveTo(0, topFrontY + 8.5 * t);
+      e.lineTo(0, topFrontY + 17 * t);
+    }
+    if (wallHeightState <= 2) {
+      e.moveTo(leftX, baseY - 8.5 * t);
+      e.lineTo(rightX, baseY - 8.5 * t);
+      e.moveTo(-6 * t, baseY - 8.5 * t);
+      e.lineTo(-6 * t, baseY - 4 * t);
+    }
     e.stroke();
 
     // Friso Grego Dourado/Azul-Olímpico (Meandro Helênico) na faixa superior da parede
-    e.fillStyle = "#0284c7";
-    e.fillRect(leftX, topFrontY + 2 * t, w, 4.2 * t);
-    e.strokeStyle = "#fbbf24";
-    e.lineWidth = 1 * t;
-    e.beginPath();
-    e.moveTo(leftX, topFrontY + 2 * t);
-    e.lineTo(rightX, topFrontY + 2 * t);
-    e.moveTo(leftX, topFrontY + 6.2 * t);
-    e.lineTo(rightX, topFrontY + 6.2 * t);
-    e.stroke();
-
-    // Topo da Parede 2.5D (Cornija de Mármore Claro)
-    e.fillStyle = "#f8fafc";
-    e.fillRect(leftX, topBackY, w, topFrontY - topBackY + 1.5 * t);
-    e.strokeStyle = "#cbd5e1";
-    e.lineWidth = 1 * t;
-    e.strokeRect(leftX + 0.5 * t, topBackY + 0.5 * t, w - 1 * t, topFrontY - topBackY);
-
-    // Detalhe de ruína (rachadura ou musgo/hera grega conforme subType)
-    if (subType === 1) {
-      e.fillStyle = "#15803d";
-      e.beginPath();
-      e.arc(-6 * t, topFrontY + 4 * t, 3.2 * t, 0, Math.PI * 2);
-      e.arc(-3 * t, topFrontY + 8 * t, 2.5 * t, 0, Math.PI * 2);
-      e.fill();
-    } else if (subType === 2) {
-      e.strokeStyle = "rgba(71, 85, 105, 0.75)";
+    if (wallHeightState === 0 || (wallHeightState === 1 && subType !== 1)) {
+      const friezeW = wallHeightState === 1 ? w * 0.62 : w;
+      const friezeX = wallHeightState === 1 ? leftX + w * 0.18 : leftX;
+      e.fillStyle = "#0369a1";
+      e.fillRect(friezeX, topFrontY + 2 * t, friezeW, 4.4 * t);
+      e.strokeStyle = "#fbbf24";
       e.lineWidth = 1.2 * t;
       e.beginPath();
-      e.moveTo(-4 * t, topFrontY + 7 * t);
-      e.lineTo(-1 * t, topFrontY + 13 * t);
-      e.lineTo(-3 * t, topFrontY + 19 * t);
+      e.moveTo(friezeX, topFrontY + 2 * t);
+      e.lineTo(friezeX + friezeW, topFrontY + 2 * t);
+      e.moveTo(friezeX, topFrontY + 6.4 * t);
+      e.lineTo(friezeX + friezeW, topFrontY + 6.4 * t);
       e.stroke();
     }
 
-    // Bordas laterais quando a parede termina em uma porta/abertura
+    // Topo da Parede 2.5D: Cornija Superior em Ardósia Azul-Escura / Cinza-Chumbo com borda de Mármore e Ouro
+    // (dá leitura imediata de onde está o topo da parede visto de cima!)
+    const topDepth = topFrontY - topBackY;
+    if (wallHeightState === 0) {
+      e.fillStyle = "#334155";
+      e.fillRect(leftX, topBackY, w, topDepth + 1.5 * t);
+      e.strokeStyle = "#f8fafc";
+      e.lineWidth = 1.6 * t;
+      e.strokeRect(leftX + 0.8 * t, topBackY + 0.8 * t, w - 1.6 * t, topDepth - 0.5 * t);
+      e.strokeStyle = "#fbbf24";
+      e.lineWidth = 0.9 * t;
+      e.strokeRect(leftX + 2.5 * t, topBackY + 2.5 * t, w - 5 * t, topDepth - 4 * t);
+    } else {
+      // Blocos superiores irregulares mostrando o miolo escuro da alvenaria grega (emplekton) e blocos de mármore lascados
+      e.fillStyle = "#1e293b";
+      e.fillRect(leftX + 1 * t, topBackY + 2.5 * t, w - 2 * t, topDepth - 2 * t);
+      e.fillStyle = "#e2e8f0";
+      e.fillRect(leftX + 1.5 * t, topBackY + 3.5 * t, w * 0.4, topDepth - 4 * t);
+      e.fillStyle = "#ffffff";
+      e.fillRect(leftX + w * 0.42, topBackY + (subType === 2 ? 0.5 * t : 5 * t), w * 0.46, topDepth - 4 * t);
+      e.strokeStyle = "#0f172a";
+      e.lineWidth = 1.3 * t;
+      e.strokeRect(leftX + 1 * t, topBackY + 2.5 * t, w - 2 * t, topDepth - 2 * t);
+      // Pedras soltas no topo quebrado
+      e.fillStyle = "#94a3b8";
+      e.beginPath();
+      e.arc(leftX + w * 0.22, topFrontY - 4 * t, 2.8 * t, 0, Math.PI * 2);
+      e.arc(leftX + w * 0.78, topFrontY - 2.5 * t, 2.4 * t, 0, Math.PI * 2);
+      e.fill();
+    }
+
+    // Hera e rachaduras de ruína
+    if (subType === 1 || wallHeightState === 2) {
+      e.fillStyle = "#15803d";
+      e.beginPath();
+      e.arc(-5 * t, baseY - 6 * t, 3 * t, 0, Math.PI * 2);
+      e.arc(-2 * t, baseY - 9 * t, 2.3 * t, 0, Math.PI * 2);
+      e.fill();
+    } else if (subType === 2 || wallHeightState === 1) {
+      e.strokeStyle = "rgba(71, 85, 105, 0.75)";
+      e.lineWidth = 1.2 * t;
+      e.beginPath();
+      e.moveTo(-3 * t, topFrontY + 4 * t);
+      e.lineTo(0, topFrontY + 10 * t);
+      e.lineTo(-2 * t, baseY - 2 * t);
+      e.stroke();
+    }
+
     if (!nL) {
       e.fillStyle = "#94a3b8";
-      e.fillRect(leftX, topBackY, 2.2 * t, baseY - topBackY);
+      e.fillRect(leftX, topBackY + (wallHeightState > 0 ? 3 * t : 0), 2 * t, baseY - topBackY);
     }
     if (!nR) {
       e.fillStyle = "#94a3b8";
-      e.fillRect(rightX - 2.2 * t, topBackY, 2.2 * t, baseY - topBackY);
+      e.fillRect(rightX - 2 * t, topBackY + (wallHeightState > 0 ? 3 * t : 0), 2 * t, baseY - topBackY);
     }
-    if (!nT) {
+    e.restore();
+  }
+
+  function drawGreekStatue(e, t, subType = 0, animTimer = 0) {
+    e.save();
+    // Pedestal escalonado de mármore com friso dourado
+    e.fillStyle = "#94a3b8";
+    e.fillRect(-11 * t, -1 * t, 22 * t, 5 * t);
+    e.fillStyle = "#e2e8f0";
+    e.fillRect(-9.5 * t, -7 * t, 19 * t, 6.5 * t);
+    e.strokeStyle = "#d97706";
+    e.lineWidth = 1 * t;
+    e.strokeRect(-8.5 * t, -6 * t, 17 * t, 4.5 * t);
+
+    if (subType === 0) {
+      // Estátua Monumental de Atena Parthenos (com elmo coríntio, lança dourada e escudo Égide)
+      e.fillStyle = "#f8fafc";
+      // Peplos / Túnica drapeada
+      e.beginPath();
+      e.moveTo(-5.5 * t, -7 * t);
+      e.lineTo(-4.5 * t, -25 * t);
+      e.lineTo(4.5 * t, -25 * t);
+      e.lineTo(5.5 * t, -7 * t);
+      e.closePath();
+      e.fill();
+      e.strokeStyle = "#94a3b8";
+      e.lineWidth = 0.9 * t;
+      e.stroke();
+      // Cabeça + Elmo com crista dourada
+      e.fillStyle = "#f1f5f9";
+      e.beginPath();
+      e.arc(0, -28 * t, 3.6 * t, 0, Math.PI * 2);
+      e.fill();
+      e.fillStyle = "#fbbf24";
+      e.beginPath();
+      e.arc(0, -30 * t, 3.8 * t, Math.PI, 0);
+      e.fill();
+      e.fillRect(-1.2 * t, -34 * t, 2.4 * t, 4 * t);
+      // Escudo redondo grego (Hoplon) ao lado
+      e.fillStyle = "#d97706";
+      e.beginPath();
+      e.ellipse(-6.5 * t, -15 * t, 3.5 * t, 6.5 * t, -0.1, 0, Math.PI * 2);
+      e.fill();
+      e.strokeStyle = "#fef08a";
+      e.lineWidth = 1.1 * t;
+      e.stroke();
+      // Lança Dourada
+      e.strokeStyle = "#b45309";
+      e.lineWidth = 1.5 * t;
+      e.beginPath();
+      e.moveTo(6.5 * t, -7 * t);
+      e.lineTo(6.5 * t, -35 * t);
+      e.stroke();
+      const glow = (Math.sin(animTimer * 3) + 1) * 0.5;
+      e.fillStyle = `rgba(254, 240, 138, ${0.65 + glow * 0.35})`;
+      e.beginPath();
+      e.moveTo(6.5 * t, -39 * t);
+      e.lineTo(4.5 * t, -34 * t);
+      e.lineTo(8.5 * t, -34 * t);
+      e.closePath();
+      e.fill();
+    } else if (subType === 1) {
+      // Estátua de Filósofo / Orador com Himation (manto) e pergaminho
+      e.fillStyle = "#f1f5f9";
+      e.fillRect(-4.8 * t, -23 * t, 9.6 * t, 16 * t);
+      // Dobra diagonal do manto grego
+      e.strokeStyle = "#0284c7";
+      e.lineWidth = 1.6 * t;
+      e.beginPath();
+      e.moveTo(-4.5 * t, -22 * t);
+      e.lineTo(4.5 * t, -12 * t);
+      e.stroke();
+      // Cabeça barbada clássica
+      e.fillStyle = "#f8fafc";
+      e.beginPath();
+      e.arc(0, -26.5 * t, 3.5 * t, 0, Math.PI * 2);
+      e.fill();
+      // Rolo de pergaminho na mão
+      e.fillStyle = "#fef3c7";
+      e.fillRect(3.5 * t, -19 * t, 3.5 * t, 2.2 * t);
+    } else {
+      // Estátua em Ruínas / Torso Esculpido Inacabado (sem um braço, estilo arqueológico)
       e.fillStyle = "#e2e8f0";
-      e.fillRect(leftX, topBackY, w, 2 * t);
+      e.beginPath();
+      e.moveTo(-5 * t, -7 * t);
+      e.lineTo(-4 * t, -19 * t);
+      e.lineTo(1 * t, -21 * t);
+      e.lineTo(4.5 * t, -17 * t);
+      e.lineTo(4.5 * t, -7 * t);
+      e.closePath();
+      e.fill();
+      // Fragmento da cabeça/busto caído na base do pedestal
+      e.fillStyle = "#cbd5e1";
+      e.beginPath();
+      e.arc(7.5 * t, 1 * t, 3.2 * t, 0, Math.PI * 2);
+      e.fill();
+    }
+    e.restore();
+  }
+
+  function drawGreekVaseCluster(e, t, subType = 0) {
+    e.save();
+    // Sombra
+    e.fillStyle = "rgba(15, 23, 42, 0.3)";
+    e.beginPath();
+    e.ellipse(0, 3 * t, 11 * t, 5 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Ânfora Grega Principal de Terracota (Figuras Negras)
+    e.fillStyle = "#c2410c";
+    e.beginPath();
+    e.ellipse(-2 * t, -4 * t, 5.5 * t, 7.5 * t, 0, 0, Math.PI * 2);
+    e.fill();
+    // Faixa preta helênica no bojo do vaso
+    e.fillStyle = "#1c1917";
+    e.fillRect(-7 * t, -6 * t, 10 * t, 3.5 * t);
+    e.strokeStyle = "#f59e0b";
+    e.lineWidth = 0.9 * t;
+    e.beginPath();
+    e.moveTo(-7 * t, -4.2 * t);
+    e.lineTo(3 * t, -4.2 * t);
+    e.stroke();
+    // Gargalo e 2 alças curvas da ânfora
+    e.fillStyle = "#ea580c";
+    e.fillRect(-4 * t, -14 * t, 4 * t, 4 * t);
+    e.strokeStyle = "#9a3412";
+    e.lineWidth = 1.4 * t;
+    e.beginPath();
+    e.arc(-5 * t, -10.5 * t, 2.5 * t, Math.PI * 0.5, Math.PI * 1.5);
+    e.arc(1 * t, -10.5 * t, 2.5 * t, -Math.PI * 0.5, Math.PI * 0.5);
+    e.stroke();
+
+    // Segundo vaso ao lado (Krater larga ou ânfora tombada/quebrada)
+    if (subType === 1) {
+      // Krater de misturar vinho nos banquetes
+      e.fillStyle = "#9a3412";
+      e.beginPath();
+      e.ellipse(6 * t, -2 * t, 5 * t, 4.5 * t, 0, 0, Math.PI * 2);
+      e.fill();
+      e.fillStyle = "#1c1917";
+      e.beginPath();
+      e.ellipse(6 * t, -5.5 * t, 5.5 * t, 1.8 * t, 0, 0, Math.PI * 2);
+      e.fill();
+    } else {
+      // Jarro menor / cacos de cerâmica no chão
+      e.fillStyle = "#ea580c";
+      e.beginPath();
+      e.ellipse(5.5 * t, 0 * t, 4.2 * t, 3 * t, 0.35, 0, Math.PI * 2);
+      e.fill();
+    }
+    e.restore();
+  }
+
+  function drawGreekFurniture(e, t, subType = 0) {
+    e.save();
+    if (subType === 0) {
+      // Kline: Divã / Cama grega de banquete e repouso com tecido azul/púrpura e almofadas douradas
+      e.fillStyle = "#78350f";
+      e.fillRect(-12 * t, -2 * t, 24 * t, 3.5 * t);
+      e.fillRect(-11 * t, 1.5 * t, 2.5 * t, 5 * t);
+      e.fillRect(8.5 * t, 1.5 * t, 2.5 * t, 5 * t);
+      // Colchão e manto helênico
+      e.fillStyle = "#f8fafc";
+      e.fillRect(-11.5 * t, -6.5 * t, 23 * t, 4.8 * t);
+      e.fillStyle = "#0284c7";
+      e.fillRect(-8 * t, -6.5 * t, 16 * t, 3.5 * t);
+      // Cabeceira curva com almofada real
+      e.fillStyle = "#fbbf24";
+      e.beginPath();
+      e.ellipse(-8.5 * t, -8 * t, 3.8 * t, 2.4 * t, -0.2, 0, Math.PI * 2);
+      e.fill();
+    } else if (subType === 1) {
+      // Trapeza: Mesa grega de madeira e bronze posta com taças Kylix e oferendas
+      e.fillStyle = "#92400e";
+      e.fillRect(-10 * t, -5 * t, 20 * t, 3 * t);
+      e.fillStyle = "#451a03";
+      e.fillRect(-8.5 * t, -2 * t, 2.2 * t, 6.5 * t);
+      e.fillRect(6.3 * t, -2 * t, 2.2 * t, 6.5 * t);
+      // Taça Kylix dourada e prato de frutas sobre a mesa
+      e.fillStyle = "#fbbf24";
+      e.beginPath();
+      e.arc(-4 * t, -6.8 * t, 2.2 * t, 0, Math.PI * 2);
+      e.fill();
+      e.fillStyle = "#dc2626";
+      e.beginPath();
+      e.arc(3.5 * t, -6.5 * t, 2.4 * t, 0, Math.PI * 2);
+      e.fill();
+    } else if (subType === 3) {
+      // Bema: Tribuna do Orador no Bouleuterion com pergaminho aberto
+      e.fillStyle = "#cbd5e1";
+      e.fillRect(-11 * t, -2 * t, 22 * t, 6 * t);
+      e.fillStyle = "#f8fafc";
+      e.fillRect(-8 * t, -13 * t, 16 * t, 11 * t);
+      e.strokeStyle = "#d97706";
+      e.lineWidth = 1.1 * t;
+      e.strokeRect(-7 * t, -12 * t, 14 * t, 9 * t);
+      // Pergaminho aberto sobre o púlpito
+      e.fillStyle = "#fef3c7";
+      e.fillRect(-5 * t, -15 * t, 10 * t, 3 * t);
+    } else {
+      // Bancada de Mármore do Bouleuterion / Assento Klismos
+      e.fillStyle = "#94a3b8";
+      e.fillRect(-12 * t, 0 * t, 24 * t, 4.5 * t);
+      e.fillStyle = "#f1f5f9";
+      e.fillRect(-13 * t, -4.5 * t, 26 * t, 5 * t);
+      e.strokeStyle = "#64748b";
+      e.lineWidth = 1 * t;
+      e.strokeRect(-13 * t, -4.5 * t, 26 * t, 5 * t);
+    }
+    e.restore();
+  }
+
+  function drawGreekDoor(e, t, isVertical = !1, isOpen = !1) {
+    e.save();
+    // Soleira de mármore no chão
+    e.fillStyle = "#cbd5e1";
+    e.fillRect(-16 * t, -6 * t, 32 * t, 14 * t);
+    e.strokeStyle = "#64748b";
+    e.lineWidth = 1 * t;
+    e.strokeRect(-16 * t, -6 * t, 32 * t, 14 * t);
+
+    // Batentes laterais (ombreiras de mármore dórico)
+    e.fillStyle = "#e2e8f0";
+    e.fillRect(-16 * t, -26 * t, 4.5 * t, 30 * t);
+    e.fillRect(11.5 * t, -26 * t, 4.5 * t, 30 * t);
+    // Lintel / Arquitrave superior com friso dourado
+    e.fillStyle = "#f8fafc";
+    e.fillRect(-17.5 * t, -30 * t, 35 * t, 5 * t);
+    e.strokeStyle = "#d97706";
+    e.lineWidth = 1.1 * t;
+    e.strokeRect(-16.5 * t, -29 * t, 33 * t, 3 * t);
+
+    if (!isOpen) {
+      // Folhas duplas de cedro e bronze fechadas
+      e.fillStyle = "#78350f";
+      e.fillRect(-11.5 * t, -25 * t, 11.2 * t, 27 * t);
+      e.fillRect(0.3 * t, -25 * t, 11.2 * t, 27 * t);
+      // Faixas e argolas de bronze helênico
+      e.fillStyle = "#d97706";
+      e.fillRect(-11 * t, -20 * t, 22 * t, 2 * t);
+      e.fillRect(-11 * t, -8 * t, 22 * t, 2 * t);
+      e.beginPath();
+      e.arc(-2.5 * t, -14 * t, 1.8 * t, 0, Math.PI * 2);
+      e.arc(2.5 * t, -14 * t, 1.8 * t, 0, Math.PI * 2);
+      e.fill();
+    } else {
+      // Folhas da porta abertas em escorço nas laterais permitindo passagem livre
+      e.fillStyle = "#78350f";
+      e.fillRect(-11.5 * t, -25 * t, 3.5 * t, 25 * t);
+      e.fillRect(8 * t, -25 * t, 3.5 * t, 25 * t);
+    }
+    e.restore();
+  }
+
+  function drawGreekUnfinishedWork(e, t, subType = 0) {
+    e.save();
+    if (subType === 0) {
+      // Andaime de Madeira e Guindaste Grego (Polyspastos) erguendo um bloco de mármore
+      e.strokeStyle = "#78350f";
+      e.lineWidth = 2.6 * t;
+      e.beginPath();
+      e.moveTo(-11 * t, 4 * t);
+      e.lineTo(-3 * t, -28 * t);
+      e.lineTo(11 * t, 4 * t);
+      e.moveTo(-9 * t, -10 * t);
+      e.lineTo(7 * t, -10 * t);
+      e.stroke();
+      // Corda do guindaste
+      e.strokeStyle = "#d97706";
+      e.lineWidth = 1.3 * t;
+      e.beginPath();
+      e.moveTo(-2 * t, -27 * t);
+      e.lineTo(-2 * t, -12 * t);
+      e.stroke();
+      // Bloco de mármore suspenso pela metade
+      e.fillStyle = "#f1f5f9";
+      e.fillRect(-8 * t, -12 * t, 12 * t, 8 * t);
+      e.strokeStyle = "#64748b";
+      e.lineWidth = 1 * t;
+      e.strokeRect(-8 * t, -12 * t, 12 * t, 8 * t);
+    } else {
+      // Blocos de mármore bruto recém-cortados e tambor de coluna inacabado no chão
+      e.fillStyle = "#e2e8f0";
+      e.fillRect(-11 * t, -6 * t, 13 * t, 9 * t);
+      e.strokeStyle = "#64748b";
+      e.lineWidth = 1 * t;
+      e.strokeRect(-11 * t, -6 * t, 13 * t, 9 * t);
+      // Tambor cilíndrico de coluna dórica ainda sem montar
+      e.fillStyle = "#cbd5e1";
+      e.beginPath();
+      e.ellipse(7 * t, 0 * t, 5.5 * t, 3.5 * t, 0, 0, Math.PI * 2);
+      e.fill();
+      e.fillStyle = "#f8fafc";
+      e.beginPath();
+      e.ellipse(7 * t, -4 * t, 5.5 * t, 3.5 * t, 0, 0, Math.PI * 2);
+      e.fill();
+      e.stroke();
     }
     e.restore();
   }

@@ -944,64 +944,305 @@
       if (u) return u.biome.id === BiomeId.MOUNTAIN_25D;
       return this._computeSurfaceBaseBiome(t, l).id === BiomeId.MOUNTAIN_25D;
     }
+    _isMeadowCityBiomeAt(t, l) {
+      const b = this._computeSurfaceBaseBiome(t, l);
+      return b.id === BiomeId.MEADOW && !b.hasWater;
+    }
+    _getMeadowCityDistrict(t, l) {
+      // Escaneia a extensão contínua do bioma Planície Florida (MEADOW) onde o tile está,
+      // de modo que cada bioma tenha uma Cidade Grega completa com:
+      // - Entre 1 a 3 Salões Monumentais (o padrão de 4 salões e corredores em cruz) no bioma!
+      // - Várias Casas espalhadas ao redor (cada casa é uma construção própria com as 4 salas e corredores internos)
+      // - Piso falhado (onde algumas lajes de mármore sumiram/quebraram deixando a grama/terra aparecer)
+      if (!this._isMeadowCityBiomeAt(t, l)) return null;
+      if (!this._greekBiomeCityCache) {
+        this._greekBiomeCityCache = new Map();
+      }
+      // Quantiza em blocos de 8 tiles para cache rápido, mas mede as bordas reais do bioma
+      const qx = Math.floor(t / 8),
+        qy = Math.floor(l / 8),
+        qKey = `${qx},${qy}`;
+      if (this._greekBiomeCityCache.has(qKey)) {
+        return this._greekBiomeCityCache.get(qKey);
+      }
+
+      const maxScan = 120;
+      let minX = t,
+        maxX = t,
+        minY = l,
+        maxY = l;
+      while (t - minX < maxScan && this._isMeadowCityBiomeAt(minX - 1, l)) minX--;
+      while (maxX - t < maxScan && this._isMeadowCityBiomeAt(maxX + 1, l)) maxX++;
+      while (l - minY < maxScan && this._isMeadowCityBiomeAt(t, minY - 1)) minY--;
+      while (maxY - l < maxScan && this._isMeadowCityBiomeAt(t, maxY + 1)) maxY++;
+
+      const midX = Math.round((minX + maxX) * 0.5),
+        midY = Math.round((minY + maxY) * 0.5);
+      let cMinX = midX,
+        cMaxX = midX,
+        cMinY = midY,
+        cMaxY = midY;
+      while (midX - cMinX < maxScan && this._isMeadowCityBiomeAt(cMinX - 1, midY)) cMinX--;
+      while (cMaxX - midX < maxScan && this._isMeadowCityBiomeAt(cMaxX + 1, midY)) cMaxX++;
+      while (midY - cMinY < maxScan && this._isMeadowCityBiomeAt(midX, cMinY - 1)) cMinY--;
+      while (cMaxY - midY < maxScan && this._isMeadowCityBiomeAt(midX, cMaxY + 1)) cMaxY++;
+
+      const cx = Math.round((cMinX + cMaxX) * 0.5),
+        cy = Math.round((cMinY + cMaxY) * 0.5),
+        width = cMaxX - cMinX + 1,
+        height = cMaxY - cMinY + 1;
+
+      // Quantiza o centro do bioma para que todos os tiles da mesma região encontrem a mesma lista de construções
+      const anchorX = Math.round(cx / 32) * 32,
+        anchorY = Math.round(cy / 32) * 32,
+        anchorKey = `city_${anchorX},${anchorY}`;
+
+      if (this._greekBiomeCityCache.has(anchorKey)) {
+        const cachedCity = this._greekBiomeCityCache.get(anchorKey);
+        this._greekBiomeCityCache.set(qKey, cachedCity);
+        return cachedCity;
+      }
+
+      if (width < 20 || height < 20 || Math.hypot(anchorX, anchorY) < 26) {
+        this._greekBiomeCityCache.set(qKey, null);
+        return null;
+      }
+
+      const cityHash = this.hash2D(anchorX, anchorY, 503);
+      // Quantidade de Grandes Salões (padrão de 4 salões e corredores): entre 1 a 3 apenas no bioma!
+      const maxHallsBySize = width >= 64 || height >= 64 ? 3 : width >= 42 || height >= 42 ? 2 : 1;
+      const hallCount = Math.min(maxHallsBySize, 1 + (Math.floor(cityHash * 3) % 3)); // 1, 2 ou 3
+
+      const buildings = [];
+      const canPlaceBuilding = (bx, by, hw, hh) => {
+        if (Math.hypot(bx, by) < 25) return !1;
+        if (!this._isMeadowCityBiomeAt(bx, by)) return !1;
+        if (
+          !this._isMeadowCityBiomeAt(bx - hw, by - hh) ||
+          !this._isMeadowCityBiomeAt(bx + hw, by - hh) ||
+          !this._isMeadowCityBiomeAt(bx - hw, by + hh) ||
+          !this._isMeadowCityBiomeAt(bx + hw, by + hh)
+        ) {
+          return !1;
+        }
+        // Evita sobreposição entre salões e casas (deixa ruas/vielas de pelo menos 4 blocos entre eles)
+        for (let i = 0; i < buildings.length; i++) {
+          const b = buildings[i];
+          if (
+            Math.abs(bx - b.cx) <= hw + b.halfW + 4 &&
+            Math.abs(by - b.cy) <= hh + b.halfH + 4
+          ) {
+            return !1;
+          }
+        }
+        return !0;
+      };
+
+      // 1. Posiciona de 1 a 3 Salões Principais (padrão 4 salões + corredores em cruz, halfW=9, halfH=8)
+      const hallOffsets = [
+        [0, 0],
+        [-26, -6],
+        [26, 6],
+        [0, -24],
+        [0, 24],
+        [-24, 18],
+        [24, -18],
+      ];
+      for (let i = 0; i < hallOffsets.length && buildings.filter((b) => b.kind === "hall").length < hallCount; i++) {
+        const ox = hallOffsets[i][0],
+          oy = hallOffsets[i][1],
+          jx = Math.floor((this.hash2D(anchorX + i, anchorY, 521) - 0.5) * 4),
+          jy = Math.floor((this.hash2D(anchorX, anchorY + i, 523) - 0.5) * 4),
+          bx = anchorX + ox + jx,
+          by = anchorY + oy + jy;
+        if (canPlaceBuilding(bx, by, 9, 8)) {
+          buildings.push({
+            kind: "hall",
+            index: buildings.length,
+            cx: bx,
+            cy: by,
+            halfW: 9,
+            halfH: 8,
+            unfinished: i === 2 && cityHash > 0.55, // O 3º salão pode estar em construção inacabada
+          });
+        }
+      }
+      // Garante pelo menos 1 Salão Principal caso os offsets precisem de ajuste fino para o centro real (cx, cy)
+      if (buildings.length === 0 && Math.hypot(cx, cy) >= 25) {
+        buildings.push({
+          kind: "hall",
+          index: 0,
+          cx: cx,
+          cy: cy,
+          halfW: 9,
+          halfH: 8,
+          unfinished: !1,
+        });
+      }
+
+      // 2. Espalha várias CASAS (cada uma com o padrão de 4 salas internas e corredores em cruz!) ao redor dos salões
+      //    para formar uma Cidade Grega bem completa!
+      const houseCandidates = [
+        [-22, -20], [0, -22], [22, -20],
+        [-24, 0],             [24, 0],
+        [-22, 20],  [0, 22],  [22, 20],
+        [-14, -22], [14, -22], [-14, 22], [14, 22],
+        [-38, -14], [38, -14], [-38, 14], [38, 14],
+        [-38, 0],   [38, 0],   [0, -38],  [0, 38],
+      ];
+      const baseCx = buildings[0] ? buildings[0].cx : cx;
+      const baseCy = buildings[0] ? buildings[0].cy : cy;
+      for (let i = 0; i < houseCandidates.length; i++) {
+        const hxOff = houseCandidates[i][0],
+          hyOff = houseCandidates[i][1],
+          jx = Math.floor((this.hash2D(baseCx + i * 7, baseCy, 541) - 0.5) * 4),
+          jy = Math.floor((this.hash2D(baseCx, baseCy + i * 7, 547) - 0.5) * 4),
+          bx = baseCx + hxOff + jx,
+          by = baseCy + hyOff + jy,
+          isUnfinishedHouse = (i % 5 === 4);
+        // Cada Casa tem 4 salas divididas por corredores em cruz (halfW: 7, halfH: 6 -> 15x13 tiles)
+        if (canPlaceBuilding(bx, by, 7, 6)) {
+          buildings.push({
+            kind: "house",
+            index: buildings.length,
+            houseVariant: i % 4,
+            cx: bx,
+            cy: by,
+            halfW: 7,
+            halfH: 6,
+            unfinished: isUnfinishedHouse,
+          });
+        }
+      }
+
+      // Garante que PELO MENOS 2 construções na cidade apareçam 100% COMPLETAS e INTACTAS (sem paredes quebradas e sem piso falhado)!
+      // O 1º Salão Principal (buildings[0]) e a 1ª Casa/Construção seguinte (buildings[1], além de mais casas pares) ficam totalmente completos!
+      let completeCount = 0;
+      for (let i = 0; i < buildings.length; i++) {
+        const b = buildings[i];
+        if (!b.unfinished && (i === 0 || i === 1 || i % 3 === 0)) {
+          b.isComplete = !0;
+          completeCount++;
+        } else {
+          b.isComplete = !1;
+        }
+      }
+      // Caso por qualquer motivo ainda tenha menos de 2 completas, força as primeiras construções a serem completas
+      for (let i = 0; i < buildings.length && completeCount < 2; i++) {
+        if (!buildings[i].isComplete) {
+          buildings[i].unfinished = !1;
+          buildings[i].isComplete = !0;
+          completeCount++;
+        }
+      }
+
+      const city = buildings.length > 0 ? { cx: baseCx, cy: baseCy, halfW: 9, halfH: 8, buildings } : null;
+      this._greekBiomeCityCache.set(anchorKey, city);
+      this._greekBiomeCityCache.set(qKey, city);
+      return city;
+    }
     _getGreekRuinCellAt(t, l) {
       if (this.isUnderground) return null;
-      // Ruínas Gregas aparecem em células de ~72x72 tiles cujo centro pertence ao bioma Planície Florida (MEADOW)
-      // (a uma distância segura do ponto inicial [0,0] para não bloquear o spawn)
-      const cellSize = 72,
-        gx = Math.floor(t / cellSize),
-        gy = Math.floor(l / cellSize),
-        key = `${gx},${gy}`;
-      if (!this._greekRuinGridCache) {
-        this._greekRuinGridCache = new Map();
-      }
-      let ruin = this._greekRuinGridCache.get(key);
-      if (ruin === void 0) {
-        const h1 = this.hash2D(gx, gy, 311),
-          h2 = this.hash2D(gx, gy, 317),
-          cx = gx * cellSize + 24 + Math.floor(h1 * 24),
-          cy = gy * cellSize + 24 + Math.floor(h2 * 24),
-          distOrigin = Math.hypot(cx, cy);
-        // Garante uma Ruína Grega próxima na primeira célula de Planície Florida e em ~65% das células de MEADOW
-        const centerBiome = this._computeSurfaceBaseBiome(cx, cy);
-        const cornerOk =
-          this._computeSurfaceBaseBiome(cx - 8, cy - 7).id === BiomeId.MEADOW &&
-          this._computeSurfaceBaseBiome(cx + 8, cy - 7).id === BiomeId.MEADOW &&
-          this._computeSurfaceBaseBiome(cx - 8, cy + 7).id === BiomeId.MEADOW &&
-          this._computeSurfaceBaseBiome(cx + 8, cy + 7).id === BiomeId.MEADOW;
-        if (
-          distOrigin > 26 &&
-          centerBiome.id === BiomeId.MEADOW &&
-          cornerOk &&
-          (h1 < 0.72 || (Math.abs(gx) <= 1 && Math.abs(gy) <= 1))
-        ) {
-          ruin = { cx, cy, halfW: 9, halfH: 8 };
-        } else {
-          ruin = null;
+      const city = this._getMeadowCityDistrict(t, l);
+      if (!city || !city.buildings || city.buildings.length === 0) return null;
+
+      // Hash determinístico por tile para irregularidades nas paredes, topos quebrados e PISO FALHADO
+      const th = this.hash2D(t, l, 409),
+        th2 = this.hash2D(t, l, 419),
+        floorHoleHash = this.hash2D(t, l, 431);
+      // Topo da parede irregular: 0 = completo com friso, 1 = topo lascado em degraus, 2 = meia altura, 3 = base baixa/inacabada
+      let wallHeightState = th < 0.32 ? 0 : th < 0.66 ? 1 : th < 0.88 ? 2 : 3;
+      // ~24% dos pisos possuem "piso falhado" (lajes quebradas ou faltando onde a grama/terra aparece)
+      const isFloorFailed = floorHoleHash < 0.24;
+
+      // Verifica se o tile (t, l) cai dentro de algum dos Salões (1 a 3) ou de alguma das várias Casas (4 salas cada)
+      let activeBld = null;
+      let minDist = 9999;
+      for (let i = 0; i < city.buildings.length; i++) {
+        const b = city.buildings[i],
+          rx = t - b.cx,
+          ry = l - b.cy;
+        if (Math.abs(rx) <= b.halfW && Math.abs(ry) <= b.halfH + (b.kind === "hall" ? 1 : 0)) {
+          activeBld = b;
+          break;
         }
-        this._greekRuinGridCache.set(key, ruin);
+        const d = Math.max(Math.abs(rx) - b.halfW, Math.abs(ry) - b.halfH);
+        if (d < minDist) minDist = d;
       }
-      if (!ruin) return null;
-      const rx = t - ruin.cx,
-        ry = l - ruin.cy;
-      if (Math.abs(rx) > ruin.halfW || Math.abs(ry) > ruin.halfH) return null;
 
-      // Planta arquitetônica da Construção de Ruínas Gregas (19x17 tiles, tamanho médio):
-      // - Pórtico Sul com escadaria e 6 Colunas Dóricas (ry === 8 e ry === 7)
-      // - Muralha Externa de Mármore Helênico (|rx| === 9 ou ry === -8 ou ry === 6) com brechas de ruína e portal sul
-      // - Corredor Central Processional (|rx| <= 1, de ry = -5 até ry = 7) e Corredor Transversal (|ry| <= 1, de rx = -8 até rx = 8)
-      // - 4 Salas Internas divididas por paredes internas com portas de acesso:
-      //   1. Sala Noroeste (Câmara das Ânforas): rx in [-8..-3], ry in [-7..-2]
-      //   2. Sala Nordeste (Tesouro de Atena): rx in [3..8], ry in [-7..-2]
-      //   3. Sala Sudoeste (Sala dos Filósofos): rx in [-8..-3], ry in [2..5]
-      //   4. Sala Sudeste (Armaria Espartana): rx in [3..8], ry in [2..5]
-      // - Santuário do Oráculo no Ádito Norte Central (rx in [-2..2], ry in [-7..-4])
+      // Entre os salões e casas da cidade (nas ruas/arredores próximos): espalha vasos, estátuas, colunas e pedras caídas
+      if (!activeBld) {
+        if (minDist <= 4) {
+          if (th < 0.026) {
+            return {
+              ruin: city,
+              rx: t - city.cx,
+              ry: l - city.cy,
+              role: th2 < 0.34 ? "statue" : th2 < 0.7 ? "vase" : "column",
+              roomName: "Via da Cidade Grega em Ruínas",
+              subType: Math.floor(th2 * 3),
+              wallHeightState: 2,
+              floorFailed: !0,
+            };
+          }
+          if (th > 0.968) {
+            return {
+              ruin: city,
+              rx: t - city.cx,
+              ry: l - city.cy,
+              role: "rubble_wall",
+              roomName: "Restos de Estrutura na Cidade",
+              subType: 0,
+              wallHeightState: 3,
+              floorFailed: !0,
+            };
+          }
+          // Calçamento falhado de pedras antigas conectando as casas e salões da cidade
+          if (minDist <= 2 && floorHoleHash > 0.58) {
+            return {
+              ruin: city,
+              rx: t - city.cx,
+              ry: l - city.cy,
+              role: "road",
+              roomName: "Rua Antiga da Pólis",
+              subType: 0,
+              wallHeightState: 0,
+              floorFailed: floorHoleHash < 0.74,
+            };
+          }
+        }
+        return null;
+      }
 
-      let role = "floor"; // piso de mármore grego
-      let roomName = "Corredor de Mármore";
+      const rx = t - activeBld.cx,
+        ry = l - activeBld.cy,
+        W = activeBld.halfW, // 9 para Salão Monumental, 7 para Casa de 4 Salas
+        H = activeBld.halfH, // 8 para Salão Monumental, 6 para Casa de 4 Salas
+        isHall = activeBld.kind === "hall",
+        isComplete = !!activeBld.isComplete,
+        isUnfinished = !isComplete && !!activeBld.unfinished;
 
-      // Escadaria / Pórtico Sul (ry = 7..8)
-      if (ry === 8) {
+      let role = isHall ? "temple_floor" : "house_floor";
+      let roomName = isHall
+        ? isComplete
+          ? `Salão Grego Monumental Completo #${(activeBld.index % 3) + 1}`
+          : `Salão Grego Monumental #${(activeBld.index % 3) + 1}`
+        : isComplete
+          ? `Casa Grega Completa de 4 Cômodos #${activeBld.index}`
+          : `Casa Grega de 4 Cômodos #${activeBld.index}`;
+      let subType = Math.floor(th * 4);
+      let doorVertical = !1;
+
+      if (isComplete) {
+        // Construção 100% completa: topo da parede inteiro (0) e sem rachaduras de ruína
+        wallHeightState = 0;
+        subType = 0;
+      } else if (isUnfinished) {
+        wallHeightState = th < 0.5 ? 2 : 3;
+      }
+
+      // Escadaria e Pórtico Frontal Sul dos Salões Monumentais (ry === H + 1 e ry === H)
+      if (isHall && ry === H + 1) {
         if (Math.abs(rx) <= 2) {
           role = "steps";
           roomName = "Escadaria do Propileu Grego";
@@ -1011,7 +1252,7 @@
         } else {
           role = "porch";
         }
-      } else if (ry === 7) {
+      } else if (isHall && ry === H) {
         if (Math.abs(rx) === 2) {
           role = "column";
           roomName = "Coluna do Portal Grego";
@@ -1020,68 +1261,147 @@
           roomName = "Pórtico de Entrada (Propileu)";
         }
       } else {
-        // Interior e Paredes (ry de -8 a +6, rx de -9 a +9)
-        const isOuterWall =
-          Math.abs(rx) === 9 || ry === -8 || ry === 6;
-        // Portas / Aberturas na muralha externa:
-        // Portal Principal Sul (ry === 6, |rx| <= 1) + Brecha antiga Leste (rx === 9, ry === 0) + Brecha Oeste (rx === -9, ry === 0)
-        const isOuterDoor =
-          (ry === 6 && Math.abs(rx) <= 1) ||
-          (Math.abs(rx) === 9 && ry === 0);
+        // =========================================================================
+        // PADRÃO ARQUITETÔNICO DE 4 SALAS + CORREDORES EM CRUZ (usado nos 1 a 3 Salões
+        // e também nas várias Casas de 4 cômodos espalhadas pela cidade!)
+        // =========================================================================
+        const southWallY = isHall ? H - 1 : H;
+        const northWallY = -H;
+        const isOuterWall = Math.abs(rx) === W || ry === northWallY || ry === southWallY;
 
-        // Paredes internas que formam as 4 salas e os corredores em cruz
+        // Portas / Entradas na parede externa (Sul, Leste, Oeste)
+        const isSouthMainDoor = ry === southWallY && Math.abs(rx) <= 1;
+        const isSideCorridorDoor = Math.abs(rx) === W && ry === 0;
+
+        // Paredes internas que dividem o interior nas 4 Salas (Casa/Salão) e Corredores em Cruz:
+        // Corredor vertical central: rx in [-1..1]
+        // Corredor horizontal central: ry in [-1..1]
+        const roomDoorYNorth = isHall ? -4 : -3;
+        const roomDoorYSouth = isHall ? 4 : 3;
+        const roomDoorX = isHall ? 5 : 4;
+
         const isVerticalRoomWall =
           Math.abs(rx) === 2 &&
-          ry >= -7 &&
-          ry <= 5 &&
-          ry !== 0 &&
-          ry !== -1 &&
-          ry !== 1 &&
-          ry !== -4 && // portas para as salas norte (ry === -4)
-          ry !== 4;   // portas para as salas sul (ry === 4)
+          ry >= northWallY + 1 &&
+          ry <= southWallY - 1 &&
+          Math.abs(ry) > 1 &&
+          ry !== roomDoorYNorth &&
+          ry !== roomDoorYSouth;
 
         const isHorizontalRoomWall =
-          (ry === -2 || ry === 2) &&
+          Math.abs(ry) === 2 &&
           Math.abs(rx) >= 2 &&
-          Math.abs(rx) <= 8 &&
-          Math.abs(rx) !== 5; // portas nos corredores laterais (|rx| === 5)
+          Math.abs(rx) <= W - 1 &&
+          Math.abs(rx) !== roomDoorX;
 
-        if ((isOuterWall && !isOuterDoor) || isVerticalRoomWall || isHorizontalRoomWall) {
-          // Algumas pedras da parede estão semi-arruinadas mas ainda formam a parede bloqueante
-          role = "wall";
-        } else if (
-          // Colunas Dóricas internas decorando o Salão Central e as salas
-          (Math.abs(rx) === 4 && (ry === -6 || ry === 0)) ||
-          (Math.abs(rx) === 7 && ry === -6)
-        ) {
-          role = "column";
-        } else if (rx === 0 && ry === -6) {
-          role = "altar";
-          roomName = "Naos do Oráculo";
-        } else if (rx === 6 && ry === -5) {
-          role = "chest";
-          roomName = "Câmara do Tesouro Helênico";
-        } else if (rx === -6 && ry === -5) {
-          role = "amphora_cluster";
-          roomName = "Câmara das Ânforas";
-        } else if (rx === 6 && ry === 4) {
-          role = "chest";
-          roomName = "Sala da Guarda Espartana";
-        } else if (rx === -6 && ry === 4) {
-          role = "brazier";
-          roomName = "Sala dos Filósofos";
-        } else if (rx === 0 && ry === 0) {
-          role = "mosaic_center";
-          roomName = "Átrio Central de Mosaico Grego";
+        const isRoomDoorTile =
+          (Math.abs(rx) === 2 && (ry === roomDoorYNorth || ry === roomDoorYSouth)) ||
+          (Math.abs(ry) === 2 && Math.abs(rx) === roomDoorX) ||
+          (!isHall && ry === southWallY && rx === 0);
+
+        if (isRoomDoorTile && (isComplete || th < 0.72)) {
+          role = "door";
+          doorVertical = Math.abs(rx) === 2;
+          roomName = isHall ? "Porta do Salão Helênico" : "Porta da Casa Grega";
+        } else if ((isOuterWall && !isSouthMainDoor && !isSideCorridorDoor) || isVerticalRoomWall || isHorizontalRoomWall) {
+          const isCorner =
+            (Math.abs(rx) === W && (ry === northWallY || ry === southWallY)) ||
+            (Math.abs(rx) === 2 && Math.abs(ry) === 2);
+          // Se a construção for COMPLETA (isComplete), nenhuma parede é quebrada!
+          if (isComplete) {
+            role = "wall";
+            wallHeightState = 0;
+          } else if (isUnfinished && (rx + ry) % 3 === 0) {
+            role = "unfinished_foundation";
+          } else if (!isCorner && th > 0.82) {
+            role = "rubble_floor";
+          } else {
+            role = "wall";
+          }
+        } else {
+          // Interior das 4 Salas da Casa / Salão e Corredores:
+          const inNW = rx <= -3 && ry <= -3; // 1ª Sala (Noroeste: Quarto / Ânforas)
+          const inNE = rx >= 3 && ry <= -3;  // 2ª Sala (Nordeste: Sala de Banquetes Andron / Tesouro)
+          const inSW = rx <= -3 && ry >= 3;  // 3ª Sala (Sudoeste: Cozinha / Estudo / Filósofos)
+          const inSE = rx >= 3 && ry >= 3;   // 4ª Sala (Sudeste: Oficina / Guarda / Construção)
+          const midRoomX = isHall ? 6 : 5;
+          const midRoomYNorth = isHall ? -5 : -4;
+          const midRoomYSouth = isHall ? 4 : 4;
+
+          if (isUnfinished && rx === 0 && ry === 0) {
+            role = "unfinished_work";
+            subType = 0; // Guindaste / Andaime no centro da construção inacabada
+            roomName = "Construção Grega Inacabada";
+          } else if (rx === 0 && ry === 0) {
+            role = "mosaic_center";
+            roomName = isHall ? "Átrio Central do Salão" : "Pátio Central da Casa (Oikos)";
+          } else if (isHall && rx === 0 && ry === northWallY + 2) {
+            role = "altar";
+            roomName = "Naos do Templo / Salão Principal";
+          } else if (rx === 0 && ry === northWallY + 1) {
+            role = "statue";
+            subType = isHall ? 0 : 1;
+          } else if (inNW) {
+            roomName = isHall ? "Câmara Noroeste (Ânforas e Estátuas)" : "1º Cômodo da Casa (Quarto Thalamos)";
+            if (rx === -midRoomX && ry === midRoomYNorth) {
+              role = isHall ? "vase" : "furniture";
+              subType = 0; // Cama/Divã Kline na casa
+            } else if (rx === -(midRoomX - 2) && ry === midRoomYNorth - 1) {
+              role = "vase";
+            } else if (isHall && rx === -4 && ry === -6) {
+              role = "column";
+            }
+          } else if (inNE) {
+            roomName = isHall ? "Câmara Nordeste (Tesouro Helênico)" : "2º Cômodo da Casa (Andron de Banquetes)";
+            if (rx === midRoomX && ry === midRoomYNorth) {
+              role = isHall ? "chest" : "furniture";
+              subType = 1; // Mesa Trapeza posta na casa
+            } else if (rx === midRoomX - 2 && ry === midRoomYNorth - 1) {
+              role = isHall ? "statue" : "vase";
+            } else if (isHall && rx === 4 && ry === -6) {
+              role = "column";
+            }
+          } else if (inSW) {
+            roomName = isHall ? "Câmara Sudoeste (Sala dos Filósofos)" : "3º Cômodo da Casa (Cozinha e Despensa)";
+            if (rx === -midRoomX && ry === midRoomYSouth) {
+              role = "furniture";
+              subType = 1; // Mesa Helênica / Bancada de preparo (sem fogueira natural)
+            } else if (rx === -(midRoomX - 2) && ry === midRoomYSouth) {
+              role = "furniture";
+              subType = 2; // Bancos / Assentos
+            } else if (rx === -(midRoomX + 1) && ry === midRoomYSouth - 1) {
+              role = "vase";
+            }
+          } else if (inSE) {
+            roomName = isHall ? "Câmara Sudeste (Assembleia e Guarda)" : "4º Cômodo da Casa (Sala de Ofícios e Arca)";
+            if (rx === midRoomX && ry === midRoomYSouth) {
+              role = isUnfinished ? "unfinished_work" : "chest";
+              subType = 1;
+            } else if (rx === midRoomX - 2 && ry === midRoomYSouth) {
+              role = "furniture";
+              subType = 3; // Tribuna / Mesa de estudos
+            } else if (rx === midRoomX + 1 && ry === midRoomYSouth - 1) {
+              role = "statue";
+              subType = isComplete ? 1 : 2;
+            }
+          } else if (isHall && Math.abs(rx) === 4 && ry === 0) {
+            role = "column";
+          }
         }
       }
 
       return {
-        ruin,
+        ruin: activeBld,
+        city,
         rx,
         ry,
         role,
         roomName,
+        subType,
+        wallHeightState: isComplete ? 0 : wallHeightState,
+        doorVertical,
+        isComplete,
+        floorFailed: isComplete ? !1 : (isFloorFailed || isUnfinished),
       };
     }
     _getMountain25DBounds(t, l) {
@@ -1402,33 +1722,141 @@
         se.greekRuinRole = greekRuin.role;
         se.greekRuinRx = greekRuin.rx;
         se.greekRuinRy = greekRuin.ry;
+        se.greekRoomName = greekRuin.roomName;
+        se.greekFloorFailed = !!greekRuin.floorFailed;
         const canKeepCustom = this.customPlacedProps.has(O);
         if (!canKeepCustom) {
           const intState =
             this.interactedProps.get(O) || this.interactedProps.get(`${t},${l}`) || {};
-          if (greekRuin.role === "wall") {
-            se.isGreekWall = !0;
+          if (greekRuin.role === "wall" || greekRuin.role === "rubble_wall") {
+            const wHeight =
+              greekRuin.isComplete
+                ? 0
+                : greekRuin.role === "rubble_wall"
+                  ? 3
+                  : (greekRuin.wallHeightState ?? (Math.abs(t + l * 3) % 4));
+            // Paredes com wHeight === 3 são tocos de parede desmoronada/inacabada baixos
+            se.isGreekWall = wHeight <= 2;
             se.prop = {
               kind: "greek_wall",
-              subType: (Math.abs(t + l * 3) % 3),
+              subType: greekRuin.isComplete ? 0 : (Math.abs(t + l * 3) % 3),
+              wallHeightState: wHeight,
               offsetX: 0,
               offsetY: 0,
               scale: 1,
-              namePt: "Muralha de Mármore Grego em Ruínas",
+              namePt:
+                wHeight === 0
+                  ? "Muralha de Mármore Helênico Completa"
+                  : wHeight === 1
+                    ? "Parede Grega com Topo Irregular Quebrado"
+                    : wHeight === 2
+                      ? "Parede Grega Semi-Desmoronada (Meia Altura)"
+                      : "Base de Parede em Ruínas / Inacabada",
               descriptionPt:
-                "Parede clássica de blocos de mármore branco helênico com friso de meandro grego e hera antiga.",
+                "Cantaria clássica de mármore com topo irregular desgastado pelos séculos, lascas de pedra e hera mediterrânea.",
+            };
+          } else if (greekRuin.role === "door") {
+            const isOpen = intState.opened !== void 0 ? !!intState.opened : !1;
+            se.isGreekDoor = !0;
+            se.isGreekDoorOpen = isOpen;
+            se.prop = {
+              kind: "greek_door",
+              subType: greekRuin.doorVertical ? 1 : 0,
+              opened: isOpen,
+              offsetX: 0,
+              offsetY: 0,
+              scale: 1,
+              interactive: !0,
+              namePt: isOpen
+                ? `Porta Helênica Aberta (${greekRuin.roomName})`
+                : `Porta de Madeira e Bronze (${greekRuin.roomName})`,
+              descriptionPt: isOpen
+                ? "Portal de mármore com batentes de cedro e cravos de bronze aberto. Pressione [F] para fechar."
+                : "Antiga porta grega de madeira de cedro reforçada com bronze sob lintel de mármore. Pressione [F] para abrir ou fechar!",
+            };
+          } else if (greekRuin.role === "statue") {
+            const stType = greekRuin.subType ?? (Math.abs(t + l) % 3);
+            const stNames = [
+              "Estátua Monumental de Atena Parthenos",
+              "Estátua de Filósofo e Orador da Pólis",
+              "Kouros de Mármore em Ruínas (Escultura Inacabada)",
+            ];
+            se.prop = {
+              kind: "greek_statue",
+              subType: stType,
+              offsetX: 0,
+              offsetY: -4,
+              scale: 1.2,
+              interactive: !0,
+              namePt: stNames[stType % stNames.length],
+              descriptionPt:
+                "Escultura clássica de mármore pario sobre pedestal com inscrições em grego antigo. Pressione [F] para contemplar!",
+            };
+          } else if (greekRuin.role === "vase" || greekRuin.role === "amphora_cluster") {
+            const vType = greekRuin.subType ?? (Math.abs(t * 3 + l) % 3);
+            const vNames = [
+              "Ânforas Gregas de Figuras Negras",
+              "Cratera (Krater) de Cerâmica de Banquete",
+              "Pithos e Jarros de Azeite de Terracota",
+            ];
+            se.prop = {
+              kind: "greek_vase",
+              subType: vType,
+              offsetX: 0,
+              offsetY: 0,
+              scale: 1.08,
+              interactive: !0,
+              opened: !!intState.opened,
+              namePt: vNames[vType % vNames.length],
+              descriptionPt:
+                "Vasos de cerâmica grega pintados com cenas mitológicas e padrão de meandro. Pressione [F] para vasculhar o interior!",
+            };
+          } else if (greekRuin.role === "furniture") {
+            const fType = greekRuin.subType ?? (Math.abs(t + l * 7) % 4);
+            const fNames = [
+              "Kline (Divã Grego de Banquete com Almofadas)",
+              "Trapeza (Mesa Helênica com Taças Kylix)",
+              "Bancada / Cadeira Klismos de Mármore",
+              "Bema (Tribuna do Orador com Pergaminhos)",
+            ];
+            se.prop = {
+              kind: "greek_furniture",
+              subType: fType,
+              offsetX: 0,
+              offsetY: 0,
+              scale: 1.1,
+              interactive: !0,
+              namePt: fNames[fType % fNames.length],
+              descriptionPt:
+                `Mobiliário autêntico da Grécia Antiga situado em: ${greekRuin.roomName}. Pressione [F] para examinar.`,
+            };
+          } else if (greekRuin.role === "unfinished_work") {
+            const uType = greekRuin.subType ?? (Math.abs(t + l) % 2);
+            se.prop = {
+              kind: "greek_unfinished",
+              subType: uType,
+              offsetX: 0,
+              offsetY: -2,
+              scale: 1.15,
+              interactive: !0,
+              namePt:
+                uType === 0
+                  ? "Guindaste Helênico (Polyspastos) e Andaime Inacabado"
+                  : "Blocos de Mármore Bruto e Tambores de Coluna Inacabados",
+              descriptionPt:
+                "Canteiro de obras da Grécia Antiga deixado pela metade pelos canteiros e escultores. Pressione [F] para inspecionar as ferramentas e blocos.",
             };
           } else if (greekRuin.role === "column") {
             se.prop = {
               kind: "ruin_pillar",
-              subType: (Math.abs(t * 5 + l) % 2),
+              subType: greekRuin.isComplete ? 0 : (Math.abs(t * 5 + l) % 2),
               offsetX: 0,
               offsetY: -4,
               scale: 1.15,
               interactive: !0,
               namePt: "Coluna Dórica de Mármore",
               descriptionPt:
-                "Coluna grega canelada de mármore branco com capitel dórico esculpido. Pressione [F] para examinar as inscrições helênicas.",
+                "Coluna grega canelada de mármore branco com capitel dórico esculpido. Pressione [F] para examinar.",
             };
           } else if (greekRuin.role === "altar") {
             se.prop = {
@@ -1438,11 +1866,11 @@
               offsetY: -4,
               scale: 1.25,
               interactive: !0,
-              namePt: "Altar do Oráculo de Delfos",
+              namePt: "Altar Sagrado do Naos (Templo Grego)",
               descriptionPt:
                 intState.activated
-                  ? "A chama divina do Oráculo brilha sobre o mármore sagrado!"
-                  : "Altar central das Ruínas Gregas. Pressione [F] para receber a bênção dos deuses do Olimpo!",
+                  ? "A chama divina de Atena brilha sobre o mármore sagrado do Naos!"
+                  : "Altar central na Cella do Templo Grego, diante da estátua divina. Pressione [F] para receber a bênção do Olimpo!",
             };
           } else if (greekRuin.role === "chest") {
             const opened = !!intState.opened;
@@ -1455,39 +1883,14 @@
               interactive: !opened,
               opened: opened,
               namePt: opened
-                ? "Arca Helênica (Saqueada)"
-                : "Arca de Tesouro Helênico",
+                ? "Kibotos / Arca Helênica (Saqueada)"
+                : "Kibotos (Arca de Tesouro Helênico)",
               descriptionPt: opened
-                ? "Os tesouros desta sala grega já foram recolhidos."
-                : "Baú ornamentado guardado em uma das salas internas das Ruínas Gregas. Pressione [F] para abrir!",
-            };
-          } else if (greekRuin.role === "brazier") {
-            se.prop = {
-              kind: "campfire",
-              subType: 0,
-              offsetX: 0,
-              offsetY: 2,
-              scale: 1,
-              lit: intState.lit !== void 0 ? intState.lit : !0,
-              interactive: !0,
-              namePt: "Pira Olímpica das Ruínas",
-              descriptionPt:
-                "Fogo sagrado aceso na Sala dos Filósofos. Pressione [F] para descansar e salvar a jornada.",
-            };
-          } else if (greekRuin.role === "amphora_cluster") {
-            se.prop = {
-              kind: "ruin_pillar",
-              subType: 1,
-              offsetX: 0,
-              offsetY: -4,
-              scale: 1,
-              interactive: !0,
-              namePt: "Estela da Câmara das Ânforas",
-              descriptionPt:
-                "Pedestal grego antigo cercado por vestígios de cerâmica helênica. Pressione [F] para decifrar.",
+                ? "Os tesouros desta câmara grega já foram recolhidos."
+                : `Arca ornamentada guardada em: ${greekRuin.roomName}. Pressione [F] para abrir!`,
             };
           } else {
-            // Corredores e pisos internos das salas ficam limpos de árvores/pedras aleatórias para circulação livre!
+            // Corredores, rua da Ágora, pátio da casa e pisos internos ficam limpos de árvores/pedras selvagens
             se.prop = null;
           }
         }
@@ -1750,18 +2153,7 @@
               ? "O santuário pulsa com bênçãos radiantes ativadas!"
               : "Pressione [F] ou Interagir para despertar a bênção mágica do santuário.",
         };
-      if (g > 0.0018 && g < 0.0035 && o.category === "land")
-        return {
-          kind: "campfire",
-          subType: 0,
-          offsetX: 0,
-          offsetY: 2,
-          scale: 1,
-          interactive: !0,
-          namePt: "Acampamento de Viajante",
-          descriptionPt:
-            "Uma fogueira crepitante aconchegante. Pressione [F] para descansar.",
-        };
+      // Fogueiras não aparecem mais naturalmente pelo mapa — são criadas exclusivamente pelo jogador via receita!
       if (g > 0.0035 && g < 0.0055 && o.category === "land") {
         const S = (f == null ? void 0 : f.opened) ?? !1;
         return {
@@ -2123,6 +2515,60 @@
           reward: "Descanso Revigorante",
         };
       }
+      if (o.prop.kind === "greek_door") {
+        const nextOpen = !o.prop.opened;
+        this.interactedProps.set(u, { ...m, opened: nextOpen });
+        this.invalidateTile(t, l);
+        return {
+          success: !0,
+          message: nextOpen
+            ? "Você empurrou os pesados batentes de cedro e bronze: a porta grega se abriu!"
+            : "Você fechou a porta de madeira e bronze das ruínas.",
+          reward: nextOpen ? "Porta Aberta" : "Porta Fechada",
+        };
+      }
+      if (o.prop.kind === "greek_statue") {
+        return {
+          success: !0,
+          message:
+            'Inscrição no pedestal da estátua: "Conhece-te a ti mesmo — nada em excesso. A sabedoria da Pólis vive no mármore eterno."',
+          reward: "Inspiração Helênica (+75 XP)",
+        };
+      }
+      if (o.prop.kind === "greek_vase") {
+        if (m.opened) {
+          return {
+            success: !0,
+            message:
+              "As ânforas de terracota exibem pinturas de figuras negras retratando heróis, trirremes e atletas olímpicos.",
+            reward: "Cerâmica Ática Examinada",
+          };
+        }
+        this.interactedProps.set(u, { ...m, opened: !0 });
+        this.invalidateTile(t, l);
+        return {
+          success: !0,
+          message:
+            "Você vasculhou as antigas ânforas e crateras gregas de cerâmica e encontrou dracmas e essências!",
+          reward: "Dracmas de Prata & Azeite (+65 XP)",
+        };
+      }
+      if (o.prop.kind === "greek_furniture") {
+        return {
+          success: !0,
+          message:
+            "Você examinou o mobiliário helênico: divãs Kline de banquete, mesas Trapeza e assentos esculpidos onde cidadãos e filósofos debatiam.",
+          reward: "Cultura da Pólis (+50 XP)",
+        };
+      }
+      if (o.prop.kind === "greek_unfinished") {
+        return {
+          success: !0,
+          message:
+            "Você examinou o canteiro de obras inacabado: blocos de mármore com tenões de içamento, cinzéis de bronze e o guindaste Polyspastos!",
+          reward: "Engenharia Helênica (+60 XP)",
+        };
+      }
       return o.prop.kind === "ruin_pillar"
         ? {
             success: !0,
@@ -2136,6 +2582,7 @@
       const o = this.getTile(t, l);
       if (this.isUnderground && o.biome.id === BiomeId.CAVE_WALL) return !1;
       if (!this.isUnderground && o && o.isGreekWall) return !1;
+      if (!this.isUnderground && o && o.isGreekDoor && !o.isGreekDoorOpen) return !1;
       // Permite subir e andar livremente em cima de todo o paredão (isCliffWall)!
       const southTile = this.getTile(t, l + 1);
       if (
@@ -2313,7 +2760,7 @@
               ? 3
               : k === "cactus"
                 ? 4.5
-                : k === "ruin_pillar"
+                : k === "ruin_pillar" || k === "greek_statue" || k === "greek_unfinished"
                   ? 5.5
                   : 0;
       let r = null;

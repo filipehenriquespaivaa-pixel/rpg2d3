@@ -585,58 +585,124 @@
             (g.globalAlpha = 1));
         const T = t.detailHash;
         if (t.isGreekRuin) {
-          // Piso de Mármore Helênico das Ruínas Gregas (salas, corredores, escadaria e mosaico central)
+          // Pisos em tons de Terracota Helênica, Travertino Dourado e Calcário Escuro para contrastar fortemente
+          // com as Paredes de Mármore Branco/Marfim e Topo de Telha/Cornija!
           const rx = t.greekRuinRx || 0,
             ry = t.greekRuinRy || 0,
-            role = t.greekRuinRole || "floor";
-          // Ladrilhos de mármore branco/creme alternados
-          const isChecker = (Math.abs(t.tx + t.ty) % 2) === 0;
-          g.fillStyle =
-            role === "steps" || role === "porch"
-              ? "#cbd5e1"
-              : isChecker
-                ? "#e2e8f0"
-                : "#f1f5f9";
-          g.fillRect(l, o, u + 1, u + 1);
+            role = t.greekRuinRole || "floor",
+            floorFailed = !!t.greekFloorFailed,
+            isChecker = (Math.abs(t.tx + t.ty) % 2) === 0;
 
-          // Junta das lajes de mármore
-          g.strokeStyle = "rgba(100, 116, 139, 0.35)";
-          g.lineWidth = 1;
-          g.strokeRect(l + 0.5, o + 0.5, u - 1, u - 1);
+          if (role === "unfinished_foundation" || role === "rubble_floor" || role === "rubble_wall") {
+            // Brecha de parede caída / alicerce inacabado: terra ocre escura com fragmentos de pedra
+            g.fillStyle = "rgba(120, 53, 15, 0.38)";
+            g.fillRect(l + 2, o + 2, u - 4, u - 4);
+            g.fillStyle = "#b45309";
+            g.fillRect(l + 5 + T * 12, o + 6 + T * 10, 6, 5);
+            g.fillStyle = "#78716c";
+            g.fillRect(l + 16 - T * 8, o + 18 - T * 6, 7, 5);
+          } else if (floorFailed && role !== "mosaic_center" && role !== "steps") {
+            // PISO FALHADO: O chão natural do bioma (grama/terra) fica visível por baixo e desenhamos
+            // apenas cacos/pedaços quebrados de ladrilho de terracota/travertino nas bordas do bloco!
+            const slabColor =
+              role === "house_floor"
+                ? isChecker
+                  ? "#b45309"
+                  : "#92400e"
+                : isChecker
+                  ? "#a16207"
+                  : "#854d0e";
+            if (T < 0.35) {
+              // Seção de piso que falhou quase por completo (apenas um canto de laje quebrada restou)
+              g.fillStyle = slabColor;
+              g.beginPath();
+              g.moveTo(l, o);
+              g.lineTo(l + u * 0.58, o);
+              g.lineTo(l + u * 0.42, o + u * 0.48);
+              g.lineTo(l, o + u * 0.62);
+              g.closePath();
+              g.fill();
+              g.strokeStyle = "rgba(69, 26, 3, 0.65)";
+              g.lineWidth = 1.2;
+              g.stroke();
+            } else {
+              // Laje com buraco irregular no meio mostrando a grama/terra por baixo
+              g.fillStyle = slabColor;
+              g.fillRect(l, o, u * 0.46, u);
+              g.fillRect(l + u * 0.64, o, u * 0.36, u * 0.72);
+              g.strokeStyle = "rgba(69, 26, 3, 0.6)";
+              g.lineWidth = 1.1;
+              g.strokeRect(l + 0.5, o + 0.5, u * 0.45, u - 1);
+              g.strokeRect(l + u * 0.64, o + 0.5, u * 0.35, u * 0.71);
+            }
+          } else {
+            // Paleta de Piso Quente e Escura (Terracota, Travertino Âmbar e Laje Basáltica nas Ruas)
+            // para nunca confundir com o Mármore Branco/Gelo das Paredes!
+            g.fillStyle =
+              role === "steps" || role === "porch"
+                ? "#78716c"
+                : role === "temple_floor"
+                  ? isChecker
+                    ? "#a16207"
+                    : "#854d0e"
+                  : role === "house_floor"
+                    ? isChecker
+                      ? "#b45309"
+                      : "#9a3412"
+                    : role === "road"
+                      ? "#57534e"
+                      : isChecker
+                        ? "#92400e"
+                        : "#78350f";
+            g.fillRect(l, o, u + 1, u + 1);
 
-          // Tapete / Friso de Meandro Grego Dourado e Azul nos corredores principais (|rx| <= 1 ou |ry| <= 1)
-          if (Math.abs(rx) <= 1 || Math.abs(ry) <= 1) {
-            g.fillStyle = "rgba(2, 132, 199, 0.18)";
-            g.fillRect(l + 3, o + 3, u - 6, u - 6);
-            g.strokeStyle = "rgba(217, 119, 6, 0.55)";
+            // Rejunte escuro profundo entre os ladrilhos do piso
+            g.strokeStyle = "rgba(41, 37, 36, 0.55)";
             g.lineWidth = 1.2;
-            g.strokeRect(l + 4, o + 4, u - 8, u - 8);
-          }
+            g.strokeRect(l + 0.5, o + 0.5, u - 1, u - 1);
 
-          // Mosaico Helênico de Sol no centro do Átrio (rx === 0, ry === 0)
-          if (role === "mosaic_center") {
-            g.fillStyle = "#0284c7";
-            g.beginPath();
-            g.arc(l + u / 2, o + u / 2, u * 0.38, 0, Math.PI * 2);
-            g.fill();
-            g.strokeStyle = "#fbbf24";
-            g.lineWidth = 2;
-            g.stroke();
-          }
+            // Detalhe interno de mosaico de ladrilho
+            g.strokeStyle = "rgba(254, 243, 199, 0.16)";
+            g.lineWidth = 0.8;
+            g.strokeRect(l + 2.5, o + 2.5, u - 5, u - 5);
 
-          // Degraus esculpidos na Escadaria Sul (role === "steps")
-          if (role === "steps") {
-            for (let sy = 4; sy < u; sy += 8) {
-              g.fillStyle = "#f8fafc";
-              g.fillRect(l + 1, o + sy, u - 2, 3);
-              g.fillStyle = "#64748b";
-              g.fillRect(l + 1, o + sy + 3, u - 2, 2);
+            // Tapete / Friso de Meandro Grego Azul-Olímpico e Ouro nos corredores principais (|rx| <= 1 ou |ry| <= 1)
+            if (Math.abs(rx) <= 1 || Math.abs(ry) <= 1) {
+              g.fillStyle =
+                role === "house_floor"
+                  ? "rgba(120, 53, 15, 0.42)"
+                  : "rgba(12, 74, 110, 0.45)";
+              g.fillRect(l + 3, o + 3, u - 6, u - 6);
+              g.strokeStyle = "rgba(251, 191, 36, 0.65)";
+              g.lineWidth = 1.2;
+              g.strokeRect(l + 4, o + 4, u - 8, u - 8);
+            }
+
+            // Mosaico Helênico / Implúvio da Casa ou Centro do Salão
+            if (role === "mosaic_center") {
+              g.fillStyle = "#0369a1";
+              g.beginPath();
+              g.arc(l + u / 2, o + u / 2, u * 0.38, 0, Math.PI * 2);
+              g.fill();
+              g.strokeStyle = "#fbbf24";
+              g.lineWidth = 2.2;
+              g.stroke();
+            }
+
+            // Degraus esculpidos na Escadaria
+            if (role === "steps") {
+              for (let sy = 4; sy < u; sy += 8) {
+                g.fillStyle = "#a8a29e";
+                g.fillRect(l + 1, o + sy, u - 2, 3);
+                g.fillStyle = "#44403c";
+                g.fillRect(l + 1, o + sy + 3, u - 2, 2);
+              }
             }
           }
 
-          // Pequenas fendas e musgo mediterrâneo em algumas lajes
-          if (T > 0.72) {
-            g.fillStyle = "rgba(21, 128, 61, 0.38)";
+          // Fendas e musgo mediterrâneo em algumas lajes
+          if (T > 0.66) {
+            g.fillStyle = "rgba(21, 128, 61, 0.42)";
             g.beginPath();
             g.arc(l + 6 + T * 16, o + 7 + T * 14, 2.5, 0, Math.PI * 2);
             g.fill();
@@ -1437,9 +1503,24 @@
                 top: !!eng.getTile(tx, ty - 1).isGreekWall,
                 bottom: !!eng.getTile(tx, ty + 1).isGreekWall,
               };
-            drawGreekRuinWall25D(c, f, t.subType || 0, nb);
+            drawGreekRuinWall25D(c, f, t.subType || 0, nb, t.wallHeightState ?? 0);
             break;
           }
+          case "greek_statue":
+            drawGreekStatue(c, f, t.subType || 0, this.animTimer);
+            break;
+          case "greek_vase":
+            drawGreekVaseCluster(c, f, t.subType || 0);
+            break;
+          case "greek_furniture":
+            drawGreekFurniture(c, f, t.subType || 0);
+            break;
+          case "greek_door":
+            drawGreekDoor(c, f, t.subType === 1, !!t.opened);
+            break;
+          case "greek_unfinished":
+            drawGreekUnfinishedWork(c, f, t.subType || 0);
+            break;
           case "cave_entrance":
             bg(c, f, this.animTimer);
             break;
