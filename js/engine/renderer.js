@@ -1495,8 +1495,21 @@
           V = S.bracelete_direito,
           O = S.mao_esquerda,
           _ = S.mao_direita,
+          isRangedHandItem = (it) => {
+            if (!it) return !1;
+            const nm = (it.name || "").toLowerCase(),
+              idv = (it.id || "").toLowerCase();
+            return (
+              nm.includes("estilingue") ||
+              idv.includes("estilingue") ||
+              idv.includes("slingshot") ||
+              nm.includes("seixo") ||
+              idv.includes("seixo") ||
+              idv.includes("pebble")
+            );
+          },
           se = !!(
-            _ ||
+            (_ && !isRangedHandItem(_)) ||
             o ||
             (O &&
               O.categoryType === "equipment" &&
@@ -1520,7 +1533,7 @@
           c.translate(f, g),
           t.isAiming && t.aimAngle !== void 0 && (() => {
             const aim = t.aimAngle;
-            const maxReach = 330;
+            const maxReach = t.hasSlingshotAim ? 660 : 330;
             const guideLength = Math.max(35, Math.min(maxReach, t.aimDistance !== void 0 ? t.aimDistance : maxReach));
             c.save();
             c.rotate(aim);
@@ -2175,7 +2188,14 @@
           isPebble = (item) => {
             const name = (item?.name || "").toLowerCase();
             const id = (item?.id || "").toLowerCase();
-            return name.includes("seixo") || id.includes("seixo") || id.includes("pebble");
+            return (
+              name.includes("seixo") ||
+              id.includes("seixo") ||
+              id.includes("pebble") ||
+              name.includes("estilingue") ||
+              id.includes("estilingue") ||
+              id.includes("slingshot")
+            );
           },
           $ = !!(
             p &&

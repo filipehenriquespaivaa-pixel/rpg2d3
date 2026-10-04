@@ -120,7 +120,15 @@
       const id = (item.id || "").toLowerCase();
       return name.includes("seixo") || id.includes("seixo") || id.includes("pebble");
     };
-    const hasPebbleEquipped = _ ? (isPebbleItem(_.mao_direita) || isPebbleItem(_.mao_esquerda)) : !1;
+    const isSlingshotItem = (item) => {
+      if (!item) return !1;
+      const name = (item.name || "").toLowerCase();
+      const id = (item.id || "").toLowerCase();
+      return name.includes("estilingue") || id.includes("estilingue") || id.includes("slingshot");
+    };
+    const hasSlingshotEquipped = _ ? (isSlingshotItem(_.mao_direita) || isSlingshotItem(_.mao_esquerda)) : !1;
+    const hasPebbleEquipped = _ ? (isPebbleItem(_.mao_direita) || isPebbleItem(_.mao_esquerda) || hasSlingshotEquipped) : !1;
+    const maxPebbleRange = hasSlingshotEquipped ? 660 : 330;
     const pebbleCount = J.useMemo(() => {
       const inHands = (_ && isPebbleItem(_.mao_direita) ? (_.mao_direita.stackCount || 1) : 0) +
                       (_ && isPebbleItem(_.mao_esquerda) ? (_.mao_esquerda.stackCount || 1) : 0);
@@ -171,7 +179,7 @@
           pebbleAimHasDragged.current = !0;
           setIsPebbleAiming(!0);
           const angle = Math.atan2(dy, dx);
-          const distance = Math.max(35, Math.min(330, 45 + (dragDist / 70) * 285));
+          const distance = Math.max(35, Math.min(maxPebbleRange, 45 + (dragDist / 70) * (maxPebbleRange - 45)));
           if (Zi) Zi(angle, distance);
         }
       }
@@ -198,7 +206,7 @@
           const dragDist = Math.hypot(dx, dy);
           if (dragDist > 8) {
             finalAngle = Math.atan2(dy, dx);
-            finalDist = Math.max(35, Math.min(330, 45 + (dragDist / 70) * 285));
+            finalDist = Math.max(35, Math.min(maxPebbleRange, 45 + (dragDist / 70) * (maxPebbleRange - 45)));
           }
         }
       }

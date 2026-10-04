@@ -1378,47 +1378,53 @@
           const id = (item?.id || "").toLowerCase();
           return name.includes("seixo") || id.includes("seixo") || id.includes("pebble");
         };
+        const isSlingshot = (item) => {
+          if (!item) return !1;
+          const nm = (item.name || "").toLowerCase(),
+            idv = (item.id || "").toLowerCase();
+          return nm.includes("estilingue") || idv.includes("estilingue") || idv.includes("slingshot");
+        };
+        // 🎯 ESTILINGUE: equipado em qualquer das mãos equivale a estar pronto para atirar
+        // e pode disparar seixos que estiverem na mão OU diretamente no inventário/mochila!
+        const hasSlingshot = isSlingshot(equipment.mao_esquerda) || isSlingshot(equipment.mao_direita);
         const hand = isPebble(equipment.mao_direita)
           ? "mao_direita"
           : isPebble(equipment.mao_esquerda)
             ? "mao_esquerda"
             : null;
-        if (!hand) {
-          ve("⚠️ Equipe um Seixo na mão esquerda ou direita para arremessar.");
+        const backpackPebbleIdx = Zt.current.findIndex(isPebble);
+        if (!hand && !(hasSlingshot && backpackPebbleIdx >= 0)) {
+          if (hasSlingshot) {
+            ve("⚠️ Você está com o Estilingue equipado, mas não tem nenhum Seixo no inventário para disparar!");
+          } else {
+            ve("⚠️ Equipe um Seixo ou um Estilingue (com Seixos no inventário) para disparar.");
+          }
           return;
         }
-        const nearest = D.findNearestMonster(E.x, E.y, 450, Q.isUnderground);
+        const maxRange = hasSlingshot ? 660 : 330;
+        const nearest = D.findNearestMonster(E.x, E.y, hasSlingshot ? 660 : 450, Q.isUnderground);
         const isAutoAim = aimAngle === void 0;
         let angle = aimAngle;
         let throwDist = aimDistance;
         if (isAutoAim) {
           if (nearest) {
             angle = Math.atan2(nearest.monster.y - E.y, nearest.monster.x - E.x);
-            throwDist = Math.max(25, Math.min(330, nearest.distance));
+            throwDist = Math.max(25, Math.min(maxRange, nearest.distance));
           } else {
             const moveX = (g.current.KeyD || g.current.ArrowRight || y.current.right ? 1 : 0) - (g.current.KeyA || g.current.ArrowLeft || y.current.left ? 1 : 0);
             const moveY = (g.current.KeyS || g.current.ArrowDown || y.current.down ? 1 : 0) - (g.current.KeyW || g.current.ArrowUp || y.current.up ? 1 : 0);
             angle = moveX || moveY ? Math.atan2(moveY, moveX) : ({ right: 0, left: Math.PI, up: -Math.PI / 2, down: Math.PI / 2 }[E.direction] || 0);
-            throwDist = 330;
+            throwDist = maxRange;
           }
         } else {
           if (angle === void 0) {
             angle = { right: 0, left: Math.PI, up: -Math.PI / 2, down: Math.PI / 2 }[E.direction] || 0;
           }
           if (throwDist === void 0) {
-            throwDist = 330;
+            throwDist = maxRange;
           }
         }
         const stats = Ks(equipment);
-        // 🎯 ESTILINGUE: equipado em qualquer das mãos -> alcance x2 e dano x1.5
-        const hasSlingshot = ["mao_esquerda", "mao_direita"].some((slotKey) => {
-          const it = equipment[slotKey];
-          if (!it) return !1;
-          const nm = (it.name || "").toLowerCase(),
-            idv = (it.id || "").toLowerCase();
-          return nm.includes("estilingue") || idv.includes("estilingue") || idv.includes("slingshot");
-        });
-        const maxRange = hasSlingshot ? 660 : 330;
         throwDist = Math.max(25, Math.min(maxRange, throwDist));
         const snapshotPoint = (isAutoAim && nearest)
           ? { x: nearest.monster.x, y: nearest.monster.y }
@@ -1434,27 +1440,41 @@
         E.aimAngle = void 0;
         E.aimDistance = void 0;
         m.current.playPunchWhoosh();
-        // O impacto e o som de acerto acontecem quando o projétil chega ao alvo.
-        Wa((previous) => {
-          const current = previous[hand];
-          if (!current) return previous;
-          const count = current.stackCount || 1;
-          if (count > 1) return { ...previous, [hand]: { ...current, stackCount: count - 1 } };
-          const replacementIndex = Zt.current.findIndex(isPebble);
-          if (replacementIndex >= 0) {
-            const replacement = Zt.current[replacementIndex];
-            ra((backpack) => {
-              const next = [...backpack];
-              const item = next[replacementIndex];
-              const count = item.stackCount || 1;
-              if (count > 1) next[replacementIndex] = { ...item, stackCount: count - 1 };
-              else next.splice(replacementIndex, 1);
-              return next;
-            });
-            return { ...previous, [hand]: { ...replacement, stackCount: 1 } };
-          }
-          return { ...previous, [hand]: null };
-        });
+        // Se tinha seixo equipado na mão, consome da mão (e repõe da mochila se houver);
+        // se estava apenas com o Estilingue na mão, consome 1 seixo diretamente da mochila/inventário!
+        if (hand) {
+          Wa((previous) => {
+            const current = previous[hand];
+            if (!current) return previous;
+            const count = current.stackCount || 1;
+            if (count > 1) return { ...previous, [hand]: { ...current, stackCount: count - 1 } };
+            const replacementIndex = Zt.current.findIndex(isPebble);
+            if (replacementIndex >= 0) {
+              const replacement = Zt.current[replacementIndex];
+              ra((backpack) => {
+                const next = [...backpack];
+                const item = next[replacementIndex];
+                const count = item.stackCount || 1;
+                if (count > 1) next[replacementIndex] = { ...item, stackCount: count - 1 };
+                else next.splice(replacementIndex, 1);
+                return next;
+              });
+              return { ...previous, [hand]: { ...replacement, stackCount: 1 } };
+            }
+            return { ...previous, [hand]: null };
+          });
+        } else {
+          ra((backpack) => {
+            const idx = backpack.findIndex(isPebble);
+            if (idx < 0) return backpack;
+            const next = [...backpack];
+            const item = next[idx];
+            const count = item.stackCount || 1;
+            if (count > 1) next[idx] = { ...item, stackCount: count - 1 };
+            else next.splice(idx, 1);
+            return next;
+          });
+        }
       }, [ve]);
     const startPebbleAim = J.useCallback((customAngle, customDist) => {
       pebbleKeyRef.current = { pressedAt: performance.now(), aiming: !0, angle: customAngle, distance: customDist, cancelled: !1 };
@@ -1501,8 +1521,21 @@
           Q = o.current,
           q = Da.current,
           F = Ks(q),
+          isRangedOnlyItem = (it) => {
+            if (!it) return !1;
+            const nm = (it.name || "").toLowerCase(),
+              idv = (it.id || "").toLowerCase();
+            return (
+              nm.includes("estilingue") ||
+              idv.includes("estilingue") ||
+              idv.includes("slingshot") ||
+              nm.includes("seixo") ||
+              idv.includes("seixo") ||
+              idv.includes("pebble")
+            );
+          },
           ie = !!(
-            q.mao_direita ||
+            (q.mao_direita && !isRangedOnlyItem(q.mao_direita)) ||
             ((ia = q.mao_esquerda) != null && ia.id.includes("sword")) ||
             ((Je = q.mao_esquerda) != null &&
               Je.name.toLowerCase().includes("espada")) ||
@@ -2918,6 +2951,8 @@
       (Ga.current = {
         handleAttack: Sl,
         handleThrowPebble: Rl,
+        startPebbleAim: startPebbleAim,
+        endPebbleAim: endPebbleAim,
         handleInteract: qo,
         handleStartFishing: nr,
         handleStopFishing: $r,
@@ -2946,6 +2981,9 @@
                 (Se.current[F] = ie));
             }
             if (q.code === "ShiftLeft" || q.code === "ShiftRight" || q.key === "Shift") {
+              if (!q.repeat && Ga.current.startPebbleAim) {
+                Ga.current.startPebbleAim();
+              }
               return;
             }
             if (
@@ -3036,6 +3074,11 @@
           },
           D = (q) => {
             ((g.current[q.code] = !1), (g.current[q.key] = !1));
+            if (q.code === "ShiftLeft" || q.code === "ShiftRight" || q.key === "Shift") {
+              if (Ga.current.endPebbleAim) {
+                Ga.current.endPebbleAim();
+              }
+            }
             const F = Gr(q.code, q.key);
             F && (Ae.current[F] = !1);
           },
@@ -3145,13 +3188,24 @@
             da = y.current,
             Ye = Math.min(0.1, (Je - la) / 1e3);
           const isHoldingPebble = pebbleKeyRef.current.pressedAt > 0;
-          const handHasPebble = [Da.current.mao_esquerda, Da.current.mao_direita].some((item) => {
+          const isPebbleItem = (item) => {
             const name = (item?.name || "").toLowerCase();
             const id = (item?.id || "").toLowerCase();
             return name.includes("seixo") || id.includes("seixo") || id.includes("pebble");
-          });
-          const aimHeld = isHoldingPebble && handHasPebble && !pebbleKeyRef.current.cancelled;
+          };
+          const isSlingshotItem = (item) => {
+            const name = (item?.name || "").toLowerCase();
+            const id = (item?.id || "").toLowerCase();
+            return name.includes("estilingue") || id.includes("estilingue") || id.includes("slingshot");
+          };
+          const handHasPebble = [Da.current.mao_esquerda, Da.current.mao_direita].some(isPebbleItem);
+          const handHasSlingshot = [Da.current.mao_esquerda, Da.current.mao_direita].some(isSlingshotItem);
+          const hasPebbleInPack = Zt.current.some(isPebbleItem);
+          const canAimPebble = handHasPebble || (handHasSlingshot && hasPebbleInPack);
+          const maxAimDist = handHasSlingshot ? 660 : 330;
+          const aimHeld = isHoldingPebble && canAimPebble && !pebbleKeyRef.current.cancelled;
           he.isAiming = !!aimHeld;
+          he.hasSlingshotAim = !!handHasSlingshot;
           if (aimHeld) {
             if (pebbleKeyRef.current.angle !== void 0) {
               he.aimAngle = pebbleKeyRef.current.angle;
@@ -3169,7 +3223,7 @@
               if (screenDist > 6) {
                 he.aimAngle = Math.atan2(dy, dx);
                 const worldDist = screenDist / zoom;
-                he.aimDistance = Math.max(35, Math.min(330, worldDist));
+                he.aimDistance = Math.max(35, Math.min(maxAimDist, worldDist));
               }
             }
             const aimX = ($e.KeyD || $e.ArrowRight || da.right ? 1 : 0) - ($e.KeyA || $e.ArrowLeft || da.left ? 1 : 0);
@@ -3181,7 +3235,7 @@
               he.aimAngle = { right: 0, left: Math.PI, up: -Math.PI / 2, down: Math.PI / 2 }[he.direction] || 0;
             }
             if (he.aimDistance === void 0) {
-              he.aimDistance = 330;
+              he.aimDistance = maxAimDist;
             }
           } else {
             he.aimDistance = void 0;
@@ -3572,7 +3626,11 @@
               const dy = Pe.clientY - playerScreenY;
               const angle = Math.atan2(dy, dx);
               const worldDist = Math.hypot(dx, dy) / zoom;
-              startPebbleAim(angle, Math.max(35, Math.min(330, worldDist)));
+              const hasSlingshot = [Da.current.mao_esquerda, Da.current.mao_direita].some((it) => {
+                const nm = (it?.name || "").toLowerCase(), idv = (it?.id || "").toLowerCase();
+                return nm.includes("estilingue") || idv.includes("estilingue") || idv.includes("slingshot");
+              });
+              startPebbleAim(angle, Math.max(35, Math.min(hasSlingshot ? 660 : 330, worldDist)));
             }
           },
           $e = (Pe) => {
@@ -3586,7 +3644,11 @@
               const dy = Pe.clientY - playerScreenY;
               const angle = Math.atan2(dy, dx);
               const worldDist = Math.hypot(dx, dy) / zoom;
-              updatePebbleAim(angle, Math.max(35, Math.min(330, worldDist)));
+              const hasSlingshot = [Da.current.mao_esquerda, Da.current.mao_direita].some((it) => {
+                const nm = (it?.name || "").toLowerCase(), idv = (it?.id || "").toLowerCase();
+                return nm.includes("estilingue") || idv.includes("estilingue") || idv.includes("slingshot");
+              });
+              updatePebbleAim(angle, Math.max(35, Math.min(hasSlingshot ? 660 : 330, worldDist)));
             }
             if (!ze) return;
             const aa = Pe.clientX - la,
@@ -3610,7 +3672,11 @@
                 const dy = Pe.clientY - playerScreenY;
                 const angle = Math.atan2(dy, dx);
                 const worldDist = Math.hypot(dx, dy) / zoom;
-                endPebbleAim(angle, Math.max(35, Math.min(330, worldDist)));
+                const hasSlingshot = [Da.current.mao_esquerda, Da.current.mao_direita].some((it) => {
+                  const nm = (it?.name || "").toLowerCase(), idv = (it?.id || "").toLowerCase();
+                  return nm.includes("estilingue") || idv.includes("estilingue") || idv.includes("slingshot");
+                });
+                endPebbleAim(angle, Math.max(35, Math.min(hasSlingshot ? 660 : 330, worldDist)));
               }
               return;
             }
