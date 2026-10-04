@@ -3377,89 +3377,89 @@
         return { role: "hall_floor", roomName };
       }
 
-      // 14. Túnel Estreito para a Caverna Subterrânea (dy in [119, 129], dx in [-3, 3])
+      // 14. Túnel Estreito da Caverna (Local de Descarte de Mortos) (dy in [119, 129], dx in [-3, 3])
       if (dy >= 119 && dy <= 129 && dx >= -3 && dx <= 3) {
         if (dx === -1 || dx === 0) {
-          const roomName = "Túnel Estreito da Caverna Subterrânea";
-          if (dy === 122 && dx === -1) return { role: "corridor_torch", roomName };
-          if (dy === 125 && dx === 0) return { role: "dungeon_skeleton", roomName };
-          if (dy === 128 && dx === -1) return { role: "bone_pile", subType: 1, scale: 1.15, roomName };
-          return { role: "cave_tunnel_floor", roomName };
+          const roomName = "Túnel Estreito da Caverna de Descarte";
+          if (dy === 121 && dx === -1) return { role: "dungeon_skeleton", isCave: true, roomName };
+          if (dy === 124 && dx === 0) return { role: "bone_pile", subType: 1, scale: 1.2, isCave: true, roomName };
+          if (dy === 127 && dx === -1) return { role: "dungeon_skeleton", isCave: true, roomName };
+          if (dy === 129 && dx === 0) return { role: "bone_pile", subType: 2, scale: 1.25, isCave: true, roomName };
+          return { role: "cave_tunnel_floor", isCave: true, roomName };
         }
-        return { role: "cave_tunnel_wall", roomName: "Paredão Rochoso do Túnel da Caverna" };
+        return { role: "cave_tunnel_wall", isCave: true, roomName: "Paredão de Rocha da Caverna" };
       }
 
-      // 15. Transição e Abertura do Túnel para o Grande Salão (dy in [130, 131])
+      // 15. Transição e Abertura para a Caverna dos Mortos (dy in [130, 131])
       if (dy === 130 && dx >= -5 && dx <= 5) {
         if (dx >= -2 && dx <= 1) {
-          return { role: "cave_tunnel_floor", roomName: "Entrada da Caverna dos Ossos" };
+          return { role: "cave_tunnel_floor", isCave: true, roomName: "Entrada da Caverna de Descarte" };
         }
-        return { role: "bone_cavern_wall", roomName: "Paredão Rochoso da Caverna dos Ossos" };
+        return { role: "bone_cavern_wall", isCave: true, roomName: "Paredão de Rocha da Caverna" };
       }
       if (dy === 131 && dx >= -9 && dx <= 9) {
         if (dx >= -4 && dx <= 3) {
-          return { role: "bone_cavern_floor", roomName: "Entrada da Caverna dos Ossos" };
+          return { role: "bone_cavern_floor", isCave: true, roomName: "Entrada da Caverna de Descarte" };
         }
-        return { role: "bone_cavern_wall", roomName: "Paredão Rochoso da Caverna dos Ossos" };
+        return { role: "bone_cavern_wall", isCave: true, roomName: "Paredão de Rocha da Caverna" };
       }
 
-      // 16. Grande Salão da Caverna dos Ossos (dx in [-9, 9], dy in [132, 154])
+      // 16. Grande Caverna de Descarte dos Mortos (Tema de Caverna Comum, dx in [-9, 9], dy in [132, 154])
       if (dx >= -9 && dx <= 9 && dy >= 132 && dy <= 154) {
         if (dy === 154) {
-          return { role: "bone_cavern_wall", roomName: "Fundo Rochoso da Caverna dos Ossos" };
+          return { role: "bone_cavern_wall", isCave: true, roomName: "Paredão de Rocha da Caverna de Descarte" };
         }
         if (dx === -9 || dx === 9) {
-          return { role: "bone_cavern_wall", roomName: "Paredão Lateral da Caverna dos Ossos" };
+          return { role: "bone_cavern_wall", isCave: true, roomName: "Paredão de Rocha da Caverna de Descarte" };
         }
         if (dy === 132 && (dx <= -5 || dx >= 4)) {
-          return { role: "bone_cavern_wall", roomName: "Paredão Norte da Caverna dos Ossos" };
+          return { role: "bone_cavern_wall", isCave: true, roomName: "Paredão de Rocha da Caverna de Descarte" };
         }
 
-        const roomName = "Grande Salão da Caverna dos Ossos";
+        const roomName = "Caverna de Descarte dos Mortos";
 
-        // Pilhas de Ossos ancestrais distribuídas pelo salão
-        if (dx === 0 && dy === 143) return { role: "bone_pile", subType: 0, scale: 1.6, roomName };
-        if (dx === -5 && dy === 136) return { role: "bone_pile", subType: 1, scale: 1.35, roomName };
-        if (dx === 5 && dy === 136) return { role: "bone_pile", subType: 2, scale: 1.35, roomName };
-        if (dx === -6 && dy === 144) return { role: "bone_pile", subType: 3, scale: 1.4, roomName };
-        if (dx === 6 && dy === 144) return { role: "bone_pile", subType: 1, scale: 1.4, roomName };
-        if (dx === -3 && dy === 150) return { role: "bone_pile", subType: 2, scale: 1.3, roomName };
-        if (dx === 3 && dy === 150) return { role: "bone_pile", subType: 0, scale: 1.3, roomName };
-        if (dx === 0 && dy === 135) return { role: "bone_pile", subType: 3, scale: 1.25, roomName };
-        if (dx === -7 && dy === 148) return { role: "bone_pile", subType: 1, scale: 1.2, roomName };
-        if (dx === 7 && dy === 148) return { role: "bone_pile", subType: 2, scale: 1.2, roomName };
+        // Pilhas de ossos e carcaças jogadas e acumuladas na caverna
+        if (dx === 0 && dy === 144) return { role: "bone_pile", subType: 0, scale: 1.7, isCave: true, roomName };
+        if (dx === 0 && dy === 152) return { role: "bone_pile", subType: 0, scale: 1.85, isCave: true, roomName };
+        if (dx === -5 && dy === 137) return { role: "bone_pile", subType: 1, scale: 1.4, isCave: true, roomName };
+        if (dx === 5 && dy === 137) return { role: "bone_pile", subType: 2, scale: 1.4, isCave: true, roomName };
+        if (dx === -2 && dy === 141) return { role: "bone_pile", subType: 3, scale: 1.45, isCave: true, roomName };
+        if (dx === 2 && dy === 141) return { role: "bone_pile", subType: 1, scale: 1.45, isCave: true, roomName };
+        if (dx === -6 && dy === 145) return { role: "bone_pile", subType: 1, scale: 1.5, isCave: true, roomName };
+        if (dx === 6 && dy === 145) return { role: "bone_pile", subType: 2, scale: 1.5, isCave: true, roomName };
+        if (dx === -7 && dy === 149) return { role: "bone_pile", subType: 3, scale: 1.4, isCave: true, roomName };
+        if (dx === 7 && dy === 149) return { role: "bone_pile", subType: 1, scale: 1.4, isCave: true, roomName };
+        if (dx === -3 && dy === 151) return { role: "bone_pile", subType: 2, scale: 1.5, isCave: true, roomName };
+        if (dx === 3 && dy === 151) return { role: "bone_pile", subType: 0, scale: 1.5, isCave: true, roomName };
+        if (dx === 0 && dy === 135) return { role: "bone_pile", subType: 3, scale: 1.35, isCave: true, roomName };
+        if (dx === -4 && dy === 147) return { role: "bone_pile", subType: 1, scale: 1.35, isCave: true, roomName };
+        if (dx === 4 && dy === 147) return { role: "bone_pile", subType: 2, scale: 1.35, isCave: true, roomName };
 
-        // Esqueletos caídos encostados nas rochas
-        if (dx === -8 && dy === 135) return { role: "dungeon_skeleton", roomName };
-        if (dx === 8 && dy === 135) return { role: "dungeon_skeleton", roomName };
-        if (dx === -8 && dy === 141) return { role: "dungeon_skeleton", roomName };
-        if (dx === 8 && dy === 141) return { role: "dungeon_skeleton", roomName };
-        if (dx === -7 && dy === 152) return { role: "dungeon_skeleton", roomName };
-        if (dx === 7 && dy === 152) return { role: "dungeon_skeleton", roomName };
-        if (dx === -2 && dy === 142) return { role: "dungeon_skeleton", roomName };
-        if (dx === 2 && dy === 142) return { role: "dungeon_skeleton", roomName };
+        // Restos mortais e esqueletos de prisioneiros descartados
+        if (dx === -8 && dy === 134) return { role: "dungeon_skeleton", isCave: true, roomName };
+        if (dx === 8 && dy === 134) return { role: "dungeon_skeleton", isCave: true, roomName };
+        if (dx === -4 && dy === 134) return { role: "dungeon_skeleton", isCave: true, roomName };
+        if (dx === 4 && dy === 134) return { role: "dungeon_skeleton", isCave: true, roomName };
+        if (dx === -7 && dy === 139) return { role: "dungeon_skeleton", isCave: true, roomName };
+        if (dx === 7 && dy === 139) return { role: "dungeon_skeleton", isCave: true, roomName };
+        if (dx === -8 && dy === 144) return { role: "dungeon_skeleton", isCave: true, roomName };
+        if (dx === 8 && dy === 144) return { role: "dungeon_skeleton", isCave: true, roomName };
+        if (dx === -1 && dy === 148) return { role: "dungeon_skeleton", isCave: true, roomName };
+        if (dx === 1 && dy === 148) return { role: "dungeon_skeleton", isCave: true, roomName };
+        if (dx === -8 && dy === 151) return { role: "dungeon_skeleton", isCave: true, roomName };
+        if (dx === 8 && dy === 151) return { role: "dungeon_skeleton", isCave: true, roomName };
+        if (dx === -5 && dy === 152) return { role: "dungeon_skeleton", isCave: true, roomName };
+        if (dx === 5 && dy === 152) return { role: "dungeon_skeleton", isCave: true, roomName };
 
-        // Gaiolas com ossos penduradas do teto da caverna
-        if (dx === -4 && dy === 140) return { role: "hanging_cage", roomName };
-        if (dx === 4 && dy === 140) return { role: "hanging_cage", roomName };
-        if (dx === 0 && dy === 148) return { role: "hanging_cage", roomName };
+        // Cogumelos bioluminescentes naturais da caverna úmida
+        if (dx === -8 && dy === 137) return { role: "glowing_mushroom", isCave: true, subType: 0, roomName };
+        if (dx === 8 && dy === 137) return { role: "glowing_mushroom", isCave: true, subType: 1, roomName };
+        if (dx === -8 && dy === 148) return { role: "glowing_mushroom", isCave: true, subType: 2, roomName };
+        if (dx === 8 && dy === 148) return { role: "glowing_mushroom", isCave: true, subType: 0, roomName };
+        if (dx === -6 && dy === 153) return { role: "glowing_mushroom", isCave: true, subType: 1, roomName };
+        if (dx === 6 && dy === 153) return { role: "glowing_mushroom", isCave: true, subType: 2, roomName };
 
-        // Braseiros espectrais
-        if (dx === -3 && dy === 146) return { role: "torture_brazier", roomName };
-        if (dx === 3 && dy === 146) return { role: "torture_brazier", roomName };
-
-        // Tochas nas paredes da caverna
-        if (dx === -8 && dy === 138) return { role: "corridor_torch", roomName };
-        if (dx === 8 && dy === 138) return { role: "corridor_torch", roomName };
-        if (dx === -8 && dy === 148) return { role: "corridor_torch", roomName };
-        if (dx === 8 && dy === 148) return { role: "corridor_torch", roomName };
-        if (dx === -4 && dy === 153) return { role: "corridor_torch", roomName };
-        if (dx === 4 && dy === 153) return { role: "corridor_torch", roomName };
-
-        // Baú guardado no fundo do salão
-        if (dx === 0 && dy === 152) return { role: "chest", roomName };
-
-        return { role: "bone_cavern_floor", roomName };
+        return { role: "bone_cavern_floor", isCave: true, roomName };
       }
 
       return null;
@@ -3714,6 +3714,15 @@
               ? "Os tesouros deste baú já foram recolhidos."
               : `Baú de carvalho com guarnições de ferro guardado em: ${cell.roomName}. Pressione [F] para abrir!`,
           };
+        } else if (cell.role === "glowing_mushroom") {
+          sProp = {
+            kind: "glowing_mushroom",
+            subType: cell.subType || 0,
+            scale: 1.15,
+            interactive: !0,
+            namePt: "Cogumelo Bioluminescente da Caverna",
+            descriptionPt: "Fungo cavernoso que emite uma suave luz azulada entre as rochas e a terra úmida do fosso de descarte.",
+          };
         }
         if (sProp) {
           if (sProp.offsetX === undefined) sProp.offsetX = 0;
@@ -3723,6 +3732,8 @@
           if (sProp.scale === undefined) sProp.scale = 1;
         }
 
+        const isCaveTheme = !!cell.isCave || cell.role === "cave_tunnel_floor" || cell.role === "cave_tunnel_wall" || cell.role === "bone_cavern_floor" || cell.role === "bone_cavern_wall";
+
         return {
           tx: t,
           ty: l,
@@ -3730,8 +3741,8 @@
           moisture: 0.7,
           temperature: 0.35,
           biome: isDungeonWall ? BIOMES[BiomeId.CAVE_WALL] : BIOMES[BiomeId.CAVE_FLOOR],
-          isDungeonFloor: !isDungeonWall,
-          isDungeonWall,
+          isDungeonFloor: isCaveTheme ? false : !isDungeonWall,
+          isDungeonWall: isCaveTheme ? false : isDungeonWall,
           isDungeonDoor,
           isDungeonDoorOpen,
           isIronBars,
