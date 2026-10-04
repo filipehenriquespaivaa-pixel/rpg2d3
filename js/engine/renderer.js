@@ -584,7 +584,64 @@
             g.fill(),
             (g.globalAlpha = 1));
         const T = t.detailHash;
-        if (y.id === BiomeId.BEACH)
+        if (t.isGreekRuin) {
+          // Piso de Mármore Helênico das Ruínas Gregas (salas, corredores, escadaria e mosaico central)
+          const rx = t.greekRuinRx || 0,
+            ry = t.greekRuinRy || 0,
+            role = t.greekRuinRole || "floor";
+          // Ladrilhos de mármore branco/creme alternados
+          const isChecker = (Math.abs(t.tx + t.ty) % 2) === 0;
+          g.fillStyle =
+            role === "steps" || role === "porch"
+              ? "#cbd5e1"
+              : isChecker
+                ? "#e2e8f0"
+                : "#f1f5f9";
+          g.fillRect(l, o, u + 1, u + 1);
+
+          // Junta das lajes de mármore
+          g.strokeStyle = "rgba(100, 116, 139, 0.35)";
+          g.lineWidth = 1;
+          g.strokeRect(l + 0.5, o + 0.5, u - 1, u - 1);
+
+          // Tapete / Friso de Meandro Grego Dourado e Azul nos corredores principais (|rx| <= 1 ou |ry| <= 1)
+          if (Math.abs(rx) <= 1 || Math.abs(ry) <= 1) {
+            g.fillStyle = "rgba(2, 132, 199, 0.18)";
+            g.fillRect(l + 3, o + 3, u - 6, u - 6);
+            g.strokeStyle = "rgba(217, 119, 6, 0.55)";
+            g.lineWidth = 1.2;
+            g.strokeRect(l + 4, o + 4, u - 8, u - 8);
+          }
+
+          // Mosaico Helênico de Sol no centro do Átrio (rx === 0, ry === 0)
+          if (role === "mosaic_center") {
+            g.fillStyle = "#0284c7";
+            g.beginPath();
+            g.arc(l + u / 2, o + u / 2, u * 0.38, 0, Math.PI * 2);
+            g.fill();
+            g.strokeStyle = "#fbbf24";
+            g.lineWidth = 2;
+            g.stroke();
+          }
+
+          // Degraus esculpidos na Escadaria Sul (role === "steps")
+          if (role === "steps") {
+            for (let sy = 4; sy < u; sy += 8) {
+              g.fillStyle = "#f8fafc";
+              g.fillRect(l + 1, o + sy, u - 2, 3);
+              g.fillStyle = "#64748b";
+              g.fillRect(l + 1, o + sy + 3, u - 2, 2);
+            }
+          }
+
+          // Pequenas fendas e musgo mediterrâneo em algumas lajes
+          if (T > 0.72) {
+            g.fillStyle = "rgba(21, 128, 61, 0.38)";
+            g.beginPath();
+            g.arc(l + 6 + T * 16, o + 7 + T * 14, 2.5, 0, Math.PI * 2);
+            g.fill();
+          }
+        } else if (y.id === BiomeId.BEACH)
           ((g.fillStyle = "rgba(212, 176, 98, 0.45)"),
             g.fillRect(l + 3, o + T * 18, u - 6, 2),
             (g.fillStyle = "rgba(254, 243, 199, 0.35)"),
@@ -1294,6 +1351,7 @@
           c.translate(l, o),
           t.kind !== "cliff_wall" &&
             t.kind !== "cliff_ramp" &&
+            t.kind !== "greek_wall" &&
             this.drawPropDirectionalShadow(c, t.kind, f, y),
           t.kind)
         ) {
@@ -1369,6 +1427,19 @@
           case "ruin_pillar":
             gg(c, f, t.subType);
             break;
+          case "greek_wall": {
+            const eng = this.engine,
+              tx = u.tx,
+              ty = u.ty,
+              nb = {
+                left: !!eng.getTile(tx - 1, ty).isGreekWall,
+                right: !!eng.getTile(tx + 1, ty).isGreekWall,
+                top: !!eng.getTile(tx, ty - 1).isGreekWall,
+                bottom: !!eng.getTile(tx, ty + 1).isGreekWall,
+              };
+            drawGreekRuinWall25D(c, f, t.subType || 0, nb);
+            break;
+          }
           case "cave_entrance":
             bg(c, f, this.animTimer);
             break;

@@ -28,13 +28,15 @@
   function Hs(e, t, l) {
     const o = l.getTile(e, t);
     if (
-      o.prop &&
-      (o.prop.kind.startsWith("tree_") ||
-        o.prop.kind === "shrine" ||
-        o.prop.kind === "campfire" ||
-        o.prop.kind === "clay_deposit" ||
-        o.prop.kind === "cliff_wall" ||
-        o.prop.kind === "cliff_ramp")
+      o.isGreekRuin ||
+      (o.prop &&
+        (o.prop.kind.startsWith("tree_") ||
+          o.prop.kind === "shrine" ||
+          o.prop.kind === "campfire" ||
+          o.prop.kind === "clay_deposit" ||
+          o.prop.kind === "cliff_wall" ||
+          o.prop.kind === "cliff_ramp" ||
+          o.prop.kind === "greek_wall"))
     )
       return !1;
     if (o.biome.hasWater && !o.biome.passable) return null;

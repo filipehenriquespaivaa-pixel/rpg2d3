@@ -898,24 +898,171 @@
         e.fill());
   }
   function gg(e, t, l) {
-    ((e.fillStyle = "#475569"),
-      e.fillRect(-7 * t, -24 * t, 14 * t, 26 * t),
-      (e.fillStyle = "#64748b"),
-      e.fillRect(-9 * t, -2 * t, 18 * t, 4 * t),
-      e.fillRect(-9 * t, -26 * t, 18 * t, 4 * t),
-      (e.strokeStyle = "#38bdf8"),
-      (e.lineWidth = 1.5),
-      e.beginPath(),
-      e.moveTo(-2 * t, -20 * t),
-      e.lineTo(2 * t, -14 * t),
-      e.lineTo(-3 * t, -8 * t),
-      e.stroke(),
-      l === 0 &&
-        ((e.fillStyle = "#15803d"),
-        e.beginPath(),
-        e.arc(-6 * t, -18 * t, 3 * t, 0, Math.PI * 2),
-        e.arc(-5 * t, -12 * t, 4 * t, 0, Math.PI * 2),
-        e.fill()));
+    // Coluna Dórica Grega de Mármore Branco com caneluras verticais, capitel e hera
+    e.save();
+    // Base / Estilóbata de mármore em 2 degraus
+    e.fillStyle = "#94a3b8";
+    e.fillRect(-10.5 * t, -1.5 * t, 21 * t, 4.5 * t);
+    e.fillStyle = "#e2e8f0";
+    e.fillRect(-9.5 * t, -4 * t, 19 * t, 3 * t);
+    e.strokeStyle = "#64748b";
+    e.lineWidth = 0.9 * t;
+    e.strokeRect(-9.5 * t, -4 * t, 19 * t, 3 * t);
+
+    // Fuste da coluna (inteira quando l !== 1, ou semi-quebrada em ruína quando l === 1)
+    const colH = l === 1 ? 18 * t : 26 * t;
+    const topY = -4 * t - colH;
+    const fusteGrad = e.createLinearGradient(-7.5 * t, 0, 7.5 * t, 0);
+    fusteGrad.addColorStop(0, "#cbd5e1");
+    fusteGrad.addColorStop(0.35, "#f8fafc");
+    fusteGrad.addColorStop(0.75, "#e2e8f0");
+    fusteGrad.addColorStop(1, "#94a3b8");
+    e.fillStyle = fusteGrad;
+    e.fillRect(-7.2 * t, topY, 14.4 * t, colH);
+
+    // Caneluras clássicas gregas (sulcos verticais)
+    e.strokeStyle = "rgba(100, 116, 139, 0.55)";
+    e.lineWidth = 1.1 * t;
+    for (const fx of [-4.5, -1.5, 1.5, 4.5]) {
+      e.beginPath();
+      e.moveTo(fx * t, topY + 2 * t);
+      e.lineTo(fx * t, -4 * t);
+      e.stroke();
+    }
+
+    if (l !== 1) {
+      // Capitel Dórico (Equino + Ábaco com friso dourado helênico)
+      e.fillStyle = "#e2e8f0";
+      e.beginPath();
+      e.moveTo(-7.5 * t, topY);
+      e.lineTo(-10 * t, topY - 3 * t);
+      e.lineTo(10 * t, topY - 3 * t);
+      e.lineTo(7.5 * t, topY);
+      e.closePath();
+      e.fill();
+
+      e.fillStyle = "#f8fafc";
+      e.fillRect(-10.5 * t, topY - 6.5 * t, 21 * t, 3.8 * t);
+      e.strokeStyle = "#d97706";
+      e.lineWidth = 1.1 * t;
+      e.strokeRect(-9.5 * t, topY - 5.5 * t, 19 * t, 1.8 * t);
+    } else {
+      // Topo fraturado em diagonal de coluna grega arruinada
+      e.fillStyle = "#cbd5e1";
+      e.beginPath();
+      e.moveTo(-7.2 * t, topY);
+      e.lineTo(-3 * t, topY - 3.5 * t);
+      e.lineTo(2 * t, topY - 1 * t);
+      e.lineTo(7.2 * t, topY - 4 * t);
+      e.lineTo(7.2 * t, topY);
+      e.closePath();
+      e.fill();
+    }
+
+    // Hera mediterrânea subindo pela coluna
+    e.fillStyle = "#15803d";
+    e.beginPath();
+    e.arc(-5.5 * t, -10 * t, 2.6 * t, 0, Math.PI * 2);
+    e.arc(-4 * t, -14 * t, 2.2 * t, 0, Math.PI * 2);
+    e.arc(-2.5 * t, -17.5 * t, 1.8 * t, 0, Math.PI * 2);
+    e.fill();
+    e.restore();
+  }
+  function drawGreekRuinWall25D(e, t, subType = 0, neighbors = null) {
+    e.save();
+    const nL = !!(neighbors && neighbors.left),
+      nR = !!(neighbors && neighbors.right),
+      nT = !!(neighbors && neighbors.top),
+      nB = !!(neighbors && neighbors.bottom),
+      half = 18 * t,
+      leftX = nL ? -half - 1 * t : -half + 1 * t,
+      rightX = nR ? half + 1 * t : half - 1 * t,
+      w = rightX - leftX,
+      wallH = 26 * t,
+      baseY = 18 * t,
+      topFrontY = baseY - wallH,
+      topBackY = -half - wallH;
+
+    // Sombra projetada no piso se não houver parede ao sul
+    if (!nB) {
+      e.fillStyle = "rgba(15, 23, 42, 0.32)";
+      e.fillRect(leftX, baseY - 2 * t, w, 7 * t);
+    }
+
+    // Face Frontal 2.5D de blocos de mármore helênico
+    const frontGrad = e.createLinearGradient(0, topFrontY, 0, baseY);
+    frontGrad.addColorStop(0, "#f1f5f9");
+    frontGrad.addColorStop(0.45, "#e2e8f0");
+    frontGrad.addColorStop(1, "#cbd5e1");
+    e.fillStyle = frontGrad;
+    e.fillRect(leftX, topFrontY, w, wallH);
+
+    // Juntas dos blocos de cantaria de mármore
+    e.strokeStyle = "rgba(100, 116, 139, 0.45)";
+    e.lineWidth = 1 * t;
+    e.beginPath();
+    e.moveTo(leftX, topFrontY + 8.5 * t);
+    e.lineTo(rightX, topFrontY + 8.5 * t);
+    e.moveTo(leftX, topFrontY + 17 * t);
+    e.lineTo(rightX, topFrontY + 17 * t);
+    e.moveTo(0, topFrontY + 8.5 * t);
+    e.lineTo(0, topFrontY + 17 * t);
+    e.moveTo(-7 * t, topFrontY + 17 * t);
+    e.lineTo(-7 * t, baseY);
+    e.moveTo(7 * t, topFrontY);
+    e.lineTo(7 * t, topFrontY + 8.5 * t);
+    e.stroke();
+
+    // Friso Grego Dourado/Azul-Olímpico (Meandro Helênico) na faixa superior da parede
+    e.fillStyle = "#0284c7";
+    e.fillRect(leftX, topFrontY + 2 * t, w, 4.2 * t);
+    e.strokeStyle = "#fbbf24";
+    e.lineWidth = 1 * t;
+    e.beginPath();
+    e.moveTo(leftX, topFrontY + 2 * t);
+    e.lineTo(rightX, topFrontY + 2 * t);
+    e.moveTo(leftX, topFrontY + 6.2 * t);
+    e.lineTo(rightX, topFrontY + 6.2 * t);
+    e.stroke();
+
+    // Topo da Parede 2.5D (Cornija de Mármore Claro)
+    e.fillStyle = "#f8fafc";
+    e.fillRect(leftX, topBackY, w, topFrontY - topBackY + 1.5 * t);
+    e.strokeStyle = "#cbd5e1";
+    e.lineWidth = 1 * t;
+    e.strokeRect(leftX + 0.5 * t, topBackY + 0.5 * t, w - 1 * t, topFrontY - topBackY);
+
+    // Detalhe de ruína (rachadura ou musgo/hera grega conforme subType)
+    if (subType === 1) {
+      e.fillStyle = "#15803d";
+      e.beginPath();
+      e.arc(-6 * t, topFrontY + 4 * t, 3.2 * t, 0, Math.PI * 2);
+      e.arc(-3 * t, topFrontY + 8 * t, 2.5 * t, 0, Math.PI * 2);
+      e.fill();
+    } else if (subType === 2) {
+      e.strokeStyle = "rgba(71, 85, 105, 0.75)";
+      e.lineWidth = 1.2 * t;
+      e.beginPath();
+      e.moveTo(-4 * t, topFrontY + 7 * t);
+      e.lineTo(-1 * t, topFrontY + 13 * t);
+      e.lineTo(-3 * t, topFrontY + 19 * t);
+      e.stroke();
+    }
+
+    // Bordas laterais quando a parede termina em uma porta/abertura
+    if (!nL) {
+      e.fillStyle = "#94a3b8";
+      e.fillRect(leftX, topBackY, 2.2 * t, baseY - topBackY);
+    }
+    if (!nR) {
+      e.fillStyle = "#94a3b8";
+      e.fillRect(rightX - 2.2 * t, topBackY, 2.2 * t, baseY - topBackY);
+    }
+    if (!nT) {
+      e.fillStyle = "#e2e8f0";
+      e.fillRect(leftX, topBackY, w, 2 * t);
+    }
+    e.restore();
   }
   function bg(e, t, l) {
     ((e.fillStyle = "#1e293b"),

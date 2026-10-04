@@ -1247,7 +1247,52 @@
             { minR: 2000, maxR: 5000, rStep: 35, arcStep: 35 }
           ];
 
+          if (E === "MEADOW" && !D.isUnderground) {
+            // Ao teleportar para Planície Florida (MEADOW), leva direto para a entrada da Construção de Ruínas Gregas!
+            for (let gy = -8; gy <= 8 && !found; gy++) {
+              for (let gx = -8; gx <= 8 && !found; gx++) {
+                const sampleTx = gx * 72 + 36,
+                  sampleTy = gy * 72 + 36;
+                const cell = D._getGreekRuinCellAt && D._getGreekRuinCellAt(sampleTx, sampleTy);
+                if (cell && cell.ruin) {
+                  const entranceTx = cell.ruin.cx,
+                    entranceTy = cell.ruin.cy + cell.ruin.halfH + 1;
+                  targetPixelX = entranceTx * D.tileSize + D.tileSize / 2;
+                  targetPixelY = entranceTy * D.tileSize + D.tileSize / 2;
+                  foundDist = Math.round(Math.hypot(entranceTx - originTx, entranceTy - originTy));
+                  found = !0;
+                  break;
+                }
+              }
+            }
+            if (!found) {
+              // Varre os centros das células até achar uma ruína grega em MEADOW
+              for (let r = 1; r <= 25 && !found; r++) {
+                for (let dy = -r; dy <= r && !found; dy++) {
+                  for (let dx = -r; dx <= r && !found; dx++) {
+                    if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+                    const h1 = D.hash2D(dx, dy, 311),
+                      h2 = D.hash2D(dx, dy, 317),
+                      cx = dx * 72 + 24 + Math.floor(h1 * 24),
+                      cy = dy * 72 + 24 + Math.floor(h2 * 24),
+                      rc = D._getGreekRuinCellAt && D._getGreekRuinCellAt(cx, cy);
+                    if (rc && rc.ruin) {
+                      const entranceTx = rc.ruin.cx,
+                        entranceTy = rc.ruin.cy + rc.ruin.halfH + 1;
+                      targetPixelX = entranceTx * D.tileSize + D.tileSize / 2;
+                      targetPixelY = entranceTy * D.tileSize + D.tileSize / 2;
+                      foundDist = Math.round(Math.hypot(entranceTx - originTx, entranceTy - originTy));
+                      found = !0;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+          }
+
           for (const tier of tiers) {
+            if (found) break;
             for (let r = tier.minR; r <= tier.maxR; r += tier.rStep) {
               if (r === 0) {
                 const tile = D.getTile(originTx, originTy);

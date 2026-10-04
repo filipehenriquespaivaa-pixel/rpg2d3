@@ -944,6 +944,146 @@
       if (u) return u.biome.id === BiomeId.MOUNTAIN_25D;
       return this._computeSurfaceBaseBiome(t, l).id === BiomeId.MOUNTAIN_25D;
     }
+    _getGreekRuinCellAt(t, l) {
+      if (this.isUnderground) return null;
+      // Ruínas Gregas aparecem em células de ~72x72 tiles cujo centro pertence ao bioma Planície Florida (MEADOW)
+      // (a uma distância segura do ponto inicial [0,0] para não bloquear o spawn)
+      const cellSize = 72,
+        gx = Math.floor(t / cellSize),
+        gy = Math.floor(l / cellSize),
+        key = `${gx},${gy}`;
+      if (!this._greekRuinGridCache) {
+        this._greekRuinGridCache = new Map();
+      }
+      let ruin = this._greekRuinGridCache.get(key);
+      if (ruin === void 0) {
+        const h1 = this.hash2D(gx, gy, 311),
+          h2 = this.hash2D(gx, gy, 317),
+          cx = gx * cellSize + 24 + Math.floor(h1 * 24),
+          cy = gy * cellSize + 24 + Math.floor(h2 * 24),
+          distOrigin = Math.hypot(cx, cy);
+        // Garante uma Ruína Grega próxima na primeira célula de Planície Florida e em ~65% das células de MEADOW
+        const centerBiome = this._computeSurfaceBaseBiome(cx, cy);
+        const cornerOk =
+          this._computeSurfaceBaseBiome(cx - 8, cy - 7).id === BiomeId.MEADOW &&
+          this._computeSurfaceBaseBiome(cx + 8, cy - 7).id === BiomeId.MEADOW &&
+          this._computeSurfaceBaseBiome(cx - 8, cy + 7).id === BiomeId.MEADOW &&
+          this._computeSurfaceBaseBiome(cx + 8, cy + 7).id === BiomeId.MEADOW;
+        if (
+          distOrigin > 26 &&
+          centerBiome.id === BiomeId.MEADOW &&
+          cornerOk &&
+          (h1 < 0.72 || (Math.abs(gx) <= 1 && Math.abs(gy) <= 1))
+        ) {
+          ruin = { cx, cy, halfW: 9, halfH: 8 };
+        } else {
+          ruin = null;
+        }
+        this._greekRuinGridCache.set(key, ruin);
+      }
+      if (!ruin) return null;
+      const rx = t - ruin.cx,
+        ry = l - ruin.cy;
+      if (Math.abs(rx) > ruin.halfW || Math.abs(ry) > ruin.halfH) return null;
+
+      // Planta arquitetônica da Construção de Ruínas Gregas (19x17 tiles, tamanho médio):
+      // - Pórtico Sul com escadaria e 6 Colunas Dóricas (ry === 8 e ry === 7)
+      // - Muralha Externa de Mármore Helênico (|rx| === 9 ou ry === -8 ou ry === 6) com brechas de ruína e portal sul
+      // - Corredor Central Processional (|rx| <= 1, de ry = -5 até ry = 7) e Corredor Transversal (|ry| <= 1, de rx = -8 até rx = 8)
+      // - 4 Salas Internas divididas por paredes internas com portas de acesso:
+      //   1. Sala Noroeste (Câmara das Ânforas): rx in [-8..-3], ry in [-7..-2]
+      //   2. Sala Nordeste (Tesouro de Atena): rx in [3..8], ry in [-7..-2]
+      //   3. Sala Sudoeste (Sala dos Filósofos): rx in [-8..-3], ry in [2..5]
+      //   4. Sala Sudeste (Armaria Espartana): rx in [3..8], ry in [2..5]
+      // - Santuário do Oráculo no Ádito Norte Central (rx in [-2..2], ry in [-7..-4])
+
+      let role = "floor"; // piso de mármore grego
+      let roomName = "Corredor de Mármore";
+
+      // Escadaria / Pórtico Sul (ry = 7..8)
+      if (ry === 8) {
+        if (Math.abs(rx) <= 2) {
+          role = "steps";
+          roomName = "Escadaria do Propileu Grego";
+        } else if (Math.abs(rx) === 4 || Math.abs(rx) === 7) {
+          role = "column";
+          roomName = "Colunata Dórica Frontal";
+        } else {
+          role = "porch";
+        }
+      } else if (ry === 7) {
+        if (Math.abs(rx) === 2) {
+          role = "column";
+          roomName = "Coluna do Portal Grego";
+        } else {
+          role = "porch";
+          roomName = "Pórtico de Entrada (Propileu)";
+        }
+      } else {
+        // Interior e Paredes (ry de -8 a +6, rx de -9 a +9)
+        const isOuterWall =
+          Math.abs(rx) === 9 || ry === -8 || ry === 6;
+        // Portas / Aberturas na muralha externa:
+        // Portal Principal Sul (ry === 6, |rx| <= 1) + Brecha antiga Leste (rx === 9, ry === 0) + Brecha Oeste (rx === -9, ry === 0)
+        const isOuterDoor =
+          (ry === 6 && Math.abs(rx) <= 1) ||
+          (Math.abs(rx) === 9 && ry === 0);
+
+        // Paredes internas que formam as 4 salas e os corredores em cruz
+        const isVerticalRoomWall =
+          Math.abs(rx) === 2 &&
+          ry >= -7 &&
+          ry <= 5 &&
+          ry !== 0 &&
+          ry !== -1 &&
+          ry !== 1 &&
+          ry !== -4 && // portas para as salas norte (ry === -4)
+          ry !== 4;   // portas para as salas sul (ry === 4)
+
+        const isHorizontalRoomWall =
+          (ry === -2 || ry === 2) &&
+          Math.abs(rx) >= 2 &&
+          Math.abs(rx) <= 8 &&
+          Math.abs(rx) !== 5; // portas nos corredores laterais (|rx| === 5)
+
+        if ((isOuterWall && !isOuterDoor) || isVerticalRoomWall || isHorizontalRoomWall) {
+          // Algumas pedras da parede estão semi-arruinadas mas ainda formam a parede bloqueante
+          role = "wall";
+        } else if (
+          // Colunas Dóricas internas decorando o Salão Central e as salas
+          (Math.abs(rx) === 4 && (ry === -6 || ry === 0)) ||
+          (Math.abs(rx) === 7 && ry === -6)
+        ) {
+          role = "column";
+        } else if (rx === 0 && ry === -6) {
+          role = "altar";
+          roomName = "Naos do Oráculo";
+        } else if (rx === 6 && ry === -5) {
+          role = "chest";
+          roomName = "Câmara do Tesouro Helênico";
+        } else if (rx === -6 && ry === -5) {
+          role = "amphora_cluster";
+          roomName = "Câmara das Ânforas";
+        } else if (rx === 6 && ry === 4) {
+          role = "chest";
+          roomName = "Sala da Guarda Espartana";
+        } else if (rx === -6 && ry === 4) {
+          role = "brazier";
+          roomName = "Sala dos Filósofos";
+        } else if (rx === 0 && ry === 0) {
+          role = "mosaic_center";
+          roomName = "Átrio Central de Mosaico Grego";
+        }
+      }
+
+      return {
+        ruin,
+        rx,
+        ry,
+        role,
+        roomName,
+      };
+    }
     _getMountain25DBounds(t, l) {
       if (!this._mountainBoundsCache) {
         this._mountainBoundsCache = new Map();
@@ -1253,6 +1393,102 @@
                   ? "Paredão monumental 4x maior que cerca e eleva o 1º andar do bioma de Montanhas 2.5D."
                   : `Paredão do ${myTier}º andar erguido com metade do tamanho do ${myTier - 1}º andar (limite de 10 blocos no topo).`,
             };
+          }
+        }
+      }
+      const greekRuin = this._getGreekRuinCellAt(t, l);
+      if (greekRuin) {
+        se.isGreekRuin = !0;
+        se.greekRuinRole = greekRuin.role;
+        se.greekRuinRx = greekRuin.rx;
+        se.greekRuinRy = greekRuin.ry;
+        const canKeepCustom = this.customPlacedProps.has(O);
+        if (!canKeepCustom) {
+          const intState =
+            this.interactedProps.get(O) || this.interactedProps.get(`${t},${l}`) || {};
+          if (greekRuin.role === "wall") {
+            se.isGreekWall = !0;
+            se.prop = {
+              kind: "greek_wall",
+              subType: (Math.abs(t + l * 3) % 3),
+              offsetX: 0,
+              offsetY: 0,
+              scale: 1,
+              namePt: "Muralha de Mármore Grego em Ruínas",
+              descriptionPt:
+                "Parede clássica de blocos de mármore branco helênico com friso de meandro grego e hera antiga.",
+            };
+          } else if (greekRuin.role === "column") {
+            se.prop = {
+              kind: "ruin_pillar",
+              subType: (Math.abs(t * 5 + l) % 2),
+              offsetX: 0,
+              offsetY: -4,
+              scale: 1.15,
+              interactive: !0,
+              namePt: "Coluna Dórica de Mármore",
+              descriptionPt:
+                "Coluna grega canelada de mármore branco com capitel dórico esculpido. Pressione [F] para examinar as inscrições helênicas.",
+            };
+          } else if (greekRuin.role === "altar") {
+            se.prop = {
+              kind: "shrine",
+              subType: 0,
+              offsetX: 0,
+              offsetY: -4,
+              scale: 1.25,
+              interactive: !0,
+              namePt: "Altar do Oráculo de Delfos",
+              descriptionPt:
+                intState.activated
+                  ? "A chama divina do Oráculo brilha sobre o mármore sagrado!"
+                  : "Altar central das Ruínas Gregas. Pressione [F] para receber a bênção dos deuses do Olimpo!",
+            };
+          } else if (greekRuin.role === "chest") {
+            const opened = !!intState.opened;
+            se.prop = {
+              kind: "chest",
+              subType: 0,
+              offsetX: 0,
+              offsetY: 0,
+              scale: 1.05,
+              interactive: !opened,
+              opened: opened,
+              namePt: opened
+                ? "Arca Helênica (Saqueada)"
+                : "Arca de Tesouro Helênico",
+              descriptionPt: opened
+                ? "Os tesouros desta sala grega já foram recolhidos."
+                : "Baú ornamentado guardado em uma das salas internas das Ruínas Gregas. Pressione [F] para abrir!",
+            };
+          } else if (greekRuin.role === "brazier") {
+            se.prop = {
+              kind: "campfire",
+              subType: 0,
+              offsetX: 0,
+              offsetY: 2,
+              scale: 1,
+              lit: intState.lit !== void 0 ? intState.lit : !0,
+              interactive: !0,
+              namePt: "Pira Olímpica das Ruínas",
+              descriptionPt:
+                "Fogo sagrado aceso na Sala dos Filósofos. Pressione [F] para descansar e salvar a jornada.",
+            };
+          } else if (greekRuin.role === "amphora_cluster") {
+            se.prop = {
+              kind: "ruin_pillar",
+              subType: 1,
+              offsetX: 0,
+              offsetY: -4,
+              scale: 1,
+              interactive: !0,
+              namePt: "Estela da Câmara das Ânforas",
+              descriptionPt:
+                "Pedestal grego antigo cercado por vestígios de cerâmica helênica. Pressione [F] para decifrar.",
+            };
+          } else {
+            // Corredores e pisos internos das salas ficam limpos de árvores/pedras aleatórias para circulação livre!
+            se.prop = null;
           }
         }
       }
@@ -1899,6 +2135,7 @@
     isTilePassable(t, l) {
       const o = this.getTile(t, l);
       if (this.isUnderground && o.biome.id === BiomeId.CAVE_WALL) return !1;
+      if (!this.isUnderground && o && o.isGreekWall) return !1;
       // Permite subir e andar livremente em cima de todo o paredão (isCliffWall)!
       const southTile = this.getTile(t, l + 1);
       if (
@@ -2076,7 +2313,9 @@
               ? 3
               : k === "cactus"
                 ? 4.5
-                : 0;
+                : k === "ruin_pillar"
+                  ? 5.5
+                  : 0;
       let r = null;
       if (hw) {
         const sc = p.scale || 1;
