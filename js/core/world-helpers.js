@@ -5,6 +5,7 @@
  */
 "use strict";
   function Zu(e, t, l, o) {
+    if (o.isDungeonFloor || o.isDungeonWall || o.dungeonRole || l.undergroundLevel === 2) return !1;
     if (o.biome.id === BiomeId.CAVE_FLOOR) return !0;
     const u = o.elevation;
     return (
@@ -27,10 +28,19 @@
   }
   function Hs(e, t, l) {
     const o = l.getTile(e, t);
+    if (!o) return !1;
     if (
+      o.isDungeonFloor ||
+      o.isDungeonWall ||
+      o.dungeonRole ||
+      l.undergroundLevel === 2 ||
+      (l.isUnderground && l.undergroundLevel === 2) ||
       o.isGreekRuin ||
       (o.prop &&
         (o.prop.kind.startsWith("tree_") ||
+          o.prop.kind.startsWith("dungeon_") ||
+          o.prop.kind === "iron_bars_gate" ||
+          o.prop.kind === "corridor_torch" ||
           o.prop.kind === "shrine" ||
           o.prop.kind === "campfire" ||
           o.prop.kind === "clay_deposit" ||

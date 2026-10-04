@@ -232,6 +232,10 @@
             ne.tx <= __wHi &&
             ne.ty >= __wTop &&
             ne.ty <= __wBot &&
+            !ne.isDungeonFloor &&
+            !ne.isDungeonWall &&
+            !ne.dungeonRole &&
+            this.engine.undergroundLevel !== 2 &&
             !this.engine.isGroundItemCollected(ne.tx, ne.ty)
           ) {
             ne.groundItem === void 0 &&

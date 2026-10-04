@@ -3666,24 +3666,12 @@
         };
       }
 
-      // Caverna comum aberta: verifica se está junto às paredes de construção para colocar PEDREGULHOS!
+      // Fora da construção do calabouço: caverna limpa (sem pedregulhos, seixos ou estalagmites)
       let caveProp = null;
       let isPedregulhos = !1;
 
-      if (isNearWall) {
-        isPedregulhos = !0;
-        caveProp = {
-          kind: "pedregulhos",
-          subType: Math.abs(t * 17 + l * 23) % 4,
-          offsetX: 0,
-          offsetY: 0,
-          scale: 1.15,
-          interactive: !0,
-          namePt: "Pedregulhos e Cascalho da Escavação",
-          descriptionPt: "Pilhas de pedregulhos pontiagudos e cascalho solto acumulados na caverna ao lado das muralhas de cantaria do calabouço.",
-        };
-      } else {
-        // Recursos naturais da caverna comum
+      if (!isNearWall) {
+        // Recursos naturais da caverna comum afastados das muralhas
         const rHash = this.hash2D(t, l, 513);
         if (rHash < 0.035) {
           const opened = !!intState.opened;
@@ -3715,14 +3703,6 @@
             interactive: !0,
             namePt: "Cogumelo Bioluminescente das Profundezas",
             descriptionPt: "Fungo raro que emite luz azulada nas cavernas. Pressione [F] para colher!",
-          };
-        } else if (rHash < 0.12) {
-          caveProp = {
-            kind: "stalagmite",
-            subType: Math.floor(rHash * 100) % 4,
-            scale: 1.1,
-            namePt: "Estalagmite de Rocha Calcária",
-            descriptionPt: "Coluna cônica de calcário erguida pelo gotejamento secular das águas da caverna.",
           };
         }
       }
