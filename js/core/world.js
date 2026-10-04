@@ -1777,9 +1777,80 @@
         return !1;
       return !0;
     }
-    isCliffFaceBlockedAt(fromX, fromY, toX, toY) {
-      // Livre para subir e caminhar por cima de todo o paredão
+    isCliffDarkWallAt(x, y, hx = this.footHX, hy = this.footHY) {
+      if (this.isUnderground) return !1;
+      const ts = this.tileSize,
+        tx = Math.floor(x / ts),
+        ty = Math.floor(y / ts),
+        isElev = (tile) =>
+          !!(tile && (tile.isCliffWall || tile.biome.id === BiomeId.MOUNTAIN_25D));
+
+      for (let dy = -4; dy <= 1; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          const t = this.getTile(tx + dx, ty + dy);
+          if (!t || !t.isCliffWall) continue;
+
+          const cx = t.tx * ts + ts / 2,
+            cy = t.ty * ts + ts / 2,
+            nL = isElev(this.getTile(t.tx - 1, t.ty)),
+            nR = isElev(this.getTile(t.tx + 1, t.ty)),
+            nT = isElev(this.getTile(t.tx, t.ty - 1)),
+            nB = isElev(this.getTile(t.tx, t.ty + 1)),
+            leftX = cx + (nL ? -19.5 : -17.5),
+            rightX = cx + (nR ? 19.5 : 17.5),
+            platBackY = cy - 19.5,
+            platFrontY = cy + 19.5,
+            baseY = cy + (nB ? 18 : 112);
+
+          // 1. Parte escura da Face Vertical Sul (estende de platFrontY - 2 até baseY = cy + 112)
+          if (!nB) {
+            const x0 = leftX - (!nL ? 18 : 0),
+              x1 = rightX + (!nR ? 18 : 0),
+              y0 = platFrontY - 2,
+              y1 = baseY;
+            if (x + hx > x0 && x - hx < x1 && y + hy > y0 && y - hy < y1) {
+              return !0;
+            }
+          }
+
+          // 2. Parte escura da Escarpa Norte (estende de platBackY - 24 até platBackY + 1)
+          if (!nT) {
+            const x0 = leftX,
+              x1 = rightX,
+              y0 = platBackY - 24,
+              y1 = platBackY + 2;
+            if (x + hx > x0 && x - hx < x1 && y + hy > y0 && y - hy < y1) {
+              return !0;
+            }
+          }
+
+          // 3. Parte escura da Escarpa Oeste (esquerda: de leftX - 24 até leftX + 2)
+          if (!nL) {
+            const x0 = leftX - 24,
+              x1 = leftX + 2,
+              y0 = platBackY,
+              y1 = nB ? platFrontY : baseY;
+            if (x + hx > x0 && x - hx < x1 && y + hy > y0 && y - hy < y1) {
+              return !0;
+            }
+          }
+
+          // 4. Parte escura da Escarpa Leste (direita: de rightX - 2 até rightX + 24)
+          if (!nR) {
+            const x0 = rightX - 2,
+              x1 = rightX + 24,
+              y0 = platBackY,
+              y1 = nB ? platFrontY : baseY;
+            if (x + hx > x0 && x - hx < x1 && y + hy > y0 && y - hy < y1) {
+              return !0;
+            }
+          }
+        }
+      }
       return !1;
+    }
+    isCliffFaceBlockedAt(fromX, fromY, toX, toY) {
+      return this.isCliffDarkWallAt(toX, toY);
     }
     isCaveRockAt(x, y) {
       const tx = Math.floor(x / this.tileSize),
@@ -1844,6 +1915,7 @@
         ty = Math.floor(y / this.tileSize);
       if (!this.isTilePassable(tx, ty)) return !1;
       if (this.isCaveRockAt(x, y)) return !1;
+      if (this.isCliffDarkWallAt(x, y)) return !1;
       return !0;
     }
     get footHX() {

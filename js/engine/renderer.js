@@ -302,6 +302,38 @@
             c.fillStyle = "rgba(56,189,248,0.18)";
             c.strokeStyle = "rgba(56,189,248,0.65)";
             c.strokeRect(t.tx * ts + 1, t.ty * ts + 1, ts - 2, ts - 2);
+            // Partes escuras do paredão (proibido andar - vermelho no debug de colisores)
+            const isElev = (tile) =>
+              !!(tile && (tile.isCliffWall || tile.biome.id === BiomeId.MOUNTAIN_25D));
+            const cx = t.tx * ts + ts / 2,
+              cy = t.ty * ts + ts / 2,
+              nL = isElev(e.getTile(t.tx - 1, t.ty)),
+              nR = isElev(e.getTile(t.tx + 1, t.ty)),
+              nT = isElev(e.getTile(t.tx, t.ty - 1)),
+              nB = isElev(e.getTile(t.tx, t.ty + 1)),
+              leftX = cx + (nL ? -19.5 : -17.5),
+              rightX = cx + (nR ? 19.5 : 17.5),
+              platBackY = cy - 19.5,
+              platFrontY = cy + 19.5,
+              baseY = cy + (nB ? 18 : 112);
+            c.fillStyle = "rgba(239,68,68,0.32)";
+            c.strokeStyle = "rgba(239,68,68,0.9)";
+            if (!nB) {
+              c.fillRect(leftX, platFrontY - 2, rightX - leftX, baseY - (platFrontY - 2));
+              c.strokeRect(leftX, platFrontY - 2, rightX - leftX, baseY - (platFrontY - 2));
+            }
+            if (!nT) {
+              c.fillRect(leftX, platBackY - 24, rightX - leftX, 26);
+              c.strokeRect(leftX, platBackY - 24, rightX - leftX, 26);
+            }
+            if (!nL) {
+              c.fillRect(leftX - 24, platBackY, 26, (nB ? platFrontY : baseY) - platBackY);
+              c.strokeRect(leftX - 24, platBackY, 26, (nB ? platFrontY : baseY) - platBackY);
+            }
+            if (!nR) {
+              c.fillRect(rightX - 2, platBackY, 26, (nB ? platFrontY : baseY) - platBackY);
+              c.strokeRect(rightX - 2, platBackY, 26, (nB ? platFrontY : baseY) - platBackY);
+            }
           }
           const r = e.getTrunkRect(t);
           if (r) {

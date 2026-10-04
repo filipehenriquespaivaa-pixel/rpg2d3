@@ -125,7 +125,12 @@
           qy = y + uy * dist * k;
         const tx = Math.floor(qx / e.tileSize);
         const ty = Math.floor(qy / e.tileSize);
-        if (!e.isTilePassable(tx, ty) || e.isCaveRockAt(qx, qy) || e.isTrunkAt(qx, qy)) {
+        if (
+          !e.isTilePassable(tx, ty) ||
+          e.isCaveRockAt(qx, qy) ||
+          e.isCliffDarkWallAt(qx, qy) ||
+          e.isTrunkAt(qx, qy)
+        ) {
           return !1;
         }
       }
