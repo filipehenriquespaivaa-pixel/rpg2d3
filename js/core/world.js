@@ -2118,6 +2118,272 @@
       }
       return (this.tileCache.set(o, se), se);
     }
+    _getUndergroundGreekSanctuaryCellAt(t, l) {
+      // Verifica se este ponto subterrâneo está abaixo do bioma de Ruínas Gregas (MEADOW)
+      // ou dentro do grande complexo subterrâneo conectado à escadaria pela qual o jogador desceu!
+      const surfB = this._computeSurfaceBaseBiome(t, l);
+      const isUnderMeadow = !!(surfB && surfB.id === BiomeId.MEADOW && !surfB.hasWater);
+      const nearActiveStair =
+        this.enteredViaStaircase &&
+        this.activeCaveEntranceCoords &&
+        Math.hypot(t - this.activeCaveEntranceCoords.tx, l - this.activeCaveEntranceCoords.ty) <= 78;
+
+      if (!isUnderMeadow && !nearActiveStair) return null;
+
+      // Se houver uma saída de escadaria nas proximidades, garante um Átrio Real Intacto ao redor dela
+      // conectado diretamente à malha de corredores!
+      const nearExit = this.getNearbyCaveExit(t, l, 6.5);
+      if (nearExit) {
+        const dx = Math.round(-nearExit.dx),
+          dy = Math.round(-nearExit.dy),
+          adx = Math.abs(dx),
+          ady = Math.abs(dy);
+        if (adx <= 5 && ady <= 5) {
+          const isExitBorder = adx === 5 || ady === 5;
+          const isCorridorOpening = adx <= 1 || ady <= 1;
+          if (isExitBorder && !isCorridorOpening) {
+            return {
+              role: "wall",
+              rx: dx,
+              ry: dy,
+              roomName: "Átrio da Escadaria Subterrânea",
+              subType: 0,
+              doorVertical: !1,
+            };
+          }
+          if (adx === 3 && ady === 3) {
+            return {
+              role: "column",
+              rx: dx,
+              ry: dy,
+              roomName: "Átrio da Escadaria Subterrânea",
+              subType: 0,
+            };
+          }
+          return {
+            role: adx <= 2 && ady <= 2 ? "mosaic_center" : "temple_floor",
+            rx: dx,
+            ry: dy,
+            roomName: "Átrio da Escadaria Subterrânea",
+            subType: 0,
+          };
+        }
+      }
+
+      // =========================================================================
+      // GRANDE COMPLEXO SUBTERRÂNEO HELÊNICO (100% Intacto — Zero Paredes Quebradas
+      // e Zero Piso Falhado!) cheio de Corredores e Salões de Tamanhos Diferentes!
+      // =========================================================================
+      // Cada setor de 20x20 blocos possui:
+      // - Um Salão de Tamanho Variado (Grande: 17x15, Médio: 13x11, Longo Horizontal: 17x9,
+      //   Longo Vertical: 11x15 ou Câmara Compacta: 9x9)
+      // - Corredores largos (3 blocos de largura) conectando os 4 pontos cardeais (N, S, L, O)
+      //   para que todos os salões e escadarias formem um único Palácio Subterrâneo contínuo!
+      const cellSize = 20;
+      const gx = Math.floor((t + 10) / cellSize),
+        gy = Math.floor((l + 10) / cellSize),
+        cx = gx * cellSize,
+        cy = gy * cellSize,
+        rx = t - cx,
+        ry = l - cy,
+        arx = Math.abs(rx),
+        ary = Math.abs(ry);
+
+      const cellHash = this.hash2D(gx, gy, 701),
+        decorHash = this.hash2D(t, l, 709),
+        sizeType = Math.floor(cellHash * 5); // 0..4: 5 tamanhos diferentes de salões!
+
+      // Define as dimensões (W = meia-largura, H = meia-altura) de cada salão conforme sizeType:
+      // 0: Grande Salão Imperial (17x15 -> W=8, H=7)
+      // 1: Salão Médio dos Mistérios (13x11 -> W=6, H=5)
+      // 2: Galeria Longa Leste-Oeste (17x9 -> W=8, H=4)
+      // 3: Galeria Alta Norte-Sul (11x15 -> W=5, H=7)
+      // 4: Câmara do Tesouro / Santuário Compacto (9x9 -> W=4, H=4)
+      const W = sizeType === 0 || sizeType === 2 ? 8 : sizeType === 1 ? 6 : sizeType === 3 ? 5 : 4;
+      const H = sizeType === 0 || sizeType === 3 ? 7 : sizeType === 1 ? 5 : 4;
+
+      const hallNames = [
+        "Grande Salão Imperial Subterrâneo",
+        "Salão Médio dos Mistérios Helênicos",
+        "Longa Galeria das Colunatas",
+        "Galeria Norte-Sul das Estátuas",
+        "Câmara Real de Mármore",
+      ];
+      const roomName = hallNames[sizeType];
+
+      // 1. Verifica se está dentro do Salão deste setor (-W..W, -H..H)
+      if (arx <= W && ary <= H) {
+        const isNorthSouthWall = ary === H;
+        const isEastWestWall = arx === W;
+        const isOuterWall = isNorthSouthWall || isEastWestWall;
+
+        // Aberturas dos corredores que chegam nas 4 direções:
+        // - Passagem central aberta (rx === 0 ou ry === 0) com Porta Grega intacta
+        // - Passagens largas nos Grandes Salões (arx <= 1 ou ary <= 1)
+        const isDoorCenter = (isNorthSouthWall && rx === 0) || (isEastWestWall && ry === 0);
+        const isWideArchway =
+          sizeType === 0 && ((isNorthSouthWall && arx === 1) || (isEastWestWall && ary === 1));
+
+        if (isDoorCenter) {
+          // Alguns portais têm Portas de Cedro e Bronze intactas, outros são arcos livres
+          if ((gx + gy) % 2 === 0) {
+            return {
+              role: "door",
+              rx,
+              ry,
+              roomName,
+              subType: isEastWestWall ? 1 : 0,
+              doorVertical: isEastWestWall,
+            };
+          }
+          return {
+            role: "temple_floor",
+            rx,
+            ry,
+            roomName,
+            subType: 0,
+          };
+        }
+
+        if (isOuterWall && !isWideArchway) {
+          return {
+            role: "wall",
+            rx,
+            ry,
+            roomName,
+            subType: 0,
+          };
+        }
+
+        // Subdivisão interna especial para o Grande Salão Imperial (sizeType === 0):
+        // cria antecâmaras laterais com paredes intactas e portas!
+        if (sizeType === 0 && arx === 4 && ary >= 3 && ary <= H - 1) {
+          if (ary === 5) {
+            return {
+              role: "door",
+              rx,
+              ry,
+              roomName: "Câmara Lateral do Grande Salão",
+              subType: 1,
+              doorVertical: !0,
+            };
+          }
+          return {
+            role: "wall",
+            rx,
+            ry,
+            roomName,
+            subType: 0,
+          };
+        }
+
+        // Mobiliário, Colunas Dóricas Intactas, Estátuas, Altares, Vasos e Arcas no interior de cada Salão:
+        if (rx === 0 && ry === 0) {
+          if (sizeType === 0) {
+            return { role: "altar", rx, ry, roomName, subType: 0 };
+          }
+          if (sizeType === 4) {
+            return { role: "chest", rx, ry, roomName, subType: 0 };
+          }
+          return { role: "mosaic_center", rx, ry, roomName, subType: 0 };
+        }
+
+        // Colunatas internas intactas conforme o tamanho do salão
+        if (
+          (sizeType === 0 && arx === 2 && (ary === 3 || ary === 5)) ||
+          (sizeType === 1 && arx === 3 && ary === 3) ||
+          (sizeType === 2 && ( arx === 3 || arx === 6 ) && ary === 2) ||
+          (sizeType === 3 && arx === 3 && (ary === 3 || ary === 5))
+        ) {
+          return { role: "column", rx, ry, roomName, subType: 0 };
+        }
+
+        // Estátuas Helênicas Intactas (subType 0 ou 1 — nunca quebradas!)
+        if (
+          (sizeType === 0 && arx === 6 && ary === 0) ||
+          (sizeType === 1 && rx === 0 && ry === -(H - 1)) ||
+          (sizeType === 3 && arx === 3 && ry === 0)
+        ) {
+          return {
+            role: "statue",
+            rx,
+            ry,
+            roomName,
+            subType: (Math.abs(gx + gy) % 2),
+          };
+        }
+
+        // Mobiliário Grego Intacto (Divãs Kline, Mesas Trapeza) e Ânforas/Arcas nos cantos dos salões
+        if (arx === W - 2 && ary === H - 2) {
+          if (decorHash < 0.28) {
+            return { role: "chest", rx, ry, roomName, subType: 0 };
+          }
+          if (decorHash < 0.65) {
+            return {
+              role: "furniture",
+              rx,
+              ry,
+              roomName,
+              subType: decorHash < 0.46 ? 0 : 1,
+            };
+          }
+          return {
+            role: "vase",
+            rx,
+            ry,
+            roomName,
+            subType: Math.floor(decorHash * 3) % 3,
+          };
+        }
+
+        // Piso 100% Intacto (alternando entre piso imperial de templo nos salões maiores e piso de terracota nas câmaras menores)
+        return {
+          role: sizeType === 1 || sizeType === 4 ? "house_floor" : "temple_floor",
+          rx,
+          ry,
+          roomName,
+          subType: 0,
+        };
+      }
+
+      // 2. Fora do Salão: Corredores Monumentais conectando os Salões nas 4 direções!
+      // - Corredor Vertical Norte-Sul: arx <= 1 (paredes laterais intactas em arx === 2)
+      // - Corredor Horizontal Leste-Oeste: ary <= 1 (paredes laterais intactas em ary === 2)
+      // - Galeria Perimetral secundária em alguns setores para criar múltiplos caminhos e encruzilhadas!
+      const inVerticalCorridor = arx <= 1 && ary > H;
+      const inHorizontalCorridor = ary <= 1 && arx > W;
+      const isVerticalCorridorWall = arx === 2 && ary > H;
+      const isHorizontalCorridorWall = ary === 2 && arx > W;
+
+      if (inVerticalCorridor || inHorizontalCorridor) {
+        return {
+          role: "corridor",
+          rx,
+          ry,
+          roomName: "Corredor Subterrâneo de Mármore",
+          subType: 0,
+        };
+      }
+
+      if (isVerticalCorridorWall || isHorizontalCorridorWall) {
+        return {
+          role: "wall",
+          rx,
+          ry,
+          roomName: "Muralha do Corredor Subterrâneo",
+          subType: 0,
+        };
+      }
+
+      // Rocha maciça ao redor das paredes externas dos salões e corredores
+      return {
+        role: "solid_rock",
+        rx,
+        ry,
+        roomName: "Rocha Subterrânea",
+        subType: 0,
+      };
+    }
     getUndergroundTile(t, l) {
       const u = this.hash2D(t, l, 97);
       const thisCave = this.getCaveEntranceAt(t, l);
@@ -2140,6 +2406,11 @@
           moisture: 0.6,
           temperature: 0.45,
           biome: BIOMES[BiomeId.CAVE_FLOOR],
+          isGreekRuin: isStair,
+          greekRuinRole: isStair ? "mosaic_center" : void 0,
+          greekRuinRx: 0,
+          greekRuinRy: 0,
+          greekFloorFailed: !1,
           prop: {
             kind: "cave_exit",
             subType: thisCave.subType || 0,
@@ -2302,6 +2573,172 @@
                 });
       }
       const p = `cave_${t},${l}`;
+      const sanctuary = this._getUndergroundGreekSanctuaryCellAt(t, l);
+      if (sanctuary) {
+        if (sanctuary.role === "solid_rock") {
+          return {
+            tx: t,
+            ty: l,
+            elevation: 0.9,
+            moisture: 0.2,
+            temperature: 0.4,
+            biome: BIOMES[BiomeId.CAVE_WALL],
+            prop: null,
+            detailHash: u,
+          };
+        }
+        const intState =
+          this.interactedProps.get(p) ||
+          this.interactedProps.get(`underground_${t},${l}`) ||
+          this.interactedProps.get(`${t},${l}`) ||
+          {};
+        let sProp = null;
+        let isGreekWall = !1;
+        let isGreekDoor = !1;
+        let isGreekDoorOpen = !1;
+
+        if (this.customPlacedProps.has(p)) {
+          sProp = { ...this.customPlacedProps.get(p) };
+        } else if (sanctuary.role === "wall") {
+          isGreekWall = !0;
+          sProp = {
+            kind: "greek_wall",
+            subType: 0,
+            wallHeightState: 0, // 100% Intacto (sem quebras!)
+            offsetX: 0,
+            offsetY: 0,
+            scale: 1,
+            namePt: "Muralha Subterrânea Helênica Intacta",
+            descriptionPt: `Parede de mármore perfeitamente preservada no subsolo (${sanctuary.roomName}).`,
+          };
+        } else if (sanctuary.role === "door") {
+          const isOpen = !!intState.opened;
+          isGreekDoor = !0;
+          isGreekDoorOpen = isOpen;
+          sProp = {
+            kind: "greek_door",
+            subType: sanctuary.doorVertical ? 1 : 0,
+            opened: isOpen,
+            offsetX: 0,
+            offsetY: 0,
+            scale: 1,
+            interactive: !0,
+            namePt: isOpen
+              ? `${sanctuary.roomName} (Porta Aberta)`
+              : `${sanctuary.roomName} (Porta Fechada)`,
+            descriptionPt: isOpen
+              ? "Os batentes de cedro e bronze desta porta subterrânea estão abertos. Pressione [F] para fechar."
+              : "Uma porta intacta de cedro e bronze guardando o salão subterrâneo. Pressione [F] para abrir!",
+          };
+        } else if (sanctuary.role === "column") {
+          sProp = {
+            kind: "ruin_pillar",
+            subType: 0, // Coluna 100% inteira!
+            offsetX: 0,
+            offsetY: -4,
+            scale: 1.15,
+            interactive: !0,
+            namePt: "Coluna Dórica Subterrânea Intacta",
+            descriptionPt: `Coluna de mármore canelado que sustenta a abóbada de: ${sanctuary.roomName}.`,
+          };
+        } else if (sanctuary.role === "statue") {
+          sProp = {
+            kind: "greek_statue",
+            subType: sanctuary.subType || 0, // 0 ou 1 (estátuas completas!)
+            offsetX: 0,
+            offsetY: -4,
+            scale: 1.15,
+            interactive: !0,
+            namePt:
+              sanctuary.subType === 0
+                ? "Estátua de Palas Atena (Santuário Subterrâneo)"
+                : "Estátua Olímpica de Mármore",
+            descriptionPt: `Escultura helênica preservada em estado impecável no interior de: ${sanctuary.roomName}. Pressione [F] para examinar.`,
+          };
+        } else if (sanctuary.role === "vase") {
+          const opened = !!intState.opened;
+          sProp = {
+            kind: "greek_vase",
+            subType: sanctuary.subType || 0,
+            offsetX: 0,
+            offsetY: -2,
+            scale: 1.05,
+            interactive: !0,
+            opened: opened,
+            namePt: opened
+              ? "Ânforas Reais do Subsolo (Examinadas)"
+              : "Ânforas e Crateras de Cerâmica Grega",
+            descriptionPt: opened
+              ? "Vasos de figuras negras preservados no complexo subterrâneo."
+              : `Cerâmicas intactas guardadas em: ${sanctuary.roomName}. Pressione [F] para inspecionar!`,
+          };
+        } else if (sanctuary.role === "furniture") {
+          sProp = {
+            kind: "greek_furniture",
+            subType: sanctuary.subType || 0,
+            offsetX: 0,
+            offsetY: -2,
+            scale: 1.08,
+            interactive: !0,
+            namePt:
+              sanctuary.subType === 0
+                ? "Kline Real (Divã de Banquete)"
+                : "Trapeza (Mesa de Mármore e Bronze)",
+            descriptionPt: `Mobiliário helênico intacto no interior de: ${sanctuary.roomName}. Pressione [F] para examinar.`,
+          };
+        } else if (sanctuary.role === "altar") {
+          sProp = {
+            kind: "shrine",
+            subType: 0,
+            offsetX: 0,
+            offsetY: -4,
+            scale: 1.25,
+            interactive: !0,
+            activated: !!intState.activated,
+            namePt: "Altar Sagrado do Santuário Subterrâneo",
+            descriptionPt: intState.activated
+              ? "O altar subterrâneo irradia a luz dourada do Olimpo!"
+              : "Pressione [F] para despertar a bênção ancestral deste salão subterrâneo.",
+          };
+        } else if (sanctuary.role === "chest") {
+          const opened = !!intState.opened;
+          sProp = {
+            kind: "chest",
+            subType: 0,
+            offsetX: 0,
+            offsetY: 0,
+            scale: 1.05,
+            interactive: !opened,
+            opened: opened,
+            namePt: opened
+              ? "Kibotos Subterrânea (Aberta)"
+              : "Kibotos Real (Arca do Tesouro Subterrâneo)",
+            descriptionPt: opened
+              ? "Os tesouros desta arca já foram recolhidos."
+              : `Arca intacta guardada em: ${sanctuary.roomName}. Pressione [F] para abrir!`,
+          };
+        }
+
+        return {
+          tx: t,
+          ty: l,
+          elevation: 0.15,
+          moisture: 0.5,
+          temperature: 0.5,
+          biome: BIOMES[BiomeId.CAVE_FLOOR],
+          isGreekRuin: !0,
+          greekRuinRole: sanctuary.role,
+          greekRuinRx: sanctuary.rx,
+          greekRuinRy: sanctuary.ry,
+          greekRoomName: sanctuary.roomName,
+          greekFloorFailed: !1, // Piso 100% intacto, sem falhas!
+          isGreekWall,
+          isGreekDoor,
+          isGreekDoorOpen,
+          prop: sProp,
+          detailHash: u,
+        };
+      }
       if (this.customPlacedProps.has(p)) {
         w = { ...this.customPlacedProps.get(p) };
         const j = this.interactedProps.get(p);
@@ -2795,8 +3232,8 @@
     isTilePassable(t, l) {
       const o = this.getTile(t, l);
       if (this.isUnderground && o.biome.id === BiomeId.CAVE_WALL) return !1;
-      if (!this.isUnderground && o && o.isGreekWall) return !1;
-      if (!this.isUnderground && o && o.isGreekDoor && !o.isGreekDoorOpen) return !1;
+      if (o && o.isGreekWall) return !1;
+      if (o && o.isGreekDoor && !o.isGreekDoorOpen) return !1;
       // Permite subir e andar livremente em cima de todo o paredão (isCliffWall)!
       const southTile = this.getTile(t, l + 1);
       if (

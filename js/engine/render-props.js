@@ -1933,18 +1933,14 @@
         e.fillRect(tx - 3.2 * t, -41 * hMul * t, 6.4 * t, 2.2 * t);
       }
 
-      // Arquitrave superior com placa "▲ SAÍDA"
+      // Arquitrave superior de mármore com friso dourado (sem texto escrito SAÍDA)
       e.fillStyle = "#f8fafc";
-      e.fillRect(-17 * wMul * t, -44 * hMul * t, 34 * wMul * t, 4 * t);
-      e.fillStyle = "#1e293b";
-      e.fillRect(-12 * t, -43.5 * hMul * t, 24 * t, 4.5 * t);
+      e.fillRect(-17 * wMul * t, -43 * hMul * t, 34 * wMul * t, 4 * t);
+      e.fillStyle = "#334155";
+      e.fillRect(-18 * wMul * t, -45 * hMul * t, 36 * wMul * t, 2 * t);
       e.strokeStyle = "#fbbf24";
       e.lineWidth = 1 * t;
-      e.strokeRect(-12 * t, -43.5 * hMul * t, 24 * t, 4.5 * t);
-      e.fillStyle = "#fef08a";
-      e.font = `bold ${Math.round(3.4 * t)}px sans-serif`;
-      e.textAlign = "center";
-      e.fillText("▲ SAÍDA", 0, -40 * hMul * t);
+      e.strokeRect(-16 * wMul * t, -42.5 * hMul * t, 32 * wMul * t, 3 * t);
 
       // Tochas de bronze acesas na base da escadaria de saída
       const flicker = Math.sin((l || 0) * 6) * 0.15;
