@@ -143,7 +143,11 @@
         this.closestCampfireCache.clear());
     }
     clearTileCache() {
-      (this.tileCache.clear(), this.closestCampfireCache.clear());
+      (this.tileCache.clear(),
+        this.closestCampfireCache.clear(),
+        this.knownCaveEntrances && this.knownCaveEntrances.clear(),
+        this.mergedCaveCache && this.mergedCaveCache.clear(),
+        this.rawCaveCandidateCache && this.rawCaveCandidateCache.clear());
     }
     getCachedTileCount() {
       return this.tileCache.size;
@@ -773,6 +777,13 @@
     }
     enterCave(t, l, o, u) {
       this.surfaceCoords = { x: o, y: u };
+      this.activeCaveEntranceCoords = { tx: t, ty: l };
+      const surfB = this._computeSurfaceBaseBiome(t, l);
+      const ent = this.getCaveEntranceAt(t, l);
+      this.enteredViaStaircase = !!(
+        (ent && ent.isStaircase) ||
+        (surfB && surfB.id === BiomeId.MEADOW)
+      );
       this.isUnderground = !0;
       this.activeCaveSeed = (this.seed + 88888) >>> 0;
       this.caveWallNoise.seed(this.activeCaveSeed + 404);
@@ -791,34 +802,230 @@
       }
       return this.surfaceCoords;
     }
+    _isRawCaveCandidateAt(t, l) {
+      if (!this.rawCaveCandidateCache) this.rawCaveCandidateCache = new Map();
+      const key = (t + 1048576) * 2097152 + (l + 1048576);
+      if (this.rawCaveCandidateCache.has(key))
+        return this.rawCaveCandidateCache.get(key);
+
+      let res = null;
+      if (t === 10 && l === 8) {
+        const b10 = this._computeSurfaceBaseBiome(10, 8);
+        const isRuins10 = !!(b10 && b10.id === BiomeId.MEADOW);
+        res = {
+          tx: 10,
+          ty: 8,
+          subType: isRuins10 ? 2 : 0,
+          isStaircase: isRuins10,
+          scale: 1.35,
+          namePt: isRuins10
+            ? "Escadaria para o Subsolo dos Cristais"
+            : "Entrada da Caverna dos Cristais",
+          descriptionPt: isRuins10
+            ? "Uma escadaria ancestral de mármore e pedra lavrada que desce para as galerias subterrâneas dos cristais. Pressione [F] para descer!"
+            : "Uma entrada rochosa imponente que desce para galerias subterrâneas inexploradas. Pressione [F] ou Interagir para entrar e explorar!",
+        };
+      } else {
+        const b = this._computeSurfaceBaseBiome(t, l);
+        if (b && !b.hasWater && b.category === "land") {
+          // 1. Garante uma Escadaria para o Subsolo na praça de entrada de cada Cidade de Ruínas Gregas!
+          if (b.id === BiomeId.MEADOW) {
+            const city = this._getMeadowCityDistrict(t, l);
+            if (city && t === city.stairTx && l === city.stairTy && !this._getGreekRuinCellAt(t, l)) {
+              res = {
+                tx: t,
+                ty: l,
+                subType: 2,
+                isStaircase: !0,
+                scale: 1.4,
+                namePt: "Escadaria Real para o Subsolo",
+                descriptionPt:
+                  "A grande escadaria de mármore da Pólis que desce em degraus profundos até o subsolo das ruínas. Pressione [F] para descer!",
+              };
+            }
+          }
+
+          // 2. Demais entradas pelo mundo (não geradas em cima das paredes das construções gregas)
+          if (!res && !this._getGreekRuinCellAt(t, l)) {
+            const g = this.hash2D(t, l, 99);
+            const isPotentialRange =
+              (g > 0.0075 && g < 0.0135) ||
+              (g > 0.009 && g < 0.0105) ||
+              (g > 0.0125 && g < 0.0165);
+            if (isPotentialRange) {
+              const clusterNoise = this.featureNoise.noise2D(
+                t * 0.06 + 410,
+                l * 0.06 + 410,
+              );
+              const isMountainOrHigh =
+                b.id === BiomeId.SNOW_PEAK ||
+                b.id === BiomeId.VOLCANIC ||
+                b.id === BiomeId.MOUNTAIN_25D ||
+                b.elevation > 0.65;
+              const isRuinsBiome = b.id === BiomeId.MEADOW;
+
+              if (isRuinsBiome && g > 0.0075 && g < 0.0135) {
+                res = {
+                  tx: t,
+                  ty: l,
+                  subType: 2,
+                  isStaircase: !0,
+                  scale: 1.35,
+                  namePt: "Escadaria para o Subsolo",
+                  descriptionPt:
+                    "Uma escadaria monumental de mármore helênico que desce em degraus profundos até as galerias do subsolo. Pressione [F] para descer!",
+                };
+              } else if (isMountainOrHigh && g > 0.0075 && g < 0.0125) {
+                res = {
+                  tx: t,
+                  ty: l,
+                  subType: 0,
+                  scale: 1.3,
+                  namePt: "Boca da Caverna das Montanhas",
+                  descriptionPt:
+                    "Uma caverna escura esculpida na rocha com brisa gelada emanando do interior. Pressione [F] para entrar e explorar!",
+                };
+              } else if (g > 0.009 && g < 0.0105) {
+                res = {
+                  tx: t,
+                  ty: l,
+                  subType: isRuinsBiome ? 2 : 1,
+                  isStaircase: isRuinsBiome,
+                  scale: 1.25,
+                  namePt: isRuinsBiome ? "Escadaria para o Subsolo" : "Fenda da Caverna Oculta",
+                  descriptionPt: isRuinsBiome
+                    ? "Uma escadaria de pedra lavrada que desce para o subsolo das ruínas. Pressione [F] para descer."
+                    : "Uma fenda profunda entre os rochedos conduzindo ao mundo subterrâneo. Pressione [F] para explorar.",
+                };
+              } else if (clusterNoise > 0.18 && g > 0.0125 && g < 0.0162) {
+                res = {
+                  tx: t,
+                  ty: l,
+                  subType: isRuinsBiome ? 2 : 1,
+                  isStaircase: isRuinsBiome,
+                  scale: 1.25,
+                  namePt: isRuinsBiome ? "Escadaria Antiga para o Subsolo" : "Galeria Rochosa Subterrânea",
+                  descriptionPt: isRuinsBiome
+                    ? "Degraus antigos de mármore que levam às galerias subterrâneas. Pressione [F] para explorar."
+                    : "Uma fenda geológica entre os rochedos conectada às galerias subterrâneas. Pressione [F] para explorar.",
+                };
+              }
+            }
+          }
+        }
+      }
+      this.rawCaveCandidateCache.set(key, res);
+      return res;
+    }
+    _getMergedCaveInfoAt(t, l) {
+      if (!this.mergedCaveCache) this.mergedCaveCache = new Map();
+      const key = (t + 1048576) * 2097152 + (l + 1048576);
+      if (this.mergedCaveCache.has(key)) return this.mergedCaveCache.get(key);
+
+      const selfRaw = this._isRawCaveCandidateAt(t, l);
+      if (!selfRaw) {
+        this.mergedCaveCache.set(key, null);
+        return null;
+      }
+
+      // Raio de fusão: quando houver uma caverna perto da outra (até 8 blocos de distância),
+      // elas se juntam em uma única Caverna Maior, Mais Alta e com Mais Pedras na Entrada!
+      const mergeR = 8;
+      const nearby = [];
+      for (let dy = -mergeR; dy <= mergeR; dy++) {
+        for (let dx = -mergeR; dx <= mergeR; dx++) {
+          const nt = t + dx,
+            nl = l + dy;
+          const cand = this._isRawCaveCandidateAt(nt, nl);
+          if (cand) {
+            nearby.push(cand);
+          }
+        }
+      }
+
+      if (nearby.length <= 1) {
+        const singleRes = {
+          ...selfRaw,
+          isMerged: !1,
+          mergedCount: 1,
+        };
+        this.mergedCaveCache.set(key, singleRes);
+        return singleRes;
+      }
+
+      // Define qual das cavernas próximas será a âncora principal (prioriza [10,8] ou a de menor coordenada/hash determinístico)
+      nearby.sort((a, b) => {
+        if (a.tx === 10 && a.ty === 8) return -1;
+        if (b.tx === 10 && b.ty === 8) return 1;
+        if (a.ty !== b.ty) return a.ty - b.ty;
+        return a.tx - b.tx;
+      });
+      const leader = nearby[0];
+      if (leader.tx !== t || leader.ty !== l) {
+        // Esta caverna foi absorvida pela caverna vizinha (se juntaram em uma só maior!)
+        this.mergedCaveCache.set(key, null);
+        return null;
+      }
+
+      const mergedCount = nearby.length;
+      const isStair = !!selfRaw.isStaircase;
+      const mergedRes = {
+        ...selfRaw,
+        isMerged: !0,
+        isStaircase: isStair,
+        mergedCount: mergedCount,
+        scale: Math.min(1.85, 1.58 + (mergedCount - 2) * 0.12),
+        namePt: isStair
+          ? `Grande Escadaria Unificada para o Subsolo (${mergedCount} Galerias)`
+          : selfRaw.tx === 10 && selfRaw.ty === 8
+            ? "Grande Caverna Unificada dos Cristais"
+            : `Grande Caverna Unificada (${mergedCount} Galerias)`,
+        descriptionPt: isStair
+          ? `Uma escadaria monumental de mármore helênico unificando ${mergedCount} galerias subterrâneas! Pressione [F] para descer ao subsolo.`
+          : `Duas ou mais cavernas próximas se fundiram nesta formação rochosa colossal, mais alta e cercada de rochedos na entrada! Pressione [F] para explorar.`,
+      };
+      this.mergedCaveCache.set(key, mergedRes);
+      return mergedRes;
+    }
     getCaveEntranceAt(t, l) {
+      if (
+        this.isUnderground &&
+        this.activeCaveEntranceCoords &&
+        this.activeCaveEntranceCoords.tx === t &&
+        this.activeCaveEntranceCoords.ty === l
+      ) {
+        const surfB = this._computeSurfaceBaseBiome(t, l);
+        const isStair = !!(this.enteredViaStaircase || (surfB && surfB.id === BiomeId.MEADOW));
+        return {
+          kind: "cave_entrance",
+          namePt: isStair ? "Escadaria para o Subsolo" : "Entrada da Caverna",
+          subType: isStair ? 2 : 0,
+          isStaircase: isStair,
+          isMerged: !1,
+          mergedCount: 1,
+          scale: 1.35,
+          tx: t,
+          ty: l,
+        };
+      }
       if (!this.knownCaveEntrances) this.knownCaveEntrances = new Map();
       const key = (t + 1048576) * 2097152 + (l + 1048576);
       if (this.knownCaveEntrances.has(key))
         return this.knownCaveEntrances.get(key);
+      const merged = this._getMergedCaveInfoAt(t, l);
       let res = null;
-      if (t === 10 && l === 8) {
+      if (merged) {
         res = {
           kind: "cave_entrance",
-          namePt: "Entrada da Caverna dos Cristais",
-          subType: 0,
-          tx: 10,
-          ty: 8,
+          namePt: merged.namePt || "Entrada da Caverna",
+          subType: merged.subType || 0,
+          isStaircase: !!merged.isStaircase,
+          isMerged: !!merged.isMerged,
+          mergedCount: merged.mergedCount || 1,
+          scale: merged.scale || 1.35,
+          tx: t,
+          ty: l,
         };
-      } else {
-        const g = this.hash2D(t, l, 99);
-        if ((g > 0.0075 && g < 0.0125) || (g > 0.009 && g < 0.0105)) {
-          const surf = this.getSurfaceTile(t, l);
-          if (surf && surf.prop && surf.prop.kind === "cave_entrance") {
-            res = {
-              kind: "cave_entrance",
-              namePt: surf.prop.namePt || "Entrada da Caverna",
-              subType: surf.prop.subType || 0,
-              tx: t,
-              ty: l,
-            };
-          }
-        }
       }
       this.knownCaveEntrances.set(key, res);
       return res;
@@ -1136,7 +1343,18 @@
         }
       }
 
-      const city = buildings.length > 0 ? { cx: baseCx, cy: baseCy, halfW: 9, halfH: 8, buildings } : null;
+      const city =
+        buildings.length > 0
+          ? {
+              cx: baseCx,
+              cy: baseCy,
+              halfW: 9,
+              halfH: 8,
+              stairTx: baseCx,
+              stairTy: baseCy + 14,
+              buildings,
+            }
+          : null;
       this._greekBiomeCityCache.set(anchorKey, city);
       this._greekBiomeCityCache.set(qKey, city);
       return city;
@@ -1172,6 +1390,9 @@
 
       // Entre os salões e casas da cidade (nas ruas/arredores próximos): espalha vasos, estátuas, colunas e pedras caídas
       if (!activeBld) {
+        if (t === city.stairTx && l === city.stairTy) {
+          return null;
+        }
         if (minDist <= 4) {
           if (th < 0.026) {
             return {
@@ -1902,6 +2123,12 @@
       const thisCave = this.getCaveEntranceAt(t, l);
       if (thisCave) {
         const surfBiome = this._computeSurfaceBaseBiome(t, l);
+        const isStair = !!(
+          thisCave.isStaircase ||
+          thisCave.subType === 2 ||
+          this.enteredViaStaircase ||
+          (surfBiome && surfBiome.id === BiomeId.MEADOW)
+        );
         const cleanName = thisCave.namePt
           .replace("Entrada da ", "")
           .replace("Boca da ", "")
@@ -1916,15 +2143,22 @@
           prop: {
             kind: "cave_exit",
             subType: thisCave.subType || 0,
+            isStaircase: isStair,
+            isMerged: !!thisCave.isMerged,
+            mergedCount: thisCave.mergedCount || 1,
             surfaceBiome: surfBiome,
             targetTx: t,
             targetTy: l,
             offsetX: 0,
             offsetY: -4,
-            scale: 1.35,
+            scale: thisCave.scale || 1.35,
             interactive: !0,
-            namePt: `Saída da Caverna [${cleanName}]`,
-            descriptionPt: `Portal rochoso em arco conectado com a superfície em [${t}, ${l}] (${thisCave.namePt}). Pressione [F] para emergir no mundo superior!`,
+            namePt: isStair
+              ? `Escadaria de Saída do Subsolo [${cleanName}]`
+              : `Saída da Caverna [${cleanName}]`,
+            descriptionPt: isStair
+              ? `Escadaria monumental de mármore que sobe do subsolo de volta para o bioma de ruínas em [${t}, ${l}]. Pressione [F] para subir!`
+              : `Portal rochoso em arco conectado com a superfície em [${t}, ${l}] (${thisCave.namePt}). Pressione [F] para emergir no mundo superior!`,
           },
           detailHash: u,
         };
@@ -2128,18 +2362,22 @@
             }
           : null;
       }
-      if (t === 10 && l === 8)
+      const mergedCave = this._getMergedCaveInfoAt(t, l);
+      if (mergedCave) {
         return {
           kind: "cave_entrance",
-          subType: 0,
+          subType: mergedCave.subType || 0,
+          isStaircase: !!(mergedCave.isStaircase || o.id === BiomeId.MEADOW),
+          isMerged: !!mergedCave.isMerged,
+          mergedCount: mergedCave.mergedCount || 1,
           offsetX: 0,
           offsetY: -4,
-          scale: 1.35,
+          scale: mergedCave.scale || 1.35,
           interactive: !0,
-          namePt: "Entrada da Caverna dos Cristais",
-          descriptionPt:
-            "Uma entrada rochosa imponente que desce para galerias subterrâneas inexploradas. Pressione [F] ou Interagir para entrar e explorar!",
+          namePt: mergedCave.namePt,
+          descriptionPt: mergedCave.descriptionPt,
         };
+      }
       const g = this.hash2D(t, l, 99);
       if (g < 0.0018 && m > 0.42 && m < 0.8)
         return {
@@ -2188,34 +2426,8 @@
           descriptionPt:
             "Inscrições rúnicas esquecidas esculpidas em granito ancestral.",
         };
-      if (
-        (o.id === BiomeId.SNOW_PEAK || o.id === BiomeId.VOLCANIC || o.id === BiomeId.MOUNTAIN_25D || m > 0.65) &&
-        g > 0.0075 &&
-        g < 0.0125
-      )
-        return {
-          kind: "cave_entrance",
-          subType: 0,
-          offsetX: 0,
-          offsetY: -4,
-          scale: 1.3,
-          interactive: !0,
-          namePt: "Boca da Caverna das Montanhas",
-          descriptionPt:
-            "Uma caverna escura esculpida na rocha com brisa gelada emanando do interior. Pressione [F] para entrar e explorar!",
-        };
-      if (g > 0.009 && g < 0.0105 && o.category === "land")
-        return {
-          kind: "cave_entrance",
-          subType: 1,
-          offsetX: 0,
-          offsetY: -4,
-          scale: 1.25,
-          interactive: !0,
-          namePt: "Fenda da Caverna Oculta",
-          descriptionPt:
-            "Uma fenda profunda entre os rochedos conduzindo ao mundo subterrâneo. Pressione [F] para explorar.",
-        };
+      // Se este tile era candidato a caverna mas se juntou com uma caverna vizinha próxima, não gera árvore em cima
+      if (this._isRawCaveCandidateAt(t, l)) return null;
       const y = this.hash2D(t, l, 23),
         w = this.hash2D(t, l, 41),
         v = (this.hash2D(t, l, 53) - 0.5) * 12,
@@ -2679,24 +2891,32 @@
     isCaveRockAt(x, y) {
       const tx = Math.floor(x / this.tileSize),
         ty = Math.floor(y / this.tileSize);
-      for (let dy = -1; dy <= 2; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -2; dy <= 3; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
           const t = this.getTile(tx + dx, ty + dy);
           if (
             t &&
             t.prop &&
             (t.prop.kind === "cave_entrance" || t.prop.kind === "cave_exit")
           ) {
+            const isMerged = !!t.prop.isMerged;
+            const isStair = !!t.prop.isStaircase;
             const cx = t.tx * this.tileSize + this.tileSize / 2;
             const cy =
               t.ty * this.tileSize + this.tileSize / 2 + (t.prop.offsetY || -4);
             const rx = x - cx;
             const ry = y - cy;
-            if (ry >= -38 && ry <= -2 && Math.abs(rx) <= 24) return !0;
+            const halfW = isMerged ? 38 : 24;
+            const topY = isMerged ? -62 : -38;
+            const doorHalfW = isStair ? (isMerged ? 16 : 13) : isMerged ? 11.5 : 8.5;
+            const sideBottomY = isMerged ? 10 : 6;
+            const backWallBottomY = isStair ? -12 : -2;
+            if (ry >= topY && ry <= backWallBottomY && Math.abs(rx) <= halfW) return !0;
             if (
-              ry > -2 &&
-              ry <= 6 &&
-              ((rx <= -8.5 && rx >= -24) || (rx >= 8.5 && rx <= 24))
+              ry > backWallBottomY &&
+              ry <= sideBottomY &&
+              ((rx <= -doorHalfW && rx >= -halfW) ||
+                (rx >= doorHalfW && rx <= halfW))
             )
               return !0;
           }
@@ -2707,20 +2927,24 @@
     getNearbyCaveDoorwayAt(x, y) {
       const tx = Math.floor(x / this.tileSize),
         ty = Math.floor(y / this.tileSize);
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
           const t = this.getTile(tx + dx, ty + dy);
           if (
             t &&
             t.prop &&
             (t.prop.kind === "cave_entrance" || t.prop.kind === "cave_exit")
           ) {
+            const isMerged = !!t.prop.isMerged;
+            const isStair = !!t.prop.isStaircase;
+            const doorHalfW = isStair ? (isMerged ? 16 : 13) : isMerged ? 11.5 : 8.5;
+            const topTriggerY = isStair ? -11 : -4;
             const cx = t.tx * this.tileSize + this.tileSize / 2;
             const cy =
               t.ty * this.tileSize + this.tileSize / 2 + (t.prop.offsetY || -4);
             const rx = x - cx;
             const ry = y - cy;
-            if (Math.abs(rx) <= 8.5 && ry >= -4 && ry <= 8) {
+            if (Math.abs(rx) <= doorHalfW && ry >= topTriggerY && ry <= 11) {
               return {
                 action:
                   t.prop.kind === "cave_entrance" ? "enter_cave" : "exit_cave",

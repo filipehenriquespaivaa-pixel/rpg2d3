@@ -1522,10 +1522,10 @@
             drawGreekUnfinishedWork(c, f, t.subType || 0);
             break;
           case "cave_entrance":
-            bg(c, f, this.animTimer, u.biome, u.detailHash);
+            bg(c, f, this.animTimer, u.biome, !!t.isMerged, t.mergedCount || 1, !!t.isStaircase);
             break;
           case "cave_exit":
-            yg(c, f, this.animTimer, t.surfaceBiome || u.biome, u.detailHash);
+            yg(c, f, this.animTimer, t.surfaceBiome || u.biome, !!t.isMerged, t.mergedCount || 1, !!t.isStaircase);
             break;
           case "crystal_cluster":
             vg(c, f, t.subType, t.opened);

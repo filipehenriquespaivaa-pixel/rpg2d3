@@ -1498,35 +1498,89 @@
     };
   }
 
-  function drawIrregularCaveRockFormation(e, t, theme, isExit = !1) {
+  function drawIrregularCaveRockFormation(e, t, theme, isExit = !1, isMerged = !1, mergedCount = 1) {
+    const wMul = isMerged ? 1.32 : 1,
+      hMul = isMerged ? 1.48 : 1;
+
     // 1. Sombra de base irregular sob os rochedos
-    e.fillStyle = "rgba(2, 6, 23, 0.42)";
+    e.fillStyle = "rgba(2, 6, 23, 0.45)";
     e.beginPath();
-    e.moveTo(-29 * t, 4 * t);
-    e.lineTo(-24 * t, 8 * t);
-    e.lineTo(25 * t, 8 * t);
-    e.lineTo(30 * t, 3 * t);
-    e.lineTo(24 * t, -4 * t);
-    e.lineTo(-24 * t, -4 * t);
+    e.moveTo(-29 * wMul * t, 5 * t);
+    e.lineTo(-24 * wMul * t, 9 * t);
+    e.lineTo(25 * wMul * t, 9 * t);
+    e.lineTo(30 * wMul * t, 4 * t);
+    e.lineTo(24 * wMul * t, -4 * t);
+    e.lineTo(-24 * wMul * t, -4 * t);
     e.closePath();
     e.fill();
 
-    // 2. Maciço Rochoso Externo Irregular (Polígono angular escarpado em vez de círculos!)
+    // Se for uma Caverna Unificada (duas ou mais cavernas próximas que se juntaram),
+    // desenha primeiro os grandes picos traseiros extras (muito mais alta!)
+    if (isMerged) {
+      e.fillStyle = theme.rockOuter;
+      e.beginPath();
+      e.moveTo(-36 * t, 4 * t);
+      e.lineTo(-39 * t, -10 * t);
+      e.lineTo(-33 * t, -26 * t);
+      e.lineTo(-25 * t, -42 * t);
+      e.lineTo(-16 * t, -38 * t);
+      e.lineTo(-11 * t, -54 * t);
+      e.lineTo(-2 * t, -60 * t);
+      e.lineTo(8 * t, -56 * t);
+      e.lineTo(15 * t, -44 * t);
+      e.lineTo(24 * t, -47 * t);
+      e.lineTo(32 * t, -31 * t);
+      e.lineTo(38 * t, -14 * t);
+      e.lineTo(36 * t, 4 * t);
+      e.closePath();
+      e.fill();
+
+      // Facetas intermediárias dos picos altos da caverna unificada
+      e.fillStyle = theme.rockMid;
+      e.beginPath();
+      e.moveTo(-23 * t, -26 * t);
+      e.lineTo(-18 * t, -40 * t);
+      e.lineTo(-9 * t, -52 * t);
+      e.lineTo(-1 * t, -57 * t);
+      e.lineTo(7 * t, -53 * t);
+      e.lineTo(14 * t, -39 * t);
+      e.lineTo(22 * t, -44 * t);
+      e.lineTo(28 * t, -28 * t);
+      e.closePath();
+      e.fill();
+
+      // Planos de luz nos picos superiores
+      e.fillStyle = theme.rockLight;
+      e.beginPath();
+      e.moveTo(-9 * t, -49 * t);
+      e.lineTo(-2 * t, -55 * t);
+      e.lineTo(5 * t, -51 * t);
+      e.lineTo(1 * t, -39 * t);
+      e.closePath();
+      e.moveTo(16 * t, -38 * t);
+      e.lineTo(22 * t, -43 * t);
+      e.lineTo(26 * t, -31 * t);
+      e.lineTo(19 * t, -27 * t);
+      e.closePath();
+      e.fill();
+    }
+
+    // 2. Maciço Rochoso Principal Irregular (Polígono angular escarpado em vez de círculos!)
     e.fillStyle = theme.rockOuter;
     e.beginPath();
-    e.moveTo(-28 * t, 4 * t);
-    e.lineTo(-30 * t, -5 * t);
-    e.lineTo(-26 * t, -16 * t);
-    e.lineTo(-21 * t, -23 * t);
-    e.lineTo(-15 * t, -21 * t);
-    e.lineTo(-11 * t, -32 * t);
-    e.lineTo(-3 * t, -37 * t);
-    e.lineTo(5 * t, -35 * t);
-    e.lineTo(12 * t, -29 * t);
-    e.lineTo(17 * t, -25 * t);
-    e.lineTo(24 * t, -21 * t);
-    e.lineTo(29 * t, -12 * t);
-    e.lineTo(27 * t, 4 * t);
+    e.moveTo(-28 * wMul * t, 4 * t);
+    e.lineTo(-30 * wMul * t, -5 * hMul * t);
+    e.lineTo(-26 * wMul * t, -16 * hMul * t);
+    e.lineTo(-21 * wMul * t, -23 * hMul * t);
+    e.lineTo(-15 * wMul * t, -21 * hMul * t);
+    e.lineTo(-11 * wMul * t, -32 * hMul * t);
+    e.lineTo(-3 * wMul * t, -37 * hMul * t);
+    e.lineTo(5 * wMul * t, -35 * hMul * t);
+    e.lineTo(12 * wMul * t, -29 * hMul * t);
+    e.lineTo(17 * wMul * t, -25 * hMul * t);
+    e.lineTo(24 * wMul * t, -21 * hMul * t);
+    e.lineTo(29 * wMul * t, -12 * hMul * t);
+    e.lineTo(27 * wMul * t, 4 * t);
     e.closePath();
     e.fill();
 
@@ -1534,34 +1588,34 @@
     e.fillStyle = theme.rockMid;
     // Bloco rochoso esquerdo
     e.beginPath();
-    e.moveTo(-26 * t, 3 * t);
-    e.lineTo(-27 * t, -7 * t);
-    e.lineTo(-23 * t, -17 * t);
-    e.lineTo(-17 * t, -20 * t);
-    e.lineTo(-12 * t, -14 * t);
-    e.lineTo(-13 * t, 3 * t);
+    e.moveTo(-26 * wMul * t, 3 * t);
+    e.lineTo(-27 * wMul * t, -7 * hMul * t);
+    e.lineTo(-23 * wMul * t, -17 * hMul * t);
+    e.lineTo(-17 * wMul * t, -20 * hMul * t);
+    e.lineTo(-12 * wMul * t, -14 * hMul * t);
+    e.lineTo(-13 * wMul * t, 3 * t);
     e.closePath();
     e.fill();
 
     // Crista rochosa superior
     e.beginPath();
-    e.moveTo(-15 * t, -16 * t);
-    e.lineTo(-9 * t, -29 * t);
-    e.lineTo(-2 * t, -34 * t);
-    e.lineTo(6 * t, -32 * t);
-    e.lineTo(13 * t, -24 * t);
-    e.lineTo(9 * t, -15 * t);
+    e.moveTo(-15 * wMul * t, -16 * hMul * t);
+    e.lineTo(-9 * wMul * t, -29 * hMul * t);
+    e.lineTo(-2 * wMul * t, -34 * hMul * t);
+    e.lineTo(6 * wMul * t, -32 * hMul * t);
+    e.lineTo(13 * wMul * t, -24 * hMul * t);
+    e.lineTo(9 * wMul * t, -15 * hMul * t);
     e.closePath();
     e.fill();
 
     // Bloco rochoso direito
     e.beginPath();
-    e.moveTo(12 * t, 3 * t);
-    e.lineTo(11 * t, -15 * t);
-    e.lineTo(17 * t, -22 * t);
-    e.lineTo(23 * t, -18 * t);
-    e.lineTo(26 * t, -9 * t);
-    e.lineTo(25 * t, 3 * t);
+    e.moveTo(12 * wMul * t, 3 * t);
+    e.lineTo(11 * wMul * t, -15 * hMul * t);
+    e.lineTo(17 * wMul * t, -22 * hMul * t);
+    e.lineTo(23 * wMul * t, -18 * hMul * t);
+    e.lineTo(26 * wMul * t, -9 * hMul * t);
+    e.lineTo(25 * wMul * t, 3 * t);
     e.closePath();
     e.fill();
 
@@ -1569,197 +1623,533 @@
     e.fillStyle = theme.rockLight;
     e.beginPath();
     // Faceta clara esquerda
-    e.moveTo(-24 * t, -6 * t);
-    e.lineTo(-21 * t, -16 * t);
-    e.lineTo(-16 * t, -18 * t);
-    e.lineTo(-15 * t, -8 * t);
+    e.moveTo(-24 * wMul * t, -6 * hMul * t);
+    e.lineTo(-21 * wMul * t, -16 * hMul * t);
+    e.lineTo(-16 * wMul * t, -18 * hMul * t);
+    e.lineTo(-15 * wMul * t, -8 * hMul * t);
     e.closePath();
     // Faceta clara topo
-    e.moveTo(-8 * t, -27 * t);
-    e.lineTo(-2 * t, -32 * t);
-    e.lineTo(5 * t, -30 * t);
-    e.lineTo(2 * t, -22 * t);
+    e.moveTo(-8 * wMul * t, -27 * hMul * t);
+    e.lineTo(-2 * wMul * t, -32 * hMul * t);
+    e.lineTo(5 * wMul * t, -30 * hMul * t);
+    e.lineTo(2 * wMul * t, -22 * hMul * t);
     e.closePath();
     // Faceta clara direita
-    e.moveTo(14 * t, -14 * t);
-    e.lineTo(17 * t, -20 * t);
-    e.lineTo(22 * t, -16 * t);
-    e.lineTo(19 * t, -7 * t);
+    e.moveTo(14 * wMul * t, -14 * hMul * t);
+    e.lineTo(17 * wMul * t, -20 * hMul * t);
+    e.lineTo(22 * wMul * t, -16 * hMul * t);
+    e.lineTo(19 * wMul * t, -7 * hMul * t);
     e.closePath();
     e.fill();
 
     // 5. Fendas geológicas e estratos (no arenito desenha faixas horizontais de sedimentos)
     e.strokeStyle = theme.stratumCol;
-    e.lineWidth = 1.3 * t;
+    e.lineWidth = (isMerged ? 1.6 : 1.3) * t;
     e.beginPath();
     if (theme.kind === "sandstone" || theme.kind === "canyon") {
       // Camadas sedimentares de arenito
-      e.moveTo(-26 * t, -10 * t);
-      e.lineTo(-14 * t, -12 * t);
-      e.moveTo(-10 * t, -25 * t);
-      e.lineTo(9 * t, -24 * t);
-      e.moveTo(13 * t, -11 * t);
-      e.lineTo(25 * t, -9 * t);
+      e.moveTo(-26 * wMul * t, -10 * hMul * t);
+      e.lineTo(-14 * wMul * t, -12 * hMul * t);
+      e.moveTo(-10 * wMul * t, -25 * hMul * t);
+      e.lineTo(9 * wMul * t, -24 * hMul * t);
+      e.moveTo(13 * wMul * t, -11 * hMul * t);
+      e.lineTo(25 * wMul * t, -9 * hMul * t);
+      if (isMerged) {
+        e.moveTo(-16 * t, -42 * t);
+        e.lineTo(14 * t, -40 * t);
+      }
     } else {
       // Fraturas angulares de rocha
-      e.moveTo(-21 * t, -19 * t);
-      e.lineTo(-17 * t, -11 * t);
-      e.lineTo(-22 * t, -4 * t);
-      e.moveTo(-3 * t, -33 * t);
-      e.lineTo(1 * t, -25 * t);
-      e.moveTo(19 * t, -21 * t);
-      e.lineTo(16 * t, -10 * t);
+      e.moveTo(-21 * wMul * t, -19 * hMul * t);
+      e.lineTo(-17 * wMul * t, -11 * hMul * t);
+      e.lineTo(-22 * wMul * t, -4 * hMul * t);
+      e.moveTo(-3 * wMul * t, -33 * hMul * t);
+      e.lineTo(1 * wMul * t, -25 * hMul * t);
+      e.moveTo(19 * wMul * t, -21 * hMul * t);
+      e.lineTo(16 * wMul * t, -10 * hMul * t);
     }
     e.stroke();
 
-    // 6. Pedras irregulares menores caídas nas laterais da entrada
+    // 6. Pedras irregulares menores nas laterais da entrada
     e.fillStyle = theme.rockMid;
     e.beginPath();
-    e.moveTo(-29 * t, 4 * t);
-    e.lineTo(-27 * t, -2 * t);
-    e.lineTo(-21 * t, -1 * t);
-    e.lineTo(-19 * t, 5 * t);
+    e.moveTo(-29 * wMul * t, 4 * t);
+    e.lineTo(-27 * wMul * t, -2 * t);
+    e.lineTo(-21 * wMul * t, -1 * t);
+    e.lineTo(-19 * wMul * t, 5 * t);
     e.closePath();
-    e.moveTo(19 * t, 5 * t);
-    e.lineTo(21 * t, -1 * t);
-    e.lineTo(27 * t, 0 * t);
-    e.lineTo(29 * t, 5 * t);
+    e.moveTo(19 * wMul * t, 5 * t);
+    e.lineTo(21 * wMul * t, -1 * t);
+    e.lineTo(27 * wMul * t, 0 * t);
+    e.lineTo(29 * wMul * t, 5 * t);
     e.closePath();
     e.fill();
+
+    // 7. Quando duas ou mais cavernas se juntam (isMerged), adiciona MUITO MAIS PEDRAS IRREGULARES na entrada!
+    if (isMerged) {
+      const extraRocks = [
+        // Aglomerado esquerdo de rochedos na entrada
+        { x: -34, y: 6, w: 9, h: 8, col: theme.rockOuter },
+        { x: -31, y: 5, w: 7, h: 6, col: theme.rockMid },
+        { x: -25, y: 7, w: 8, h: 6.5, col: theme.rockOuter },
+        { x: -24, y: 6, w: 6, h: 5, col: theme.rockLight },
+        { x: -18, y: 8, w: 6.5, h: 5, col: theme.rockMid },
+        // Aglomerado direito de rochedos na entrada
+        { x: 34, y: 6, w: 9.5, h: 8, col: theme.rockOuter },
+        { x: 31, y: 5, w: 7, h: 6, col: theme.rockMid },
+        { x: 25, y: 7, w: 8, h: 6.5, col: theme.rockOuter },
+        { x: 24, y: 6, w: 6, h: 5, col: theme.rockLight },
+        { x: 18, y: 8, w: 6.5, h: 5, col: theme.rockMid },
+        // Pedras extras empilhadas nas ombreiras da entrada
+        { x: -20, y: -4, w: 7, h: 8, col: theme.rockMid },
+        { x: 20, y: -4, w: 7, h: 8, col: theme.rockMid },
+      ];
+      for (let i = 0; i < extraRocks.length; i++) {
+        const rk = extraRocks[i];
+        e.fillStyle = rk.col;
+        e.beginPath();
+        e.moveTo((rk.x - rk.w * 0.5) * t, rk.y * t);
+        e.lineTo((rk.x - rk.w * 0.38) * t, (rk.y - rk.h * 0.85) * t);
+        e.lineTo((rk.x + rk.w * 0.12) * t, (rk.y - rk.h) * t);
+        e.lineTo((rk.x + rk.w * 0.48) * t, (rk.y - rk.h * 0.55) * t);
+        e.lineTo((rk.x + rk.w * 0.52) * t, (rk.y + 1) * t);
+        e.closePath();
+        e.fill();
+      }
+    }
   }
 
-  function drawCaveBiomeOverlay(e, t, theme) {
+  function drawCaveBiomeOverlay(e, t, theme, isMerged = !1) {
+    const wMul = isMerged ? 1.32 : 1,
+      hMul = isMerged ? 1.48 : 1;
     // Se for bioma de grama/floresta/neve, aplica tapetes irregulares de MUSGO DA COR DA GRAMA (ou neve) sobre as cristas da pedra!
     if (theme.hasMoss) {
       e.fillStyle = theme.mossColor;
       // Camada de musgo superior acompanhando a crista irregular da caverna
       e.beginPath();
-      e.moveTo(-23 * t, -16 * t);
-      e.lineTo(-21 * t, -23 * t);
-      e.lineTo(-15 * t, -21 * t);
-      e.lineTo(-11 * t, -32 * t);
-      e.lineTo(-3 * t, -37 * t);
-      e.lineTo(5 * t, -35 * t);
-      e.lineTo(12 * t, -29 * t);
-      e.lineTo(17 * t, -25 * t);
-      e.lineTo(23 * t, -20 * t);
-      e.lineTo(18 * t, -16 * t);
-      e.lineTo(11 * t, -20 * t);
-      e.lineTo(4 * t, -26 * t);
-      e.lineTo(-4 * t, -27 * t);
-      e.lineTo(-12 * t, -18 * t);
-      e.lineTo(-18 * t, -14 * t);
+      e.moveTo(-23 * wMul * t, -16 * hMul * t);
+      e.lineTo(-21 * wMul * t, -23 * hMul * t);
+      e.lineTo(-15 * wMul * t, -21 * hMul * t);
+      e.lineTo(-11 * wMul * t, -32 * hMul * t);
+      e.lineTo(-3 * wMul * t, -37 * hMul * t);
+      e.lineTo(5 * wMul * t, -35 * hMul * t);
+      e.lineTo(12 * wMul * t, -29 * hMul * t);
+      e.lineTo(17 * wMul * t, -25 * hMul * t);
+      e.lineTo(23 * wMul * t, -20 * hMul * t);
+      e.lineTo(18 * wMul * t, -16 * hMul * t);
+      e.lineTo(11 * wMul * t, -20 * hMul * t);
+      e.lineTo(4 * wMul * t, -26 * hMul * t);
+      e.lineTo(-4 * wMul * t, -27 * hMul * t);
+      e.lineTo(-12 * wMul * t, -18 * hMul * t);
+      e.lineTo(-18 * wMul * t, -14 * hMul * t);
       e.closePath();
       e.fill();
 
-      // Destaque secundário do musgo (groundAccentColor do bioma) e tufos pendentes sobre o arco
+      // Destaque secundário do musgo (groundAccentColor do bioma) e manchas nas pedras laterais
       e.fillStyle = theme.mossAccent;
       e.beginPath();
-      e.moveTo(-10 * t, -29 * t);
-      e.lineTo(-3 * t, -35 * t);
-      e.lineTo(4 * t, -33 * t);
-      e.lineTo(8 * t, -27 * t);
-      e.lineTo(1 * t, -28 * t);
+      e.moveTo(-10 * wMul * t, -29 * hMul * t);
+      e.lineTo(-3 * wMul * t, -35 * hMul * t);
+      e.lineTo(4 * wMul * t, -33 * hMul * t);
+      e.lineTo(8 * wMul * t, -27 * hMul * t);
+      e.lineTo(1 * wMul * t, -28 * hMul * t);
       e.closePath();
       // Manchas de musgo descendo pela rocha esquerda e direita
-      e.moveTo(-25 * t, -8 * t);
-      e.lineTo(-22 * t, -14 * t);
-      e.lineTo(-16 * t, -12 * t);
-      e.lineTo(-18 * t, -6 * t);
+      e.moveTo(-25 * wMul * t, -8 * hMul * t);
+      e.lineTo(-22 * wMul * t, -14 * hMul * t);
+      e.lineTo(-16 * wMul * t, -12 * hMul * t);
+      e.lineTo(-18 * wMul * t, -6 * hMul * t);
       e.closePath();
-      e.moveTo(16 * t, -12 * t);
-      e.lineTo(21 * t, -15 * t);
-      e.lineTo(25 * t, -9 * t);
-      e.lineTo(19 * t, -7 * t);
+      e.moveTo(16 * wMul * t, -12 * hMul * t);
+      e.lineTo(21 * wMul * t, -15 * hMul * t);
+      e.lineTo(25 * wMul * t, -9 * hMul * t);
+      e.lineTo(19 * wMul * t, -7 * hMul * t);
       e.closePath();
+      if (isMerged) {
+        // Musgo nos rochedos extras da entrada da caverna unificada
+        e.moveTo(-34 * t, 2 * t);
+        e.lineTo(-29 * t, -1 * t);
+        e.lineTo(-22 * t, 2 * t);
+        e.lineTo(-26 * t, 5 * t);
+        e.closePath();
+        e.moveTo(22 * t, 2 * t);
+        e.lineTo(29 * t, -1 * t);
+        e.lineTo(34 * t, 2 * t);
+        e.lineTo(26 * t, 5 * t);
+        e.closePath();
+      }
       e.fill();
     } else if (theme.hasSand) {
       // Dunas de areia / poeira de arenito acumulada na base e nas fendas da caverna
       e.fillStyle = theme.mossColor;
       e.beginPath();
-      e.moveTo(-30 * t, 4 * t);
-      e.quadraticCurveTo(-22 * t, -2 * t, -13 * t, 4 * t);
+      e.moveTo(-30 * wMul * t, 5 * t);
+      e.quadraticCurveTo(-22 * wMul * t, -2 * t, -13 * wMul * t, 5 * t);
       e.closePath();
-      e.moveTo(13 * t, 4 * t);
-      e.quadraticCurveTo(22 * t, -2 * t, 30 * t, 4 * t);
+      e.moveTo(13 * wMul * t, 5 * t);
+      e.quadraticCurveTo(22 * wMul * t, -2 * t, 30 * wMul * t, 5 * t);
       e.closePath();
       e.fill();
       e.fillStyle = theme.rockHighlight;
       e.beginPath();
-      e.moveTo(-9 * t, -29 * t);
-      e.lineTo(-2 * t, -34 * t);
-      e.lineTo(5 * t, -32 * t);
-      e.lineTo(1 * t, -28 * t);
+      e.moveTo(-9 * wMul * t, -29 * hMul * t);
+      e.lineTo(-2 * wMul * t, -34 * hMul * t);
+      e.lineTo(5 * wMul * t, -32 * hMul * t);
+      e.lineTo(1 * wMul * t, -28 * hMul * t);
       e.closePath();
       e.fill();
     }
   }
 
-  function bg(e, t, l, biome = null) {
+  function drawRuinsSubterraneanStaircase(e, t, l, isExit = !1, isMerged = !1) {
+    const wMul = isMerged ? 1.28 : 1,
+      hMul = isMerged ? 1.22 : 1;
+
+    if (isExit) {
+      // =========================================================================
+      // SAÍDA DA ESCADARIA NO SUBSOLO (Escadaria de Mármore que SOBE do chão da
+      // caverna em direção à abertura iluminada da superfície no teto!)
+      // =========================================================================
+      // 1. Tapete de luz solar projetado no chão da caverna ao pé da escadaria
+      const floorBeam = e.createRadialGradient(0, 6 * t, 2 * t, 0, 8 * t, 26 * wMul * t);
+      floorBeam.addColorStop(0, "rgba(254, 240, 138, 0.38)");
+      floorBeam.addColorStop(0.55, "rgba(56, 189, 248, 0.16)");
+      floorBeam.addColorStop(1, "rgba(15, 23, 42, 0)");
+      e.fillStyle = floorBeam;
+      e.beginPath();
+      e.ellipse(0, 8 * t, 26 * wMul * t, 11 * t, 0, 0, Math.PI * 2);
+      e.fill();
+
+      // 2. Sombra da estrutura da escadaria que se ergue no subsolo
+      e.fillStyle = "rgba(2, 6, 23, 0.55)";
+      e.fillRect(-24 * wMul * t, -34 * hMul * t, 48 * wMul * t, (34 * hMul + 12) * t);
+
+      // 3. Estrutura Lateral de Pedra/Mármore Sustentando a Escadaria Ascendente (2.5D)
+      e.fillStyle = "#334155";
+      e.beginPath();
+      e.moveTo(-22 * wMul * t, 8 * t);
+      e.lineTo(-18 * wMul * t, -34 * hMul * t);
+      e.lineTo(18 * wMul * t, -34 * hMul * t);
+      e.lineTo(22 * wMul * t, 8 * t);
+      e.closePath();
+      e.fill();
+
+      // Balaustradas / Corrimãos Laterais de Mármore Branco subindo em rampa até o teto
+      e.fillStyle = "#f8fafc";
+      // Corrimão esquerdo
+      e.beginPath();
+      e.moveTo(-21 * wMul * t, 8 * t);
+      e.lineTo(-16 * wMul * t, -34 * hMul * t);
+      e.lineTo(-11.5 * wMul * t, -34 * hMul * t);
+      e.lineTo(-15.5 * wMul * t, 8 * t);
+      e.closePath();
+      e.fill();
+      // Corrimão direito
+      e.beginPath();
+      e.moveTo(15.5 * wMul * t, 8 * t);
+      e.lineTo(11.5 * wMul * t, -34 * hMul * t);
+      e.lineTo(16 * wMul * t, -34 * hMul * t);
+      e.lineTo(21 * wMul * t, 8 * t);
+      e.closePath();
+      e.fill();
+
+      // Friso dourado ao longo das balaustradas ascendentes
+      e.strokeStyle = "#f59e0b";
+      e.lineWidth = 1.2 * t;
+      e.beginPath();
+      e.moveTo(-18.5 * wMul * t, 7 * t);
+      e.lineTo(-14 * wMul * t, -33 * hMul * t);
+      e.moveTo(18.5 * wMul * t, 7 * t);
+      e.lineTo(14 * wMul * t, -33 * hMul * t);
+      e.stroke();
+
+      // 4. Degraus Ascendentes (começam largos na base da caverna e sobem em degraus 3D até o portal iluminado no topo!)
+      const numUpSteps = isMerged ? 10 : 8;
+      for (let s = 0; s < numUpSteps; s++) {
+        const r0 = s / numUpSteps;
+        const r1 = (s + 1) / numUpSteps;
+        // Base em y = +8*t subindo até y = -28*hMul*t
+        const yBottom = (8 - r0 * (34 * hMul)) * t;
+        const yTop = (8 - r1 * (34 * hMul)) * t;
+        const stepH = Math.max(2 * t, yBottom - yTop);
+        const halfW0 = (15.5 - r0 * 4) * wMul * t;
+        const halfW1 = (15.5 - r1 * 4) * wMul * t;
+
+        // Espelho frontal vertical do degrau (quem está na caverna vê a frente do degrau subindo!)
+        const riserLum = Math.round(110 + r0 * 95);
+        e.fillStyle = `rgb(${riserLum}, ${riserLum + 4}, ${riserLum + 12})`;
+        e.fillRect(-halfW0, yBottom - stepH * 0.55, halfW0 * 2, stepH * 0.55);
+
+        // Pisada superior do degrau banhada pela luz do dia que vem de cima
+        const treadLum = Math.round(165 + r1 * 88);
+        e.fillStyle = `rgb(${treadLum}, ${treadLum}, ${Math.min(255, treadLum + 8)})`;
+        e.fillRect(-halfW1, yTop, halfW1 * 2, stepH * 0.48);
+
+        // Borda dourada sutil nos degraus superiores
+        if (s % 2 === 1) {
+          e.fillStyle = "rgba(251, 191, 36, 0.45)";
+          e.fillRect(-halfW0 + 1 * t, yBottom - stepH * 0.55, (halfW0 - 1 * t) * 2, 0.7 * t);
+        }
+      }
+
+      // 5. Portal / Claraboia de Saída no Topo da Escadaria (Céu aberto e luz do dia lá em cima!)
+      const skyGrad = e.createLinearGradient(0, -38 * hMul * t, 0, -22 * hMul * t);
+      skyGrad.addColorStop(0, "#38bdf8");
+      skyGrad.addColorStop(0.55, "#bae6fd");
+      skyGrad.addColorStop(1, "#fef08a");
+      e.fillStyle = skyGrad;
+      e.fillRect(-12 * wMul * t, -37 * hMul * t, 24 * wMul * t, 11 * hMul * t);
+
+      // Feixe de luz solar descendo da abertura sobre os degraus
+      const rayGrad = e.createLinearGradient(0, -36 * hMul * t, 0, 8 * t);
+      rayGrad.addColorStop(0, "rgba(254, 240, 138, 0.42)");
+      rayGrad.addColorStop(0.5, "rgba(254, 240, 138, 0.16)");
+      rayGrad.addColorStop(1, "rgba(254, 240, 138, 0)");
+      e.fillStyle = rayGrad;
+      e.beginPath();
+      e.moveTo(-12 * wMul * t, -36 * hMul * t);
+      e.lineTo(12 * wMul * t, -36 * hMul * t);
+      e.lineTo(18 * wMul * t, 8 * t);
+      e.lineTo(-18 * wMul * t, 8 * t);
+      e.closePath();
+      e.fill();
+
+      // Colunas Dóricas e Arquitrave de Mármore emoldurando a Saída no Topo e na Base
+      for (const side of [-1, 1]) {
+        // Pilares da base da escadaria
+        const bx = side * 18 * wMul * t;
+        e.fillStyle = "#94a3b8";
+        e.fillRect(bx - 3.2 * t, 4 * t, 6.4 * t, 4 * t);
+        e.fillStyle = "#f8fafc";
+        e.fillRect(bx - 2.4 * t, -8 * t, 4.8 * t, 12 * t);
+        e.fillStyle = "#f59e0b";
+        e.fillRect(bx - 3 * t, -9.5 * t, 6 * t, 1.8 * t);
+
+        // Colunas do portal superior de saída
+        const tx = side * 13.5 * wMul * t;
+        e.fillStyle = "#f8fafc";
+        e.fillRect(tx - 2.4 * t, -39 * hMul * t, 4.8 * t, 13 * hMul * t);
+        e.fillStyle = "#e2e8f0";
+        e.fillRect(tx - 3.2 * t, -41 * hMul * t, 6.4 * t, 2.2 * t);
+      }
+
+      // Arquitrave superior com placa "▲ SAÍDA"
+      e.fillStyle = "#f8fafc";
+      e.fillRect(-17 * wMul * t, -44 * hMul * t, 34 * wMul * t, 4 * t);
+      e.fillStyle = "#1e293b";
+      e.fillRect(-12 * t, -43.5 * hMul * t, 24 * t, 4.5 * t);
+      e.strokeStyle = "#fbbf24";
+      e.lineWidth = 1 * t;
+      e.strokeRect(-12 * t, -43.5 * hMul * t, 24 * t, 4.5 * t);
+      e.fillStyle = "#fef08a";
+      e.font = `bold ${Math.round(3.4 * t)}px sans-serif`;
+      e.textAlign = "center";
+      e.fillText("▲ SAÍDA", 0, -40 * hMul * t);
+
+      // Tochas de bronze acesas na base da escadaria de saída
+      const flicker = Math.sin((l || 0) * 6) * 0.15;
+      for (const side of [-1, 1]) {
+        const tx = side * 18 * wMul * t,
+          ty = -11 * t;
+        e.fillStyle = `rgba(251, 191, 36, ${0.9 + flicker})`;
+        e.beginPath();
+        e.arc(tx, ty, 2.8 * t, 0, Math.PI * 2);
+        e.fill();
+      }
+      return;
+    }
+
+    // =========================================================================
+    // ENTRADA DA ESCADARIA NA SUPERFÍCIE (Poço de Mármore que DESCE ao Subsolo)
+    // =========================================================================
+    // 1. Sombra projetada ao redor do poço da escadaria
+    e.fillStyle = "rgba(2, 6, 23, 0.45)";
+    e.fillRect(-25 * wMul * t, -24 * hMul * t, 50 * wMul * t, (24 * hMul + 11) * t);
+
+    // 2. Piso/Moldura externa de mármore travertino e borda dourada ao nível do solo
+    e.fillStyle = "#cbd5e1";
+    e.fillRect(-23 * wMul * t, -22 * hMul * t, 46 * wMul * t, (22 * hMul + 9) * t);
+    e.strokeStyle = "#475569";
+    e.lineWidth = 1.3 * t;
+    e.strokeRect(-23 * wMul * t, -22 * hMul * t, 46 * wMul * t, (22 * hMul + 9) * t);
+
+    // Friso grego dourado na borda externa da escadaria
+    e.strokeStyle = "#d97706";
+    e.lineWidth = 1.1 * t;
+    e.strokeRect(-21 * wMul * t, -20 * hMul * t, 42 * wMul * t, (20 * hMul + 7) * t);
+
+    // 3. Muretas Laterais (Parapeitos de Mármore 2.5D nas bordas esquerda, direita e fundo norte)
+    e.fillStyle = "#f8fafc";
+    e.fillRect(-22 * wMul * t, -26 * hMul * t, 44 * wMul * t, 6 * t);
+    e.fillStyle = "#334155";
+    e.fillRect(-22 * wMul * t, -28 * hMul * t, 44 * wMul * t, 2.5 * t);
+
+    e.fillStyle = "#e2e8f0";
+    e.fillRect(-22 * wMul * t, -22 * hMul * t, 6.5 * wMul * t, (22 * hMul + 8) * t);
+    e.fillRect(15.5 * wMul * t, -22 * hMul * t, 6.5 * wMul * t, (22 * hMul + 8) * t);
+    e.fillStyle = "#334155";
+    e.fillRect(-21.5 * wMul * t, -22 * hMul * t, 5.5 * wMul * t, (22 * hMul + 6) * t);
+    e.fillRect(16 * wMul * t, -22 * hMul * t, 5.5 * wMul * t, (22 * hMul + 6) * t);
+    e.strokeStyle = "#f8fafc";
+    e.lineWidth = 1 * t;
+    e.strokeRect(-21.5 * wMul * t, -22 * hMul * t, 5.5 * wMul * t, (22 * hMul + 6) * t);
+    e.strokeRect(16 * wMul * t, -22 * hMul * t, 5.5 * wMul * t, (22 * hMul + 6) * t);
+
+    // 4. Vão Central da Escadaria (Fosso que desce da superfície para a escuridão do subsolo)
+    const innerW = 31 * wMul * t,
+      innerX = -15.5 * wMul * t,
+      innerTopY = -20 * hMul * t,
+      innerH = (20 * hMul + 8) * t;
+
+    const voidGrad = e.createLinearGradient(0, innerTopY, 0, innerTopY + innerH);
+    voidGrad.addColorStop(0, "#020617");
+    voidGrad.addColorStop(0.45, "#09090b");
+    voidGrad.addColorStop(0.8, "#1e293b");
+    voidGrad.addColorStop(1, "#334155");
+    e.fillStyle = voidGrad;
+    e.fillRect(innerX, innerTopY, innerW, innerH);
+
+    // 5. Degraus de Mármore em Perspectiva Descendo para o Subsolo
+    const numSteps = isMerged ? 9 : 7;
+    for (let s = 0; s < numSteps; s++) {
+      const ratio = s / numSteps;
+      const nextRatio = (s + 1) / numSteps;
+      const stepY1 = 7 * t - ratio * (25 * hMul * t);
+      const stepY2 = 7 * t - nextRatio * (25 * hMul * t);
+      const stepH = Math.max(1.8 * t, stepY1 - stepY2);
+      const inset = ratio * 4.5 * wMul * t;
+      const sx = innerX + inset;
+      const sw = innerW - inset * 2;
+
+      const shade = Math.round(235 - ratio * 175);
+      e.fillStyle = `rgb(${shade}, ${shade}, ${Math.min(255, shade + 8)})`;
+      e.fillRect(sx, stepY2, sw, stepH * 0.72);
+
+      const riserShade = Math.max(12, shade - 55);
+      e.fillStyle = `rgb(${riserShade}, ${riserShade}, ${riserShade + 5})`;
+      e.fillRect(sx, stepY2 + stepH * 0.72, sw, stepH * 0.28);
+    }
+
+    // 6. Pares de Colunas Dóricas guardando a entrada da escadaria
+    const colPositions = isMerged
+      ? [-18.5 * wMul, -11.5 * wMul, 11.5 * wMul, 18.5 * wMul]
+      : [-18.5 * wMul, 18.5 * wMul];
+    for (let i = 0; i < colPositions.length; i++) {
+      const cx = colPositions[i] * t;
+      e.fillStyle = "#94a3b8";
+      e.fillRect(cx - 3.5 * t, -19 * hMul * t, 7 * t, 4 * t);
+      e.fillStyle = "#f8fafc";
+      e.fillRect(cx - 2.8 * t, -32 * hMul * t, 5.6 * t, 14 * hMul * t);
+      e.fillStyle = "#cbd5e1";
+      e.fillRect(cx + 0.5 * t, -32 * hMul * t, 2.3 * t, 14 * hMul * t);
+      e.fillStyle = "#e2e8f0";
+      e.fillRect(cx - 3.8 * t, -34.5 * hMul * t, 7.6 * t, 2.8 * t);
+      e.fillStyle = "#f59e0b";
+      e.fillRect(cx - 3.5 * t, -32.2 * hMul * t, 7 * t, 1 * t);
+    }
+
+    // Arquitrave / Portal de Mármore no topo norte da escadaria
+    e.fillStyle = "#f1f5f9";
+    e.fillRect(-22 * wMul * t, -37.5 * hMul * t, 44 * wMul * t, 4 * t);
+    e.fillStyle = "#334155";
+    e.fillRect(-23 * wMul * t, -39.5 * hMul * t, 46 * wMul * t, 2.2 * t);
+    e.strokeStyle = "#fbbf24";
+    e.lineWidth = 1 * t;
+    e.strokeRect(-21 * wMul * t, -37 * hMul * t, 42 * wMul * t, 3 * t);
+
+    // 7. Tochas / Arandelas de Bronze acesas nas laterais da escadaria
+    const flicker = Math.sin((l || 0) * 6) * 0.15;
+    for (const side of [-1, 1]) {
+      const tx = side * 14.2 * wMul * t,
+        ty = -6 * t;
+      e.fillStyle = "#78350f";
+      e.fillRect(tx - 1.2 * t, ty - 5 * t, 2.4 * t, 6 * t);
+      e.fillStyle = `rgba(251, 191, 36, ${0.88 + flicker})`;
+      e.beginPath();
+      e.arc(tx, ty - 6.5 * t, 2.6 * t, 0, Math.PI * 2);
+      e.fill();
+    }
+  }
+
+  function bg(e, t, l, biome = null, isMerged = !1, mergedCount = 1, isStaircase = !1) {
+    if (isStaircase || (biome && biome.id === "MEADOW")) {
+      drawRuinsSubterraneanStaircase(e, t, l, !1, isMerged);
+      return;
+    }
     const theme = getCaveBiomeTheme(biome);
-    drawIrregularCaveRockFormation(e, t, theme, !1);
+    drawIrregularCaveRockFormation(e, t, theme, !1, isMerged, mergedCount);
+
+    const archW = isMerged ? 1.25 : 1,
+      archH = isMerged ? 1.32 : 1;
 
     // Boca escura irregular da caverna (arco rochoso facetado em vez de elipse redonda)
-    const o = e.createRadialGradient(0, 0, 2 * t, 0, -4 * t, 16 * t);
+    const o = e.createRadialGradient(0, 0, 2 * t, 0, -4 * archH * t, 18 * archW * t);
     (o.addColorStop(0, "#000000"),
       o.addColorStop(0.7, "#09090b"),
       o.addColorStop(1, "#18181b"),
       (e.fillStyle = o),
       e.beginPath(),
-      e.moveTo(-14 * t, 4 * t),
-      e.lineTo(-14 * t, -8 * t),
-      e.lineTo(-10 * t, -17 * t),
-      e.lineTo(-3 * t, -20 * t),
-      e.lineTo(4 * t, -20 * t),
-      e.lineTo(10 * t, -16 * t),
-      e.lineTo(14 * t, -8 * t),
-      e.lineTo(14 * t, 4 * t),
+      e.moveTo(-14 * archW * t, 4 * t),
+      e.lineTo(-14 * archW * t, -8 * archH * t),
+      e.lineTo(-10 * archW * t, -17 * archH * t),
+      e.lineTo(-3 * archW * t, -20 * archH * t),
+      e.lineTo(4 * archW * t, -20 * archH * t),
+      e.lineTo(10 * archW * t, -16 * archH * t),
+      e.lineTo(14 * archW * t, -8 * archH * t),
+      e.lineTo(14 * archW * t, 4 * t),
       e.closePath(),
       e.fill(),
       (e.fillStyle = "#27272a"),
-      e.fillRect(-10 * t, 0 * t, 20 * t, 2.5 * t),
+      e.fillRect(-10 * archW * t, 0 * t, 20 * archW * t, 2.5 * t),
       (e.fillStyle = "#18181b"),
-      e.fillRect(-8 * t, 2.5 * t, 16 * t, 2.5 * t),
+      e.fillRect(-8 * archW * t, 2.5 * t, 16 * archW * t, 2.5 * t),
       (e.fillStyle = "#451a03"),
-      e.fillRect(-13 * t, -16 * t, 3.5 * t, 18 * t),
-      e.fillRect(9.5 * t, -16 * t, 3.5 * t, 18 * t),
+      e.fillRect(-13 * archW * t, -16 * archH * t, 3.5 * t, (16 * archH + 2) * t),
+      e.fillRect((13 * archW - 3.5) * t, -16 * archH * t, 3.5 * t, (16 * archH + 2) * t),
       (e.fillStyle = "#78350f"),
-      e.fillRect(-14 * t, -18 * t, 28 * t, 4 * t),
+      e.fillRect(-14 * archW * t, -18 * archH * t, 28 * archW * t, 4 * t),
       (e.strokeStyle = "#0f172a"),
       (e.lineWidth = 1.2 * t),
       e.beginPath(),
-      e.moveTo(6 * t, -14 * t),
-      e.lineTo(6 * t, -9 * t),
+      e.moveTo(6 * archW * t, -14 * archH * t),
+      e.lineTo(6 * archW * t, -9 * archH * t),
       e.stroke(),
       (e.fillStyle = "#1e293b"),
-      e.fillRect(4 * t, -9 * t, 4 * t, 5.5 * t));
+      e.fillRect((6 * archW - 2) * t, -9 * archH * t, 4 * t, 5.5 * t));
     const u = Math.sin(l * 6) * 0.15;
     e.fillStyle = `rgba(251, 191, 36, ${0.85 + u})`;
-    e.fillRect(4.8 * t, -8.2 * t, 2.4 * t, 3.8 * t);
+    e.fillRect((6 * archW - 1.2) * t, (-9 * archH + 0.8) * t, 2.4 * t, 3.8 * t);
 
     // Cobertura de musgo da cor da grama (ou areia/neve conforme o bioma)
-    drawCaveBiomeOverlay(e, t, theme);
+    drawCaveBiomeOverlay(e, t, theme, isMerged);
   }
-  function yg(e, t, l = 0, biome = null) {
+  function yg(e, t, l = 0, biome = null, isMerged = !1, mergedCount = 1, isStaircase = !1) {
+    if (isStaircase || (biome && biome.id === "MEADOW")) {
+      drawRuinsSubterraneanStaircase(e, t, l, !0, isMerged);
+      return;
+    }
     const theme = getCaveBiomeTheme(biome);
-    drawIrregularCaveRockFormation(e, t, theme, !0);
+    drawIrregularCaveRockFormation(e, t, theme, !0, isMerged, mergedCount);
+
+    const archW = isMerged ? 1.25 : 1,
+      archH = isMerged ? 1.32 : 1;
 
     // Luz do dia saindo pelo arco rochoso irregular da saída da caverna
-    const o = e.createLinearGradient(0, -20 * t, 0, 4 * t);
+    const o = e.createLinearGradient(0, -20 * archH * t, 0, 4 * t);
     (o.addColorStop(0, "#0284c7"),
       o.addColorStop(0.35, "#38bdf8"),
       o.addColorStop(0.7, "#7dd3fc"),
       o.addColorStop(1, "#fde047"),
       (e.fillStyle = o),
       e.beginPath(),
-      e.moveTo(-14 * t, 4 * t),
-      e.lineTo(-14 * t, -8 * t),
-      e.lineTo(-10 * t, -17 * t),
-      e.lineTo(-3 * t, -20 * t),
-      e.lineTo(4 * t, -20 * t),
-      e.lineTo(10 * t, -16 * t),
-      e.lineTo(14 * t, -8 * t),
-      e.lineTo(14 * t, 4 * t),
+      e.moveTo(-14 * archW * t, 4 * t),
+      e.lineTo(-14 * archW * t, -8 * archH * t),
+      e.lineTo(-10 * archW * t, -17 * archH * t),
+      e.lineTo(-3 * archW * t, -20 * archH * t),
+      e.lineTo(4 * archW * t, -20 * archH * t),
+      e.lineTo(10 * archW * t, -16 * archH * t),
+      e.lineTo(14 * archW * t, -8 * archH * t),
+      e.lineTo(14 * archW * t, 4 * t),
       e.closePath(),
       e.fill());
     const r = e.createLinearGradient(0, -2 * t, 0, 16 * t);
@@ -1768,43 +2158,43 @@
       r.addColorStop(1, "rgba(254, 240, 138, 0)"),
       (e.fillStyle = r),
       e.beginPath(),
-      e.moveTo(-11 * t, -2 * t),
-      e.lineTo(11 * t, -2 * t),
-      e.lineTo(20 * t, 14 * t),
-      e.lineTo(-20 * t, 14 * t),
+      e.moveTo(-11 * archW * t, -2 * t),
+      e.lineTo(11 * archW * t, -2 * t),
+      e.lineTo(20 * archW * t, 14 * t),
+      e.lineTo(-20 * archW * t, 14 * t),
       e.closePath(),
       e.fill(),
       (e.fillStyle = "#334155"),
-      e.fillRect(-10 * t, 0 * t, 20 * t, 2.5 * t),
+      e.fillRect(-10 * archW * t, 0 * t, 20 * archW * t, 2.5 * t),
       (e.fillStyle = "#1e293b"),
-      e.fillRect(-8 * t, 2.5 * t, 16 * t, 2.5 * t),
+      e.fillRect(-8 * archW * t, 2.5 * t, 16 * archW * t, 2.5 * t),
       (e.fillStyle = "#451a03"),
-      e.fillRect(-13 * t, -16 * t, 3.5 * t, 18 * t),
-      e.fillRect(9.5 * t, -16 * t, 3.5 * t, 18 * t),
+      e.fillRect(-13 * archW * t, -16 * archH * t, 3.5 * t, (16 * archH + 2) * t),
+      e.fillRect((13 * archW - 3.5) * t, -16 * archH * t, 3.5 * t, (16 * archH + 2) * t),
       (e.fillStyle = "#78350f"),
-      e.fillRect(-14 * t, -18 * t, 28 * t, 4 * t),
+      e.fillRect(-14 * archW * t, -18 * archH * t, 28 * archW * t, 4 * t),
       (e.fillStyle = "#451a03"),
-      e.fillRect(-10 * t, -23 * t, 20 * t, 5 * t),
+      e.fillRect(-10 * t, (-23 * archH) * t, 20 * t, 5 * t),
       (e.fillStyle = "#92400e"),
-      e.fillRect(-9 * t, -22 * t, 18 * t, 4 * t),
+      e.fillRect(-9 * t, (-23 * archH + 1) * t, 18 * t, 4 * t),
       (e.fillStyle = "#fef08a"),
       (e.font = `bold ${Math.round(3.5 * t)}px sans-serif`),
       (e.textAlign = "center"),
-      e.fillText("▲ SAÍDA", 0, -19 * t),
+      e.fillText("▲ SAÍDA", 0, (-23 * archH + 4) * t),
       (e.strokeStyle = "#0f172a"),
       (e.lineWidth = 1.2 * t),
       e.beginPath(),
-      e.moveTo(6 * t, -14 * t),
-      e.lineTo(6 * t, -9 * t),
+      e.moveTo(6 * archW * t, -14 * archH * t),
+      e.lineTo(6 * archW * t, -9 * archH * t),
       e.stroke(),
       (e.fillStyle = "#1e293b"),
-      e.fillRect(4 * t, -9 * t, 4 * t, 5.5 * t));
+      e.fillRect((6 * archW - 2) * t, -9 * archH * t, 4 * t, 5.5 * t));
     const u = Math.sin((l || 0) * 6) * 0.15;
     e.fillStyle = `rgba(251, 191, 36, ${0.85 + u})`;
-    e.fillRect(4.8 * t, -8.2 * t, 2.4 * t, 3.8 * t);
+    e.fillRect((6 * archW - 1.2) * t, (-9 * archH + 0.8) * t, 2.4 * t, 3.8 * t);
 
     // Cobertura de musgo/arenito/neve seguindo o bioma da superfície correspondente
-    drawCaveBiomeOverlay(e, t, theme);
+    drawCaveBiomeOverlay(e, t, theme, isMerged);
   }
   function vg(e, t, l, o = !1) {
     if (
