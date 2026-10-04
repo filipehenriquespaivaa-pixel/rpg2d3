@@ -67,9 +67,16 @@
 
     const dungeonStairInfo = J.useMemo(() => {
       if (!isDevMode || !worldEngine || !worldEngine.isUnderground) return null;
-      if (worldEngine.undergroundLevel && worldEngine.undergroundLevel !== 1) return null;
-      if (typeof worldEngine.getDungeonEntranceStairForBiome !== "function") return null;
-      const stair = worldEngine.getDungeonEntranceStairForBiome(t.tx, t.ty);
+      const isSubsolo1 = !worldEngine.undergroundLevel || worldEngine.undergroundLevel === 1;
+      const isDungeonL2 = worldEngine.undergroundLevel === 2;
+      if (!isSubsolo1 && !isDungeonL2) return null;
+      let stair = null;
+      if (isDungeonL2) {
+        stair = worldEngine.activeDungeonStairCoords || (typeof worldEngine.getDungeonEntranceStairForBiome === "function" ? worldEngine.getDungeonEntranceStairForBiome(t.tx, t.ty) : null);
+      } else {
+        if (typeof worldEngine.getDungeonEntranceStairForBiome !== "function") return null;
+        stair = worldEngine.getDungeonEntranceStairForBiome(t.tx, t.ty);
+      }
       if (!stair) return null;
       const dx = stair.tx - t.tx;
       const dy = stair.ty - t.ty;
@@ -86,6 +93,8 @@
         distance,
         deg,
         cardinal,
+        isExit: isDungeonL2,
+        label: isDungeonL2 ? "Subsolo 1 (Saída):" : "Calabouço:",
       };
     }, [isDevMode, worldEngine, t.tx, t.ty]);
     const [be, Me] = J.useState(() => isDevMode || !1),
@@ -507,25 +516,37 @@
           dungeonStairInfo &&
           h.jsxs("div", {
             id: "hud-dungeon-compass-bar",
-            className:
-              "pointer-events-auto absolute top-12 sm:top-14 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/95 border-2 border-red-500/80 shadow-xl shadow-red-950/70 backdrop-blur-md z-30 select-none animate-in fade-in slide-in-from-top-2 duration-200",
+            className: `pointer-events-auto absolute top-12 sm:top-14 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/95 border-2 ${
+              dungeonStairInfo.isExit
+                ? "border-amber-500/90 shadow-xl shadow-amber-950/70"
+                : "border-red-500/80 shadow-xl shadow-red-950/70"
+            } backdrop-blur-md z-30 select-none animate-in fade-in slide-in-from-top-2 duration-200`,
             children: [
               h.jsxs("div", {
-                className:
-                  "relative w-7 h-7 rounded-full bg-slate-900 border border-red-500/60 flex items-center justify-center shadow-inner shrink-0",
-                title: `Direção da Escadaria do Calabouço: ${dungeonStairInfo.cardinal} (${Math.round(dungeonStairInfo.deg)}°)`,
+                className: `relative w-7 h-7 rounded-full bg-slate-900 border ${
+                  dungeonStairInfo.isExit
+                    ? "border-amber-500/60"
+                    : "border-red-500/60"
+                } flex items-center justify-center shadow-inner shrink-0`,
+                title: `${dungeonStairInfo.isExit ? "Direção da Escadaria de Retorno ao Subsolo 1" : "Direção da Escadaria do Calabouço"}: ${dungeonStairInfo.cardinal} (${Math.round(dungeonStairInfo.deg)}°)`,
                 children: [
                   h.jsx("div", {
-                    className:
-                      "absolute inset-0 rounded-full border border-dashed border-red-400/30",
+                    className: `absolute inset-0 rounded-full border border-dashed ${
+                      dungeonStairInfo.isExit
+                        ? "border-amber-400/30"
+                        : "border-red-400/30"
+                    }`,
                   }),
                   h.jsx("div", {
                     className:
                       "w-full h-full flex items-center justify-center transition-transform duration-200 ease-out",
                     style: { transform: `rotate(${dungeonStairInfo.deg}deg)` },
                     children: h.jsx("div", {
-                      className:
-                        "w-0 h-0 border-l-[3.5px] border-l-transparent border-r-[3.5px] border-r-transparent border-b-[10px] border-b-red-500 drop-shadow-[0_0_4px_rgba(239,68,68,0.9)] -translate-y-1.5",
+                      className: `w-0 h-0 border-l-[3.5px] border-l-transparent border-r-[3.5px] border-r-transparent border-b-[10px] ${
+                        dungeonStairInfo.isExit
+                          ? "border-b-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.9)]"
+                          : "border-b-red-500 drop-shadow-[0_0_4px_rgba(239,68,68,0.9)]"
+                      } -translate-y-1.5`,
                     }),
                   }),
                   h.jsx("div", {
@@ -537,13 +558,17 @@
               h.jsxs("div", {
                 className: "flex items-center gap-1.5 text-xs font-mono",
                 children: [
-                  h.jsx("span", {
-                    className: "font-bold text-red-400 flex items-center gap-1",
+                  h.jsxs("span", {
+                    className: `font-bold ${
+                      dungeonStairInfo.isExit
+                        ? "text-amber-400"
+                        : "text-red-400"
+                    } flex items-center gap-1`,
                     children: [
-                      h.jsx("span", { children: "🧭" }),
+                      h.jsx("span", { children: dungeonStairInfo.isExit ? "🏰" : "🧭" }),
                       h.jsx("span", {
                         className: "hidden xs:inline",
-                        children: "Calabouço:",
+                        children: dungeonStairInfo.label || (dungeonStairInfo.isExit ? "Subsolo 1:" : "Calabouço:"),
                       }),
                     ],
                   }),
@@ -553,7 +578,9 @@
                         ? "bg-emerald-950 border border-emerald-500/60 text-emerald-300 animate-pulse"
                         : dungeonStairInfo.distance <= 18
                           ? "bg-amber-950 border border-amber-500/60 text-amber-300"
-                          : "bg-red-950 border border-red-500/60 text-red-300"
+                          : dungeonStairInfo.isExit
+                            ? "bg-amber-950/80 border border-amber-500/60 text-amber-300"
+                            : "bg-red-950 border border-red-500/60 text-red-300"
                     }`,
                     children: [
                       dungeonStairInfo.distance,
@@ -580,12 +607,17 @@
                 onClick: () => {
                   p && p("DUNGEON_STAIR_TARGET");
                 },
-                className:
-                  "px-2 py-0.5 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold text-[10px] transition cursor-pointer shadow flex items-center gap-1 shrink-0",
-                title: `Teleportar instantaneamente para a frente da Escadaria do Calabouço em [${dungeonStairInfo.stair.tx}, ${dungeonStairInfo.stair.ty}]`,
+                className: `px-2 py-0.5 rounded-full ${
+                  dungeonStairInfo.isExit
+                    ? "bg-amber-600 hover:bg-amber-500"
+                    : "bg-red-600 hover:bg-red-500"
+                } active:scale-95 text-white font-bold text-[10px] transition cursor-pointer shadow flex items-center gap-1 shrink-0`,
+                title: dungeonStairInfo.isExit
+                  ? `Teleportar instantaneamente para a frente da Escadaria de Retorno ao Subsolo 1 em [${dungeonStairInfo.stair.tx}, ${dungeonStairInfo.stair.ty}]`
+                  : `Teleportar instantaneamente para a frente da Escadaria do Calabouço em [${dungeonStairInfo.stair.tx}, ${dungeonStairInfo.stair.ty}]`,
                 children: [
                   h.jsx("span", { children: "⚡" }),
-                  h.jsx("span", { children: "Ir até Lá" }),
+                  h.jsx("span", { children: dungeonStairInfo.isExit ? "Ir p/ Saída" : "Ir até Lá" }),
                 ],
               }),
             ],

@@ -1319,14 +1319,21 @@
                   re = Math.floor(f.current.y / D.tileSize);
                 D.enterCave(ge, re, f.current.x, f.current.y);
               }
-              D.isUnderground = !0;
-              D.undergroundLevel = 1;
+              if (E === "SUBSOLO_HALL") {
+                D.isUnderground = !0;
+                D.undergroundLevel = 1;
+              } else if (D.undergroundLevel !== 2) {
+                D.isUnderground = !0;
+                D.undergroundLevel = 1;
+              }
               D.clearTileCache();
               targetPixelX = stair.tx * D.tileSize + 14;
               targetPixelY = (stair.ty + 2) * D.tileSize + 14;
               foundDist = 0;
               found = !0;
-              ve(`🧭 Teleportado diretamente para a Escadaria do Calabouço em [${stair.tx}, ${stair.ty}]!`);
+              ve(D.undergroundLevel === 2
+                ? `🧭 Teleportado diretamente para a Escadaria de Retorno ao Subsolo em [${stair.tx}, ${stair.ty}]!`
+                : `🧭 Teleportado diretamente para a Escadaria do Calabouço em [${stair.tx}, ${stair.ty}]!`);
             }
           }
 
@@ -3349,10 +3356,10 @@
           if (
             window.__devMode &&
             Q.isUnderground &&
-            (Q.undergroundLevel === 1 || !Q.undergroundLevel) &&
             typeof Q.getDungeonEntranceStairForBiome === "function"
           ) {
-            const stair = Q.getDungeonEntranceStairForBiome(Ye, Ge);
+            const isL2 = Q.undergroundLevel === 2;
+            const stair = isL2 ? (Q.activeDungeonStairCoords || Q.getDungeonEntranceStairForBiome(Ye, Ge)) : Q.getDungeonEntranceStairForBiome(Ye, Ge);
             if (stair) {
               const dx = stair.tx - Ye;
               const dy = stair.ty - Ge;
@@ -3363,18 +3370,18 @@
                 sx >= 8 && sx <= Pe - 8 && sy >= 8 && sy <= aa - 8;
               if (isInside) {
                 const pulse = (Math.sin(performance.now() * 0.007) + 1) * 0.5;
-                da.strokeStyle = `rgba(239, 68, 68, ${0.45 + pulse * 0.5})`;
-                da.lineWidth = 1.8;
+                da.strokeStyle = isL2 ? `rgba(251, 191, 36, ${0.55 + pulse * 0.45})` : `rgba(239, 68, 68, ${0.45 + pulse * 0.5})`;
+                da.lineWidth = 2.0;
                 da.beginPath();
                 da.arc(sx, sy, 5.5 + pulse * 3.5, 0, Math.PI * 2);
                 da.stroke();
 
-                da.fillStyle = "#ef4444";
+                da.fillStyle = isL2 ? "#fbbf24" : "#ef4444";
                 da.beginPath();
                 da.arc(sx, sy, 3.8, 0, Math.PI * 2);
                 da.fill();
 
-                da.fillStyle = "#fef08a";
+                da.fillStyle = "#ffffff";
                 da.beginPath();
                 da.arc(sx, sy, 1.8, 0, Math.PI * 2);
                 da.fill();

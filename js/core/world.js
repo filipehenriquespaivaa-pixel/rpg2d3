@@ -3398,6 +3398,13 @@
               : `Baú de carvalho com guarnições de ferro guardado em: ${cell.roomName}. Pressione [F] para abrir!`,
           };
         }
+        if (sProp) {
+          if (sProp.offsetX === undefined) sProp.offsetX = 0;
+          if (sProp.offsetY === undefined) {
+            sProp.offsetY = sProp.kind === "dungeon_staircase_up" ? -4 : 0;
+          }
+          if (sProp.scale === undefined) sProp.scale = 1;
+        }
 
         return {
           tx: t,
@@ -3405,8 +3412,8 @@
           elevation: 0.1,
           moisture: 0.7,
           temperature: 0.35,
-          biome: BIOMES[BiomeId.CAVE_FLOOR],
-          isDungeonFloor: !0,
+          biome: isDungeonWall ? BIOMES[BiomeId.CAVE_WALL] : BIOMES[BiomeId.CAVE_FLOOR],
+          isDungeonFloor: !isDungeonWall,
           isDungeonWall,
           isDungeonDoor,
           isDungeonDoorOpen,
@@ -4282,14 +4289,14 @@
             t.prop &&
             (t.prop.kind === "dungeon_staircase_down" || t.prop.kind === "dungeon_staircase_up")
           ) {
-            const doorHalfW = 14;
-            const topTriggerY = -10;
+            const doorHalfW = 18;
+            const topTriggerY = -12;
             const cx = t.tx * this.tileSize + this.tileSize / 2;
             const cy =
               t.ty * this.tileSize + this.tileSize / 2 + (t.prop.offsetY || -4);
             const rx = x - cx;
             const ry = y - cy;
-            if (Math.abs(rx) <= doorHalfW && ry >= topTriggerY && ry <= 11) {
+            if (Math.abs(rx) <= doorHalfW && ry >= topTriggerY && ry <= 14) {
               return {
                 action:
                   t.prop.kind === "dungeon_staircase_down"

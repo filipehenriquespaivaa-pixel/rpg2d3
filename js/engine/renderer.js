@@ -154,6 +154,24 @@
                   color: "rgba(254, 240, 138, 0.16)",
                   intensity: 0.75,
                 });
+              else if (G.prop.kind === "dungeon_staircase_up")
+                K.push({
+                  x: ke * f + f / 2,
+                  y: ne * f + f / 2 - 6,
+                  radius: 160 + Math.sin(this.animTimer * 3) * 8,
+                  color: "rgba(251, 191, 36, 0.95)",
+                  intensity: 0.95,
+                  isCampfire: !0,
+                });
+              else if (G.prop.kind === "dungeon_staircase_down")
+                K.push({
+                  x: ke * f + f / 2,
+                  y: ne * f + f / 2 - 4,
+                  radius: 140 + Math.sin(this.animTimer * 3) * 6,
+                  color: "rgba(239, 68, 68, 0.9)",
+                  intensity: 0.9,
+                  isCampfire: !0,
+                });
               else if (G.prop.kind === "crystal_cluster" && !G.prop.opened) {
                 const de = [
                     "rgba(192, 132, 252, 0.15)",
@@ -197,8 +215,10 @@
         for (const ne of z) {
           if (ne.prop) {
             const ke = ne.prop,
-              G = ne.tx * f + f / 2 + ke.offsetX,
-              de = ne.ty * f + f / 2 + ke.offsetY;
+              offX = (typeof ke.offsetX === "number" && isFinite(ke.offsetX)) ? ke.offsetX : 0,
+              offY = (typeof ke.offsetY === "number" && isFinite(ke.offsetY)) ? ke.offsetY : 0,
+              G = ne.tx * f + f / 2 + offX,
+              de = ne.ty * f + f / 2 + offY;
             // Desenha o paredão (cliff_wall) e a rampa (cliff_ramp) na camada de terreno/platô abaixo dos pés do personagem
             // para que o jogador apareça caminhando em cima do paredão!
             const sortY =
@@ -592,7 +612,16 @@
             g.fill(),
             (g.globalAlpha = 1));
         const T = t.detailHash;
-        if (t.isDungeonFloor) {
+        if (t.isDungeonWall) {
+          // Fundação e base maciça da muralha do calabouço
+          g.fillStyle = "#090d16";
+          g.fillRect(l, o, u, u);
+          g.fillStyle = "#1e293b";
+          g.fillRect(l + 1, o + 1, u - 2, u - 2);
+          g.strokeStyle = "rgba(15, 23, 42, 0.9)";
+          g.lineWidth = 1;
+          g.strokeRect(l + 0.5, o + 0.5, u - 1, u - 1);
+        } else if (t.isDungeonFloor) {
           // Lajes maciças de pedra escura do calabouço
           const isAlt = (Math.abs(t.tx + t.ty) % 2) === 0;
           g.fillStyle = isAlt ? "#1e293b" : "#172033";

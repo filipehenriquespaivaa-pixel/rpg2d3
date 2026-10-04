@@ -3419,62 +3419,148 @@
     const hMul = 1.15;
 
     if (isUp) {
-      // Escadaria que SOBE de volta para o subsolo (luz dourada dos salões superiores descendo)
-      const floorGlow = e.createRadialGradient(0, 6 * t, 2 * t, 0, 8 * t, 28 * wMul * t);
-      floorGlow.addColorStop(0, "rgba(251, 191, 36, 0.35)");
-      floorGlow.addColorStop(0.6, "rgba(56, 189, 248, 0.12)");
+      // 1. Auréola de luz dourada irradiando no piso em frente à escadaria
+      const floorGlow = e.createRadialGradient(0, 8 * t, 3 * t, 0, 8 * t, 36 * wMul * t);
+      floorGlow.addColorStop(0, "rgba(251, 191, 36, 0.65)");
+      floorGlow.addColorStop(0.45, "rgba(245, 158, 11, 0.35)");
+      floorGlow.addColorStop(0.75, "rgba(234, 88, 12, 0.12)");
       floorGlow.addColorStop(1, "rgba(15, 23, 42, 0)");
       e.fillStyle = floorGlow;
       e.beginPath();
-      e.ellipse(0, 8 * t, 28 * wMul * t, 12 * t, 0, 0, Math.PI * 2);
+      e.ellipse(0, 9 * t, 36 * wMul * t, 16 * t, 0, 0, Math.PI * 2);
       e.fill();
 
-      // Sombra e base
-      e.fillStyle = "rgba(2, 6, 23, 0.65)";
-      e.fillRect(-22 * wMul * t, -32 * hMul * t, 44 * wMul * t, (32 * hMul + 10) * t);
+      // 2. Base e reentrância do pórtico na muralha de pedra
+      e.fillStyle = "rgba(2, 6, 23, 0.85)";
+      e.fillRect(-26 * wMul * t, -36 * hMul * t, 52 * wMul * t, (36 * hMul + 14) * t);
 
-      // Paredes laterais de pedra escura
-      e.fillStyle = "#1e293b";
+      // Pilares laterais maciços de granito chanfrado
+      e.fillStyle = "#334155";
+      e.fillRect(-26 * wMul * t, -36 * hMul * t, 7 * wMul * t, (36 * hMul + 12) * t);
+      e.fillRect(19 * wMul * t, -36 * hMul * t, 7 * wMul * t, (36 * hMul + 12) * t);
+
+      // Chanfros e relevos das pilastras
+      e.fillStyle = "#475569";
+      e.fillRect(-25 * wMul * t, -35 * hMul * t, 5 * wMul * t, (35 * hMul + 10) * t);
+      e.fillRect(20 * wMul * t, -35 * hMul * t, 5 * wMul * t, (35 * hMul + 10) * t);
+
+      // 3. Feixe de luz celestial/dourada que desce dos salões superiores do subsolo
+      const beamPulse = Math.sin((animTimer || 0) * 4) * 0.08 + 0.38;
+      const beamGrad = e.createLinearGradient(0, -32 * hMul * t, 0, 8 * t);
+      beamGrad.addColorStop(0, `rgba(254, 240, 138, ${beamPulse * 1.5})`);
+      beamGrad.addColorStop(0.4, `rgba(251, 191, 36, ${beamPulse})`);
+      beamGrad.addColorStop(0.85, `rgba(245, 158, 11, ${beamPulse * 0.5})`);
+      beamGrad.addColorStop(1, "rgba(217, 119, 6, 0.05)");
+      e.fillStyle = beamGrad;
       e.beginPath();
-      e.moveTo(-20 * wMul * t, 8 * t);
-      e.lineTo(-16 * wMul * t, -32 * hMul * t);
+      e.moveTo(-16 * wMul * t, -32 * hMul * t);
       e.lineTo(16 * wMul * t, -32 * hMul * t);
-      e.lineTo(20 * wMul * t, 8 * t);
+      e.lineTo(22 * wMul * t, 8 * t);
+      e.lineTo(-22 * wMul * t, 8 * t);
       e.closePath();
       e.fill();
 
-      // Corrimãos e pilares de ferro forjado
-      e.fillStyle = "#0f172a";
-      e.fillRect(-20 * wMul * t, 6 * t, 3 * t, 6 * t);
-      e.fillRect(17 * wMul * t, 6 * t, 3 * t, 6 * t);
-      e.strokeStyle = "#475569";
-      e.lineWidth = 1.6 * t;
-      e.beginPath();
-      e.moveTo(-18 * wMul * t, 7 * t);
-      e.lineTo(-14 * wMul * t, -30 * hMul * t);
-      e.moveTo(18 * wMul * t, 7 * t);
-      e.lineTo(14 * wMul * t, -30 * hMul * t);
-      e.stroke();
-
-      // Degraus ascendentes
-      const numSteps = 8;
+      // 4. Degraus de cantaria ascendentes iluminados
+      const numSteps = 9;
       for (let s = 0; s < numSteps; s++) {
         const r0 = s / numSteps;
         const r1 = (s + 1) / numSteps;
-        const yBottom = (8 - r0 * (32 * hMul)) * t;
-        const yTop = (8 - r1 * (32 * hMul)) * t;
-        const stepH = Math.max(2 * t, yBottom - yTop);
-        const halfW0 = (14.5 - r0 * 3.5) * wMul * t;
-        const halfW1 = (14.5 - r1 * 3.5) * wMul * t;
+        const yBottom = (8 - r0 * (34 * hMul)) * t;
+        const yTop = (8 - r1 * (34 * hMul)) * t;
+        const stepH = Math.max(2.5 * t, yBottom - yTop);
+        const halfW0 = (17.5 - r0 * 4.5) * wMul * t;
+        const halfW1 = (17.5 - r1 * 4.5) * wMul * t;
 
-        const riserLum = Math.round(55 + r0 * 85);
-        e.fillStyle = `rgb(${riserLum}, ${riserLum + 2}, ${riserLum + 8})`;
+        // Espelho do degrau
+        const riserLum = Math.round(70 + r0 * 95);
+        e.fillStyle = `rgb(${riserLum + 12}, ${riserLum + 8}, ${riserLum})`;
         e.fillRect(-halfW0, yBottom - stepH * 0.55, halfW0 * 2, stepH * 0.55);
 
-        const treadLum = Math.round(90 + r1 * 105);
-        e.fillStyle = `rgb(${treadLum}, ${treadLum}, ${treadLum + 10})`;
-        e.fillRect(-halfW1, yTop, halfW1 * 2, stepH * 0.48);
+        // Piso do degrau com destaque de iluminação
+        const treadLum = Math.round(130 + r1 * 100);
+        e.fillStyle = `rgb(${Math.min(255, treadLum + 20)}, ${Math.min(255, treadLum + 16)}, ${treadLum})`;
+        e.fillRect(-halfW1, yTop, halfW1 * 2, stepH * 0.52);
+
+        // Friso dourado polido na quina do degrau
+        e.fillStyle = `rgba(254, 240, 138, ${0.45 + r1 * 0.45})`;
+        e.fillRect(-halfW1, yTop, halfW1 * 2, 1.2 * t);
       }
+
+      // 5. Corrimãos pesados de latão polido e ferro forjado
+      e.strokeStyle = "#fbbf24";
+      e.lineWidth = 1.8 * t;
+      e.beginPath();
+      e.moveTo(-18 * wMul * t, 8 * t);
+      e.lineTo(-13 * wMul * t, -32 * hMul * t);
+      e.moveTo(18 * wMul * t, 8 * t);
+      e.lineTo(13 * wMul * t, -32 * hMul * t);
+      e.stroke();
+
+      // 6. Arco Superior / Verga de cantaria com arco
+      e.fillStyle = "#1e293b";
+      e.fillRect(-27 * wMul * t, -40 * hMul * t, 54 * wMul * t, 8 * hMul * t);
+      e.fillStyle = "#334155";
+      e.fillRect(-26 * wMul * t, -39 * hMul * t, 52 * wMul * t, 6 * hMul * t);
+      e.strokeStyle = "#64748b";
+      e.lineWidth = 1.2 * t;
+      e.strokeRect(-26 * wMul * t, -39 * hMul * t, 52 * wMul * t, 6 * hMul * t);
+
+      // 7. Placa de Pedra com inscrição entalhada em relevo dourado
+      e.fillStyle = "#090d16";
+      e.fillRect(-19 * wMul * t, -37.5 * hMul * t, 38 * wMul * t, 5 * hMul * t);
+      e.strokeStyle = "#f59e0b";
+      e.lineWidth = 1.2 * t;
+      e.strokeRect(-19 * wMul * t, -37.5 * hMul * t, 38 * wMul * t, 5 * hMul * t);
+
+      // Texto entalhado na pedra: "▲ SUBSOLO I ▲"
+      e.fillStyle = "#fef08a";
+      e.font = `bold ${Math.round(4.5 * t)}px monospace`;
+      e.textAlign = "center";
+      e.textBaseline = "middle";
+      e.fillText("▲ SUBSOLO I ▲", 0, -35 * hMul * t);
+
+      // 8. Tochas gêmeas flamejantes de ferro forjado nas pilastras laterais
+      const torchFlicker = Math.sin((animTimer || 0) * 8) * 0.18;
+      for (const side of [-1, 1]) {
+        const tx = side * 22 * wMul * t;
+        const ty = -14 * t;
+        // Suporte de ferro
+        e.fillStyle = "#0f172a";
+        e.fillRect(tx - 1.5 * t, ty - 6 * t, 3 * t, 8 * t);
+        e.fillRect(tx - (side > 0 ? 3 : 0) * t, ty, 3 * t, 2 * t);
+        // Cesta da tocha
+        e.fillStyle = "#78350f";
+        e.fillRect(tx - 2.5 * t, ty - 8 * t, 5 * t, 3.5 * t);
+
+        // Halo de luz da tocha
+        const tHalo = e.createRadialGradient(tx, ty - 9 * t, 1 * t, tx, ty - 9 * t, 12 * t);
+        tHalo.addColorStop(0, "rgba(254, 240, 138, 0.85)");
+        tHalo.addColorStop(0.5, "rgba(249, 115, 22, 0.45)");
+        tHalo.addColorStop(1, "rgba(249, 115, 22, 0)");
+        e.fillStyle = tHalo;
+        e.beginPath();
+        e.arc(tx, ty - 9 * t, 12 * t, 0, Math.PI * 2);
+        e.fill();
+
+        // Chama viva
+        e.fillStyle = `rgba(249, 115, 22, ${0.9 + torchFlicker})`;
+        e.beginPath();
+        e.arc(tx, ty - 9.5 * t, 3.2 * t, 0, Math.PI * 2);
+        e.fill();
+        e.fillStyle = "#fef08a";
+        e.beginPath();
+        e.arc(tx, ty - 9.5 * t, 1.6 * t, 0, Math.PI * 2);
+        e.fill();
+      }
+
+      // 9. Sinalizador / Indicador luminoso flutuante no topo
+      const beaconFloat = Math.sin((animTimer || 0) * 5) * 2 * t;
+      const beaconAlpha = Math.sin((animTimer || 0) * 4) * 0.2 + 0.8;
+      e.fillStyle = `rgba(251, 191, 36, ${beaconAlpha})`;
+      e.font = `bold ${Math.round(8 * t)}px monospace`;
+      e.textAlign = "center";
+      e.textBaseline = "middle";
+      e.fillText("▲", 0, (-44 * hMul * t) + beaconFloat);
     } else {
       // Escadaria que DESCE para o calabouço (poço escuro profundo com névoa sombria, tochas vivas e ferro forjado)
       e.fillStyle = "rgba(2, 6, 23, 0.65)";
@@ -3614,18 +3700,19 @@
     e.restore();
   }
 
-  function drawDungeonWall25D(e, t, neighbors = null) {
+  function drawDungeonWall25D(e, t = 1, neighbors = null) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     const nL = !!(neighbors && neighbors.left);
     const nR = !!(neighbors && neighbors.right);
     const nT = !!(neighbors && neighbors.top);
     const nB = !!(neighbors && neighbors.bottom);
-    const half = 18 * t;
-    const leftX = nL ? -half - 1 * t : -half + 1 * t;
-    const rightX = nR ? half + 1 * t : half - 1 * t;
+    const half = 17 * t;
+    const leftX = nL ? -half - 1 * t : -half;
+    const rightX = nR ? half + 1 * t : half;
     const w = rightX - leftX;
     const wallH = 26 * t;
-    const baseY = 18 * t;
+    const baseY = 16 * t;
     const topFrontY = baseY - wallH;
 
     // Sombra projetada na base
@@ -3634,23 +3721,24 @@
       e.fillRect(leftX - 1 * t, baseY - 2 * t, w + 2 * t, 9.5 * t);
     }
 
-    // Face frontal da muralha de granito/ardósia escuro
+    // Face frontal da muralha de granito escuro com contraste nítido
     const frontGrad = e.createLinearGradient(0, topFrontY, 0, baseY);
-    frontGrad.addColorStop(0, "#475569");
-    frontGrad.addColorStop(0.4, "#334155");
+    frontGrad.addColorStop(0, "#64748b");
+    frontGrad.addColorStop(0.35, "#475569");
+    frontGrad.addColorStop(0.75, "#334155");
     frontGrad.addColorStop(1, "#1e293b");
     e.fillStyle = frontGrad;
     e.fillRect(leftX, topFrontY, w, wallH);
 
-    // Rodapé de cantaria bruta
+    // Rodapé reforçado de cantaria bruta
     e.fillStyle = "#0f172a";
     e.fillRect(leftX, baseY - 3.5 * t, w, 3.5 * t);
 
-    // Linhas de argamassa e blocos de pedra
-    e.strokeStyle = "rgba(15, 23, 42, 0.85)";
+    // Linhas de argamassa e chanfros de relevo nos blocos de pedra
+    e.strokeStyle = "rgba(15, 23, 42, 0.95)";
     e.lineWidth = 1.3 * t;
     e.beginPath();
-    // Linhas horizontais
+    // Linhas horizontais de argamassa
     e.moveTo(leftX, topFrontY + 8.5 * t);
     e.lineTo(rightX, topFrontY + 8.5 * t);
     e.moveTo(leftX, topFrontY + 17 * t);
@@ -3666,22 +3754,38 @@
     e.lineTo(0, baseY - 3.5 * t);
     e.stroke();
 
-    // Topo da parede (visível se não tiver parede acima)
+    // Destaque de luz nas bordas superiores dos blocos de cantaria
+    e.strokeStyle = "rgba(148, 163, 184, 0.35)";
+    e.lineWidth = 1 * t;
+    e.beginPath();
+    e.moveTo(leftX + 1, topFrontY + 1 * t);
+    e.lineTo(rightX - 1, topFrontY + 1 * t);
+    e.moveTo(leftX + 1, topFrontY + 9.5 * t);
+    e.lineTo(rightX - 1, topFrontY + 9.5 * t);
+    e.moveTo(leftX + 1, topFrontY + 18 * t);
+    e.lineTo(rightX - 1, topFrontY + 18 * t);
+    e.stroke();
+
+    // Topo da parede (laje de cobertura visível se não tiver parede acima)
     if (!nT) {
-      e.fillStyle = "#64748b";
-      e.fillRect(leftX, topFrontY - 3 * t, w, 3 * t);
-      e.fillStyle = "#334155";
+      e.fillStyle = "#94a3b8";
+      e.fillRect(leftX, topFrontY - 3.5 * t, w, 3.5 * t);
+      e.fillStyle = "#cbd5e1";
       e.fillRect(leftX, topFrontY - 4 * t, w, 1 * t);
+      e.strokeStyle = "#475569";
+      e.lineWidth = 0.8 * t;
+      e.strokeRect(leftX, topFrontY - 3.5 * t, w, 3.5 * t);
     }
 
-    // Manchas de umidade e musgo na base
-    e.fillStyle = "rgba(22, 101, 52, 0.35)";
+    // Manchas de umidade e musgo na base da muralha
+    e.fillStyle = "rgba(22, 101, 52, 0.4)";
     e.fillRect(leftX, baseY - 5 * t, w, 2 * t);
 
     e.restore();
   }
 
-  function drawIronBarsGate(e, t, isVert = !1, isOpened = !1) {
+  function drawIronBarsGate(e, t = 1, isVert = !1, isOpened = !1) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     const half = 18 * t;
 
@@ -3759,7 +3863,8 @@
     e.restore();
   }
 
-  function drawDungeonDoor(e, t, isVert = !1, isOpened = !1) {
+  function drawDungeonDoor(e, t = 1, isVert = !1, isOpened = !1) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     if (isOpened) {
       // Porta de carvalho aberta
@@ -3816,7 +3921,8 @@
     e.restore();
   }
 
-  function drawTortureRack(e, t) {
+  function drawTortureRack(e, t = 1) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     // Sombra
     e.fillStyle = "rgba(2, 6, 23, 0.6)";
@@ -3870,7 +3976,8 @@
     e.restore();
   }
 
-  function drawIronMaiden(e, t) {
+  function drawIronMaiden(e, t = 1) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     // Sombra
     e.fillStyle = "rgba(2, 6, 23, 0.65)";
@@ -3920,7 +4027,8 @@
     e.restore();
   }
 
-  function drawHangingCage(e, t, animTimer = 0) {
+  function drawHangingCage(e, t = 1, animTimer = 0) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     const sway = Math.sin((animTimer || 0) * 1.6) * 0.04;
     e.rotate(sway);
@@ -3975,7 +4083,8 @@
     e.restore();
   }
 
-  function drawTortureBrazier(e, t, animTimer = 0) {
+  function drawTortureBrazier(e, t = 1, animTimer = 0) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     // Sombra
     e.fillStyle = "rgba(2, 6, 23, 0.55)";
@@ -4034,7 +4143,8 @@
     e.restore();
   }
 
-  function drawTortureTools(e, t) {
+  function drawTortureTools(e, t = 1) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     // Mesa rústica ensanguentada
     e.fillStyle = "rgba(2, 6, 23, 0.5)";
@@ -4068,7 +4178,8 @@
     e.restore();
   }
 
-  function drawLatrinePit(e, t, animTimer = 0) {
+  function drawLatrinePit(e, t = 1, animTimer = 0) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     // Borda de pedra escavada da fossa
     e.fillStyle = "#1e293b";
@@ -4112,7 +4223,8 @@
     e.restore();
   }
 
-  function drawLatrineBench(e, t) {
+  function drawLatrineBench(e, t = 1) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     // Bancos de latrina em alvenaria
     e.fillStyle = "rgba(2, 6, 23, 0.5)";
@@ -4139,7 +4251,8 @@
     e.restore();
   }
 
-  function drawDungeonSkeleton(e, t) {
+  function drawDungeonSkeleton(e, t = 1) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     // Sombra
     e.fillStyle = "rgba(2, 6, 23, 0.4)";
@@ -4177,7 +4290,8 @@
     e.restore();
   }
 
-  function drawDungeonStraw(e, t) {
+  function drawDungeonStraw(e, t = 1) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     // Monte de palha mofada
     e.fillStyle = "#713f12";
@@ -4200,7 +4314,8 @@
     e.restore();
   }
 
-  function drawJailerTable(e, t) {
+  function drawJailerTable(e, t = 1) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     e.fillStyle = "rgba(2, 6, 23, 0.5)";
     e.fillRect(-13 * t, -4 * t, 26 * t, 14 * t);
@@ -4232,7 +4347,8 @@
     e.restore();
   }
 
-  function drawWeaponRack(e, t) {
+  function drawWeaponRack(e, t = 1) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     e.fillStyle = "rgba(2, 6, 23, 0.45)";
     e.fillRect(-11 * t, -2 * t, 22 * t, 10 * t);
