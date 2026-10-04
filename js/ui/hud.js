@@ -52,6 +52,7 @@
     savedCampfire: C = null,
     onUseBeltSlot: I,
     devMode: devModeProp,
+    worldEngine: worldEngineProp,
   }) => {
     var So;
     const isDevMode = Boolean(
@@ -59,6 +60,34 @@
         ? devModeProp
         : (typeof window !== "undefined" && window.__devMode)
     );
+    const worldEngine =
+      worldEngineProp ||
+      (typeof window !== "undefined" &&
+        (window.__worldEngine || window.__gameEngine?.world));
+
+    const dungeonStairInfo = J.useMemo(() => {
+      if (!isDevMode || !worldEngine || !worldEngine.isUnderground) return null;
+      if (worldEngine.undergroundLevel && worldEngine.undergroundLevel !== 1) return null;
+      if (typeof worldEngine.getDungeonEntranceStairForBiome !== "function") return null;
+      const stair = worldEngine.getDungeonEntranceStairForBiome(t.tx, t.ty);
+      if (!stair) return null;
+      const dx = stair.tx - t.tx;
+      const dy = stair.ty - t.ty;
+      const distance = Math.round(Math.hypot(dx, dy));
+      let deg = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
+      if (deg < 0) deg += 360;
+      const cardinals = ["N", "NE", "L", "SE", "S", "SO", "O", "NO"];
+      const cardIndex = Math.round(deg / 45) % 8;
+      const cardinal = cardinals[cardIndex];
+      return {
+        stair,
+        dx,
+        dy,
+        distance,
+        deg,
+        cardinal,
+      };
+    }, [isDevMode, worldEngine, t.tx, t.ty]);
     const [be, Me] = J.useState(() => isDevMode || !1),
       [Te, Fe] = J.useState(() => isDevMode || window.innerWidth > 768),
       [_e, xe] = J.useState(() => isDevMode || window.innerWidth > 1024),
@@ -470,6 +499,93 @@
                     className: "hidden sm:inline",
                     children: Ie ? "Exibir Interface Dev" : "Modo Imersivo (Dev)",
                   }),
+                ],
+              }),
+            ],
+          }),
+        isDevMode &&
+          dungeonStairInfo &&
+          h.jsxs("div", {
+            id: "hud-dungeon-compass-bar",
+            className:
+              "pointer-events-auto absolute top-12 sm:top-14 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/95 border-2 border-red-500/80 shadow-xl shadow-red-950/70 backdrop-blur-md z-30 select-none animate-in fade-in slide-in-from-top-2 duration-200",
+            children: [
+              h.jsxs("div", {
+                className:
+                  "relative w-7 h-7 rounded-full bg-slate-900 border border-red-500/60 flex items-center justify-center shadow-inner shrink-0",
+                title: `Direção da Escadaria do Calabouço: ${dungeonStairInfo.cardinal} (${Math.round(dungeonStairInfo.deg)}°)`,
+                children: [
+                  h.jsx("div", {
+                    className:
+                      "absolute inset-0 rounded-full border border-dashed border-red-400/30",
+                  }),
+                  h.jsx("div", {
+                    className:
+                      "w-full h-full flex items-center justify-center transition-transform duration-200 ease-out",
+                    style: { transform: `rotate(${dungeonStairInfo.deg}deg)` },
+                    children: h.jsx("div", {
+                      className:
+                        "w-0 h-0 border-l-[3.5px] border-l-transparent border-r-[3.5px] border-r-transparent border-b-[10px] border-b-red-500 drop-shadow-[0_0_4px_rgba(239,68,68,0.9)] -translate-y-1.5",
+                    }),
+                  }),
+                  h.jsx("div", {
+                    className:
+                      "absolute w-1.5 h-1.5 rounded-full bg-amber-400 border border-slate-950",
+                  }),
+                ],
+              }),
+              h.jsxs("div", {
+                className: "flex items-center gap-1.5 text-xs font-mono",
+                children: [
+                  h.jsx("span", {
+                    className: "font-bold text-red-400 flex items-center gap-1",
+                    children: [
+                      h.jsx("span", { children: "🧭" }),
+                      h.jsx("span", {
+                        className: "hidden xs:inline",
+                        children: "Calabouço:",
+                      }),
+                    ],
+                  }),
+                  h.jsxs("span", {
+                    className: `font-bold px-1.5 py-0.5 rounded text-[11px] ${
+                      dungeonStairInfo.distance <= 4
+                        ? "bg-emerald-950 border border-emerald-500/60 text-emerald-300 animate-pulse"
+                        : dungeonStairInfo.distance <= 18
+                          ? "bg-amber-950 border border-amber-500/60 text-amber-300"
+                          : "bg-red-950 border border-red-500/60 text-red-300"
+                    }`,
+                    children: [
+                      dungeonStairInfo.distance,
+                      "m (",
+                      dungeonStairInfo.cardinal,
+                      ")",
+                    ],
+                  }),
+                  h.jsxs("span", {
+                    className:
+                      "text-[10px] text-slate-400 font-mono hidden sm:inline",
+                    children: [
+                      "[",
+                      dungeonStairInfo.stair.tx,
+                      ",",
+                      dungeonStairInfo.stair.ty,
+                      "]",
+                    ],
+                  }),
+                ],
+              }),
+              h.jsxs("button", {
+                type: "button",
+                onClick: () => {
+                  p && p("DUNGEON_STAIR_TARGET");
+                },
+                className:
+                  "px-2 py-0.5 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold text-[10px] transition cursor-pointer shadow flex items-center gap-1 shrink-0",
+                title: `Teleportar instantaneamente para a frente da Escadaria do Calabouço em [${dungeonStairInfo.stair.tx}, ${dungeonStairInfo.stair.ty}]`,
+                children: [
+                  h.jsx("span", { children: "⚡" }),
+                  h.jsx("span", { children: "Ir até Lá" }),
                 ],
               }),
             ],
@@ -2190,6 +2306,74 @@
                       }),
                     ],
                   }),
+                  dungeonStairInfo &&
+                    h.jsxs("div", {
+                      className:
+                        "p-3 rounded-xl bg-red-950/40 border border-red-500/40 flex flex-col gap-2 shadow-sm",
+                      children: [
+                        h.jsxs("div", {
+                          className: "flex items-center justify-between",
+                          children: [
+                            h.jsxs("div", {
+                              className: "flex items-center gap-1.5",
+                              children: [
+                                h.jsx("span", { className: "text-sm", children: "🧭" }),
+                                h.jsx("span", {
+                                  className: "font-bold text-red-300",
+                                  children: "Bússola do Calabouço",
+                                }),
+                              ],
+                            }),
+                            h.jsxs("span", {
+                              className:
+                                "text-[10px] font-mono px-2 py-0.5 rounded bg-red-950 border border-red-500/50 text-red-300 font-bold",
+                              children: [
+                                dungeonStairInfo.distance,
+                                "m ",
+                                dungeonStairInfo.cardinal,
+                              ],
+                            }),
+                          ],
+                        }),
+                        h.jsxs("p", {
+                          className: "text-[11px] text-slate-300 leading-relaxed",
+                          children: [
+                            "A escadaria que desce para o calabouço está nas coordenadas ",
+                            h.jsxs("span", {
+                              className: "text-amber-300 font-mono font-bold",
+                              children: [
+                                "[",
+                                dungeonStairInfo.stair.tx,
+                                ", ",
+                                dungeonStairInfo.stair.ty,
+                                "]",
+                              ],
+                            }),
+                            ". Siga na direção ",
+                            h.jsx("span", {
+                              className: "text-red-400 font-bold",
+                              children: dungeonStairInfo.cardinal,
+                            }),
+                            ".",
+                          ],
+                        }),
+                        h.jsxs("button", {
+                          type: "button",
+                          onClick: () => {
+                            p && p("DUNGEON_STAIR_TARGET");
+                            setShowDevSettings(!1);
+                          },
+                          className:
+                            "w-full py-1.5 px-3 rounded-lg bg-red-700 hover:bg-red-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow",
+                          children: [
+                            h.jsx("span", { children: "⚡" }),
+                            h.jsx("span", {
+                              children: "Teleportar Direto para a Escadaria",
+                            }),
+                          ],
+                        }),
+                      ],
+                    }),
                   h.jsxs("div", {
                     className:
                       "p-3 rounded-xl bg-slate-900/80 border border-white/10 flex flex-col gap-2 shadow-sm",

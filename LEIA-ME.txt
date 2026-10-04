@@ -60,6 +60,8 @@ MELHORIAS NO SISTEMA DE CAVERNAS:
      * Salão da Fossa e Latrinas com poço fétido de esgoto sob grades de ferro e assentos de latrina talhados na alvenaria.
      * Câmara de provisões e despojos ao final do corredor.
      * O andar inferior compartilha ambientação com a caverna natural comum, mas as muralhas de cantaria do calabouço são 100% sólidas (sem portas para a caverna comum) e circundadas por pilhas de pedregulhos e cascalho da escavação.
+   - Bússola do Calabouço (Modo Dev):
+     * Ao estar no subsolo do bioma com construção, surge uma bússola dinâmica com agulha 360°, distância em metros/tiles, direção cardeal (N, NE, L, SE, etc.) e botão de teleporte rápido "Ir até Lá", além de um marcador/seta em tempo real no minimapa.
 
 CONTROLES:
 - W, A, S, D ou Setas: Movimentação do personagem

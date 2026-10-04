@@ -61,6 +61,7 @@
       [$a, Ie] = J.useState(null),
       ee = J.useRef(null);
     ee.current = $a;
+    if (typeof window !== "undefined") window.__worldEngine = o.current;
     const He = J.useRef(100),
       Sa = J.useRef(100),
       oa = J.useRef(!1),
@@ -1278,18 +1279,23 @@
             }
           }
 
-          if (E === "SUBSOLO_HALL") {
+          if (E === "SUBSOLO_HALL" || E === "DUNGEON_STAIR_TARGET") {
             let stair = null;
-            for (let r = 0; r <= 35 && !stair; r++) {
-              for (let dy = -r; dy <= r && !stair; dy++) {
-                for (let dx = -r; dx <= r && !stair; dx++) {
-                  if (r > 0 && Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
-                  const sampleTx = originTx + dx * 24;
-                  const sampleTy = originTy + dy * 24;
-                  const candidate = D.getDungeonEntranceStairForBiome(sampleTx, sampleTy);
-                  if (candidate) {
-                    stair = candidate;
-                    break;
+            if (D.isUnderground && D.getDungeonEntranceStairForBiome) {
+              stair = D.getDungeonEntranceStairForBiome(originTx, originTy);
+            }
+            if (!stair) {
+              for (let r = 0; r <= 35 && !stair; r++) {
+                for (let dy = -r; dy <= r && !stair; dy++) {
+                  for (let dx = -r; dx <= r && !stair; dx++) {
+                    if (r > 0 && Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+                    const sampleTx = originTx + dx * 24;
+                    const sampleTy = originTy + dy * 24;
+                    const candidate = D.getDungeonEntranceStairForBiome(sampleTx, sampleTy);
+                    if (candidate) {
+                      stair = candidate;
+                      break;
+                    }
                   }
                 }
               }
@@ -1303,7 +1309,7 @@
               targetPixelY = (stair.ty + 2) * D.tileSize + 14;
               foundDist = 0;
               found = !0;
-              ve(`⚡ Teleportado para o Salão Subterrâneo em frente à Escadaria do Calabouço em [${stair.tx}, ${stair.ty}]!`);
+              ve(`🧭 Teleportado diretamente para a Escadaria do Calabouço em [${stair.tx}, ${stair.ty}]!`);
             }
           }
 
@@ -3320,6 +3326,61 @@
                 }
             }
           da.putImageData(re, 0, 0);
+          // 🧭 Bússola e Marcador da Escadaria do Calabouço no Minimapa (Modo Desenvolvedor)
+          if (
+            window.__devMode &&
+            Q.isUnderground &&
+            (Q.undergroundLevel === 1 || !Q.undergroundLevel) &&
+            typeof Q.getDungeonEntranceStairForBiome === "function"
+          ) {
+            const stair = Q.getDungeonEntranceStairForBiome(Ye, Ge);
+            if (stair) {
+              const dx = stair.tx - Ye;
+              const dy = stair.ty - Ge;
+              const sx = De + dx / 0.9;
+              const sy = qe + dy / 0.9;
+              da.save();
+              const isInside =
+                sx >= 8 && sx <= Pe - 8 && sy >= 8 && sy <= aa - 8;
+              if (isInside) {
+                const pulse = (Math.sin(performance.now() * 0.007) + 1) * 0.5;
+                da.strokeStyle = `rgba(239, 68, 68, ${0.45 + pulse * 0.5})`;
+                da.lineWidth = 1.8;
+                da.beginPath();
+                da.arc(sx, sy, 5.5 + pulse * 3.5, 0, Math.PI * 2);
+                da.stroke();
+
+                da.fillStyle = "#ef4444";
+                da.beginPath();
+                da.arc(sx, sy, 3.8, 0, Math.PI * 2);
+                da.fill();
+
+                da.fillStyle = "#fef08a";
+                da.beginPath();
+                da.arc(sx, sy, 1.8, 0, Math.PI * 2);
+                da.fill();
+              } else {
+                const angle = Math.atan2(dy, dx);
+                const edgeR = Math.min(De, qe) - 6;
+                const bx = De + Math.cos(angle) * edgeR;
+                const by = qe + Math.sin(angle) * edgeR;
+
+                da.save();
+                da.translate(bx, by);
+                da.rotate(angle);
+                da.fillStyle = "#ef4444";
+                da.beginPath();
+                da.moveTo(5.5, 0);
+                da.lineTo(-4.5, -4);
+                da.lineTo(-2, 0);
+                da.lineTo(-4.5, 4);
+                da.closePath();
+                da.fill();
+                da.restore();
+              }
+              da.restore();
+            }
+          }
         };
         c.current.setAudio(m.current);
         let ze = 0,
@@ -3970,6 +4031,7 @@
             onCookingPot: kG,
             savedCampfire: $a,
             onUseBeltSlot: Ur,
+            worldEngine: o.current,
             devMode:
               typeof (props && props.devMode) === "boolean"
                 ? props.devMode
