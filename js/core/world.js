@@ -2167,16 +2167,16 @@
       }
 
       // Se houver uma saída de escadaria nas proximidades, garante um Átrio Real Intacto ao redor dela
-      // conectado diretamente à malha de corredores com Portas Helênicas!
+      // e um corredor reto conectando esse Átrio diretamente à malha de Corredores Principais!
       const nearExit = this.getNearbyCaveExit(t, l, 6.5);
       if (nearExit) {
         const dx = Math.round(-nearExit.dx),
           dy = Math.round(-nearExit.dy),
           adx = Math.abs(dx),
           ady = Math.abs(dy);
-        if (adx <= 5 && ady <= 5) {
-          const isExitBorder = adx === 5 || ady === 5;
-          const isDoorCenter = (adx === 5 && dy === 0) || (ady === 5 && dx === 0);
+        if (adx <= 4 && ady <= 4) {
+          const isExitBorder = adx === 4 || ady === 4;
+          const isDoorCenter = (adx === 4 && dy === 0) || (ady === 4 && dx === 0);
           const isCorridorOpening = adx <= 1 || ady <= 1;
           if (isDoorCenter) {
             return {
@@ -2184,8 +2184,8 @@
               rx: dx,
               ry: dy,
               roomName: "Átrio da Escadaria Subterrânea",
-              subType: adx === 5 ? 1 : 0,
-              doorVertical: adx === 5,
+              subType: adx === 4 ? 1 : 0,
+              doorVertical: adx === 4,
             };
           }
           if (isExitBorder && !isCorridorOpening) {
@@ -2198,7 +2198,7 @@
               doorVertical: !1,
             };
           }
-          if (adx === 3 && ady === 3) {
+          if (adx === 2 && ady === 2) {
             return {
               role: "column",
               rx: dx,
@@ -2208,7 +2208,7 @@
             };
           }
           return {
-            role: adx <= 2 && ady <= 2 ? "mosaic_center" : "temple_floor",
+            role: adx <= 1 && ady <= 1 ? "mosaic_center" : "temple_floor",
             rx: dx,
             ry: dy,
             roomName: "Átrio da Escadaria Subterrânea",
@@ -2218,184 +2218,267 @@
       }
 
       // =========================================================================
-      // GRANDE COMPLEXO SUBTERRÂNEO HELÊNICO (100% Intacto — Zero Paredes Quebradas,
-      // Zero Rochedos Naturais e Zero Piso Falhado!)
-      // Cheio de Corredores, Portas e Salões de Tamanhos Diferentes!
+      // ARQUITETURA SUBTERRÂNEA HELÊNICA (100% Intacta — Sem Rochedos Naturais!):
+      // 1. REDE DE CORREDORES PRINCIPAIS CONTÍNUOS (Avenidas Subterrâneas de 3 blocos
+      //    de largura que cruzam o subsolo em linha reta, sem serem interrompidas!).
+      // 2. ALAS DE SALÕES CONECTADOS (1, 2 ou até 3 Salões de tamanhos variados):
+      //    - O SALÃO 1 (Salão de Entrada) fica ao lado do Corredor Principal e é o
+      //      ÚNICO conectado ao corredor por uma Porta.
+      //    - O SALÃO 2 e o SALÃO 3 (quando a ala tem 2 ou 3 salões) ficam conectados
+      //      diretamente um no outro (Salão 1 -> Porta -> Salão 2 -> Porta -> Salão 3)
+      //      e NÃO têm nenhuma porta para o corredor principal!
       // =========================================================================
-      // Cada setor de 20x20 blocos possui:
-      // - Um Salão Principal de Tamanho Variado (Grande: 17x15, Médio: 13x11, Longo Horizontal: 17x9,
-      //   Longo Vertical: 11x15 ou Câmara Compacta: 9x9)
-      // - Corredores largos (3 blocos de largura) conectando os 4 pontos cardeais (N, S, L, O)
-      // - Câmaras e Aposentos Laterais nos cantos dos setores maiores (no espaço entre os corredores),
-      //   de modo que 100% da estrutura seja arquitetura helênica intacta (sem rochedos de caverna!).
-      const cellSize = 20;
-      const gx = Math.floor((t + 10) / cellSize),
-        gy = Math.floor((l + 10) / cellSize),
-        cx = gx * cellSize,
-        cy = gy * cellSize,
-        rx = t - cx,
-        ry = l - cy,
+      const blockSize = 32;
+      const bx = Math.floor(t / blockSize),
+        by = Math.floor(l / blockSize),
+        lx = ((t % blockSize) + blockSize) % blockSize, // 0..31
+        ly = ((l % blockSize) + blockSize) % blockSize; // 0..31
+
+      const blockHash = this.hash2D(bx, by, 701),
+        wingHashA = this.hash2D(bx, by, 719),
+        wingHashB = this.hash2D(bx, by, 733),
+        decorHash = this.hash2D(t, l, 709);
+
+      // -------------------------------------------------------------------------
+      // A. CORREDORES PRINCIPAIS CONTÍNUOS (lx in 0..4 e ly in 0..4):
+      //    - Piso do corredor contínuo: lx in 1..3 ou ly in 1..3
+      //    - Paredes do corredor: lx === 0, lx === 4, ly === 0, ly === 4
+      //    - Apenas 2 Portas por quadra ligando o Corredor Principal ao SALÃO 1
+      //      de cada Ala (nunca ao Salão 2 nem ao Salão 3!):
+      //      * Ala Superior/Oeste entram pela porta no Corredor Norte: (lx === 10, ly === 4)
+      //      * Ala Inferior/Leste entram pela porta no Corredor Oeste: (lx === 4, ly === 10)
+      // -------------------------------------------------------------------------
+      const inHorizAvenue = ly >= 1 && ly <= 3;
+      const inVertAvenue = lx >= 1 && lx <= 3;
+
+      if (inHorizAvenue || inVertAvenue) {
+        // Cruzamento das duas avenidas de corredores (lx in 1..3, ly in 1..3)
+        if (inHorizAvenue && inVertAvenue) {
+          return {
+            role: lx === 2 && ly === 2 ? "mosaic_center" : "corridor",
+            rx: lx - 2,
+            ry: ly - 2,
+            roomName: "Encruzilhada do Grande Corredor Subterrâneo",
+            subType: 0,
+          };
+        }
+        // Portais monumentais ao longo do corredor principal (a cada 32 blocos, em lx === 18 ou ly === 18)
+        if ((inHorizAvenue && lx === 18 && ly === 2) || (inVertAvenue && ly === 18 && lx === 2)) {
+          return {
+            role: "door",
+            rx: inHorizAvenue ? lx - 18 : lx - 2,
+            ry: inHorizAvenue ? ly - 2 : ly - 18,
+            roomName: "Portal do Corredor Principal",
+            subType: inHorizAvenue ? 1 : 0,
+            doorVertical: inHorizAvenue,
+          };
+        }
+        return {
+          role: "corridor",
+          rx: inVertAvenue ? lx - 2 : 0,
+          ry: inHorizAvenue ? ly - 2 : 0,
+          roomName: "Grande Corredor Subterrâneo",
+          subType: 0,
+        };
+      }
+
+      // Paredes que ladeiam os Corredores Principais (lx === 0, lx === 4, ly === 0, ly === 4)
+      const isCorridorWall = lx === 0 || lx === 4 || ly === 0 || ly === 4;
+      if (isCorridorWall) {
+        // Porta ÚNICA do Corredor Norte (ly === 4) para o SALÃO 1 da Ala A (em lx === 10, ly === 4)
+        if (ly === 4 && lx === 10) {
+          return {
+            role: "door",
+            rx: 0,
+            ry: 0,
+            roomName: "Porta do Salão de Entrada (Conectado ao Corredor)",
+            subType: 0,
+            doorVertical: !1,
+          };
+        }
+        // Porta ÚNICA do Corredor Oeste (lx === 4) para o SALÃO 1 da Ala B (em lx === 4, ly === 22)
+        if (lx === 4 && ly === 22) {
+          return {
+            role: "door",
+            rx: 0,
+            ry: 0,
+            roomName: "Porta do Salão de Entrada (Conectado ao Corredor)",
+            subType: 1,
+            doorVertical: !0,
+          };
+        }
+        return {
+          role: "wall",
+          rx: lx,
+          ry: ly,
+          roomName: "Muralha do Grande Corredor Subterrâneo",
+          subType: 0,
+        };
+      }
+
+      // -------------------------------------------------------------------------
+      // B. INTERIOR DO QUADRANTE (lx in 5..31, ly in 5..31 -> área 27x27):
+      //    Dividido por uma parede mestra horizontal em ly === 17 em DUAS ALAS INDEPENDENTES:
+      //    - ALA NORTE (ly in 5..17, lx in 5..31):
+      //      Pode ter 1 Salão grandioso, 2 Salões conectados em série, ou 3 Salões conectados em série!
+      //      * Apenas o SALÃO 1 tem porta para o Corredor Principal (em lx === 10, ly === 4).
+      //      * O SALÃO 2 só é acessível por uma porta interna a partir do SALÃO 1!
+      //      * O SALÃO 3 só é acessível por uma porta interna a partir do SALÃO 2!
+      //    - ALA SUL (ly in 17..31, lx in 5..31):
+      //      Pode ter 1, 2 ou 3 Salões de tamanhos diferentes conectados em série!
+      //      * Apenas o SALÃO 1 da Ala Sul tem porta para o Corredor Principal (em lx === 4, ly === 22).
+      //      * O SALÃO 2 e o SALÃO 3 da Ala Sul conectam-se apenas entre si (Salão 1 -> Salão 2 -> Salão 3),
+      //        sem nenhuma porta para o corredor!
+      // -------------------------------------------------------------------------
+
+      // Parede mestra separando a Ala Norte da Ala Sul em ly === 17
+      if (ly === 17) {
+        return {
+          role: "wall",
+          rx: lx - 18,
+          ry: 0,
+          roomName: "Muralha Divisória dos Salões",
+          subType: 0,
+        };
+      }
+
+      const isNorthWing = ly < 17;
+      const wHash = isNorthWing ? wingHashA : wingHashB;
+      // Quantidade de salões conectados em cadeia nesta ala: 1, 2 ou 3 salões!
+      // (Prioriza cadeias de 2 e 3 salões conectados um no outro, além de grandes salões únicos)
+      const numHallsInChain = wHash < 0.18 ? 1 : wHash < 0.55 ? 2 : 3;
+
+      // Coordenadas verticais da Ala atual:
+      // Ala Norte: y de 5 a 16 (altura interna = 12 blocos)
+      // Ala Sul:   y de 18 a 31 (altura interna = 14 blocos)
+      const wingYMin = isNorthWing ? 5 : 18;
+      const wingYMax = isNorthWing ? 16 : 31;
+      const wingMidY = Math.floor((wingYMin + wingYMax) / 2);
+
+      // Define as paredes divisórias entre os salões da cadeia (xSplit1 entre Salão 1 e Salão 2; xSplit2 entre Salão 2 e Salão 3)
+      // variando os tamanhos para criar Salões Grandes, Médios e Câmaras Menores!
+      let xSplit1 = 32,
+        xSplit2 = 32;
+      if (numHallsInChain === 2) {
+        // 2 Salões conectados: Salão 1 (ligado ao corredor) -> Porta Interna -> Salão 2 (exclusivo, sem porta pro corredor!)
+        xSplit1 = wHash < 0.36 ? 16 : 20; // Salão 1 médio/grande + Salão 2 grande/médio
+      } else if (numHallsInChain === 3) {
+        // 3 Salões conectados em série:
+        // Salão 1 (ligado ao corredor) -> Porta Interna -> Salão 2 (intermediário) -> Porta Interna -> Salão 3 (profundo)
+        // Nem o Salão 2 nem o Salão 3 têm conexão direta com o corredor!
+        xSplit1 = wHash < 0.78 ? 13 : 15;
+        xSplit2 = wHash < 0.78 ? 22 : 24;
+      }
+
+      // Verifica se este tile (lx, ly) está em uma Parede Divisória entre Salão 1 e Salão 2 (xSplit1)
+      // ou entre Salão 2 e Salão 3 (xSplit2):
+      if (lx === xSplit1 || lx === xSplit2) {
+        const isFirstConnection = lx === xSplit1;
+        // Porta interna que conecta um salão diretamente no outro!
+        const doorY = isFirstConnection ? wingMidY : wingMidY + (blockHash > 0.5 ? 1 : -1);
+        if (ly === doorY) {
+          return {
+            role: "door",
+            rx: 0,
+            ry: 0,
+            roomName: isFirstConnection
+              ? "Porta Interna: Salão 1 → Salão 2 (Sem saída para o Corredor)"
+              : "Porta Interna: Salão 2 → Salão 3 (Câmara Profunda)",
+            subType: 1,
+            doorVertical: !0,
+          };
+        }
+        return {
+          role: "wall",
+          rx: 0,
+          ry: ly - wingMidY,
+          roomName: "Muralha entre Salões Conectados",
+          subType: 0,
+        };
+      }
+
+      // Identifica em qual dos 3 salões da cadeia estamos (hallIndex: 1, 2 ou 3) e seus limites exatos [hXMin..hXMax]:
+      let hallIndex = 1,
+        hXMin = 5,
+        hXMax = 31;
+      if (numHallsInChain === 2) {
+        if (lx < xSplit1) {
+          hallIndex = 1;
+          hXMin = 5;
+          hXMax = xSplit1 - 1;
+        } else {
+          hallIndex = 2;
+          hXMin = xSplit1 + 1;
+          hXMax = 31;
+        }
+      } else if (numHallsInChain === 3) {
+        if (lx < xSplit1) {
+          hallIndex = 1;
+          hXMin = 5;
+          hXMax = xSplit1 - 1;
+        } else if (lx < xSplit2) {
+          hallIndex = 2;
+          hXMin = xSplit1 + 1;
+          hXMax = xSplit2 - 1;
+        } else {
+          hallIndex = 3;
+          hXMin = xSplit2 + 1;
+          hXMax = 31;
+        }
+      }
+
+      // Para dar tamanhos variados também na altura (além da largura), alguns Salões 2 ou 3 são mais estreitos
+      // verticalmente, com paredes duplas internas de mármore:
+      let hYMin = wingYMin,
+        hYMax = wingYMax;
+      if (hallIndex === 3 && numHallsInChain === 3 && wHash > 0.82) {
+        // Câmara 3 mais compacta verticalmente (mas mantendo a porta em doorY acessível)
+        hYMin = wingYMin + 1;
+        hYMax = wingYMax - 1;
+        if (ly < hYMin || ly > hYMax) {
+          return {
+            role: "wall",
+            rx: lx - Math.floor((hXMin + hXMax) / 2),
+            ry: ly - wingMidY,
+            roomName: "Muralha da Câmara Interna",
+            subType: 0,
+          };
+        }
+      }
+
+      const hCenterX = Math.floor((hXMin + hXMax) / 2),
+        hCenterY = Math.floor((hYMin + hYMax) / 2),
+        hWidth = hXMax - hXMin + 1,
+        hHeight = hYMax - hYMin + 1,
+        rx = lx - hCenterX,
+        ry = ly - hCenterY,
         arx = Math.abs(rx),
         ary = Math.abs(ry);
 
-      const cellHash = this.hash2D(gx, gy, 701),
-        decorHash = this.hash2D(t, l, 709),
-        sizeType = Math.floor(cellHash * 5); // 0..4: 5 tamanhos diferentes de salões!
+      const roomName =
+        numHallsInChain === 1
+          ? "Grande Salão Imperial (Ligado ao Corredor)"
+          : hallIndex === 1
+            ? `1º Salão de Entrada (Ligado ao Corredor — Cadeia de ${numHallsInChain} Salões)`
+            : hallIndex === 2
+              ? `2º Salão Interno (Ligado ao 1º Salão — Cadeia de ${numHallsInChain} Salões)`
+              : "3º Salão Profundo do Santuário (Ligado apenas ao 2º Salão)";
 
-      // Define as dimensões (W = meia-largura, H = meia-altura) de cada salão conforme sizeType:
-      // 0: Grande Salão Imperial (17x15 -> W=8, H=7)
-      // 1: Salão Médio dos Mistérios (13x11 -> W=6, H=5)
-      // 2: Galeria Longa Leste-Oeste (17x9 -> W=8, H=4)
-      // 3: Galeria Alta Norte-Sul (11x15 -> W=5, H=7)
-      // 4: Câmara do Tesouro / Santuário Compacto (9x9 -> W=4, H=4)
-      const W = sizeType === 0 || sizeType === 2 ? 8 : sizeType === 1 ? 6 : sizeType === 3 ? 5 : 4;
-      const H = sizeType === 0 || sizeType === 3 ? 7 : sizeType === 1 ? 5 : 4;
-
-      const hallNames = [
-        "Grande Salão Imperial Subterrâneo",
-        "Salão Médio dos Mistérios Helênicos",
-        "Longa Galeria das Colunatas",
-        "Galeria Norte-Sul das Estátuas",
-        "Câmara Real de Mármore",
-      ];
-      const roomName = hallNames[sizeType];
-
-      // 1. Verifica se está dentro do Salão Principal deste setor (-W..W, -H..H)
-      if (arx <= W && ary <= H) {
-        const isNorthSouthWall = ary === H;
-        const isEastWestWall = arx === W;
-        const isOuterWall = isNorthSouthWall || isEastWestWall;
-
-        // Portas Helênicas Intactas nas 4 entradas cardeais de todos os salões!
-        const isDoorCenter = (isNorthSouthWall && rx === 0) || (isEastWestWall && ry === 0);
-
-        if (isDoorCenter) {
+      // Decoração e Arquitetura Interna conforme o tamanho e a posição do Salão na cadeia (1º, 2º ou 3º):
+      // 1. Centro do Salão (rx === 0, ry === 0):
+      if (rx === 0 && ry === 0) {
+        if (hallIndex === 3 || (hallIndex === 2 && numHallsInChain === 2)) {
+          // O último salão da cadeia guarda um Altar Sagrado ou uma Arca Real Kibotos!
           return {
-            role: "door",
-            rx,
-            ry,
-            roomName,
-            subType: isEastWestWall ? 1 : 0,
-            doorVertical: isEastWestWall,
-          };
-        }
-
-        if (isOuterWall) {
-          return {
-            role: "wall",
+            role: (bx + by + hallIndex) % 2 === 0 ? "altar" : "chest",
             rx,
             ry,
             roomName,
             subType: 0,
           };
         }
-
-        // Subdivisão interna especial para o Grande Salão Imperial (sizeType === 0):
-        // cria antecâmaras laterais com paredes intactas e portas!
-        if (sizeType === 0 && arx === 4 && ary >= 3 && ary <= H - 1) {
-          if (ary === 5) {
-            return {
-              role: "door",
-              rx,
-              ry,
-              roomName: "Câmara Lateral do Grande Salão",
-              subType: 1,
-              doorVertical: !0,
-            };
-          }
-          return {
-            role: "wall",
-            rx,
-            ry,
-            roomName,
-            subType: 0,
-          };
-        }
-
-        // Subdivisão interna para o Salão Médio (sizeType === 1):
-        // divisória norte com porta central para o Adyton (Santuário Interno)
-        if (sizeType === 1 && ry === -2 && arx <= W - 1) {
-          if (rx === 0) {
-            return {
-              role: "door",
-              rx,
-              ry,
-              roomName: "Adyton do Salão Médio",
-              subType: 0,
-              doorVertical: !1,
-            };
-          }
-          return {
-            role: "wall",
-            rx,
-            ry,
-            roomName,
-            subType: 0,
-          };
-        }
-
-        // Mobiliário, Colunas Dóricas Intactas, Estátuas, Altares, Vasos e Arcas no interior de cada Salão:
-        if (rx === 0 && ry === 0) {
-          if (sizeType === 0) {
-            return { role: "altar", rx, ry, roomName, subType: 0 };
-          }
-          if (sizeType === 4) {
-            return { role: "chest", rx, ry, roomName, subType: 0 };
-          }
-          return { role: "mosaic_center", rx, ry, roomName, subType: 0 };
-        }
-
-        // Colunatas internas intactas conforme o tamanho do salão
-        if (
-          (sizeType === 0 && arx === 2 && (ary === 3 || ary === 5)) ||
-          (sizeType === 1 && arx === 3 && ary === 2) ||
-          (sizeType === 2 && (arx === 3 || arx === 6) && ary === 2) ||
-          (sizeType === 3 && arx === 3 && (ary === 3 || ary === 5))
-        ) {
-          return { role: "column", rx, ry, roomName, subType: 0 };
-        }
-
-        // Estátuas Helênicas Intactas (subType 0 ou 1 — nunca quebradas!)
-        if (
-          (sizeType === 0 && arx === 6 && ary === 0) ||
-          (sizeType === 1 && rx === 0 && ry === -(H - 1)) ||
-          (sizeType === 3 && arx === 3 && ry === 0)
-        ) {
-          return {
-            role: "statue",
-            rx,
-            ry,
-            roomName,
-            subType: Math.abs(gx + gy) % 2,
-          };
-        }
-
-        // Mobiliário Grego Intacto (Divãs Kline, Mesas Trapeza) e Ânforas/Arcas nos cantos dos salões
-        if (arx === W - 2 && ary === H - 2) {
-          if (decorHash < 0.28) {
-            return { role: "chest", rx, ry, roomName, subType: 0 };
-          }
-          if (decorHash < 0.65) {
-            return {
-              role: "furniture",
-              rx,
-              ry,
-              roomName,
-              subType: decorHash < 0.46 ? 0 : 1,
-            };
-          }
-          return {
-            role: "vase",
-            rx,
-            ry,
-            roomName,
-            subType: Math.floor(decorHash * 3) % 3,
-          };
-        }
-
-        // Piso 100% Intacto (alternando entre piso imperial de templo nos salões maiores e piso de terracota nas câmaras menores)
         return {
-          role: sizeType === 1 || sizeType === 4 ? "house_floor" : "temple_floor",
+          role: "mosaic_center",
           rx,
           ry,
           roomName,
@@ -2403,98 +2486,72 @@
         };
       }
 
-      // 2. Fora do Salão Principal: Corredores Monumentais + Salas de Canto (Aposentos Laterais)
-      // Transforma todo o espaço restante em corredores e salas menores interligadas por portas,
-      // eliminando 100% qualquer rochedo ou parede natural de caverna!
-      const inVerticalCorridor = arx <= 1 && ary > H;
-      const inHorizontalCorridor = ary <= 1 && arx > W;
-      const isVerticalCorridorWall = arx === 2 && ary > H;
-      const isHorizontalCorridorWall = ary === 2 && arx > W;
-
-      if (inVerticalCorridor || inHorizontalCorridor) {
-        // Portas nas divisas entre setores (arx === 10 && ry === 0 ou ary === 10 && rx === 0)
-        if ((arx === 10 && ry === 0) || (ary === 10 && rx === 0)) {
-          return {
-            role: "door",
-            rx,
-            ry,
-            roomName: "Portal do Corredor Subterrâneo",
-            subType: arx === 10 ? 1 : 0,
-            doorVertical: arx === 10,
-          };
-        }
+      // 2. Colunas Dóricas Intactas nos salões largos/grandes (sem bloquear as portas!)
+      if (
+        hWidth >= 11 &&
+        hHeight >= 10 &&
+        arx === Math.max(2, Math.floor(hWidth / 4)) &&
+        ary === Math.max(2, Math.floor(hHeight / 4))
+      ) {
         return {
-          role: "corridor",
+          role: "column",
           rx,
           ry,
-          roomName: "Corredor Subterrâneo de Mármore",
+          roomName,
           subType: 0,
         };
       }
 
-      if (isVerticalCorridorWall || isHorizontalCorridorWall) {
-        // Portas de acesso dos corredores para as Câmaras de Canto (Aposentos Laterais)
-        const isCornerRoomDoorV = isVerticalCorridorWall && ary === H + 2 && H <= 6;
-        const isCornerRoomDoorH = isHorizontalCorridorWall && arx === W + 2 && W <= 6;
-        if (isCornerRoomDoorV || isCornerRoomDoorH) {
+      // 3. Estátuas Helênicas Intactas nos salões internos ou grandes
+      if (
+        rx === 0 &&
+        ly === hYMin + 1 &&
+        lx !== 10 && // nunca bloqueia a porta do corredor norte!
+        hHeight >= 10
+      ) {
+        return {
+          role: "statue",
+          rx,
+          ry,
+          roomName,
+          subType: (Math.abs(bx + by) + hallIndex) % 2,
+        };
+      }
+
+      // 4. Mobiliário Grego Intacto (Divãs Kline, Mesas Trapeza), Ânforas e Arcas nos cantos internos de cada salão
+      const isCornerSpot =
+        (lx === hXMin + 1 || lx === hXMax - 1) &&
+        (ly === hYMin + 1 || ly === hYMax - 1) &&
+        !(lx === 10 && ly === 6) && // deixa livre a frente da porta norte
+        !(lx === 6 && ly === 22); // deixa livre a frente da porta oeste
+      if (isCornerSpot && decorHash < 0.68) {
+        if (hallIndex >= 2 && decorHash < 0.26) {
+          return { role: "chest", rx, ry, roomName, subType: 0 };
+        }
+        if (decorHash < 0.48) {
           return {
-            role: "door",
+            role: "furniture",
             rx,
             ry,
-            roomName: "Aposento Lateral do Palácio Subterrâneo",
-            subType: isVerticalCorridorWall ? 1 : 0,
-            doorVertical: isVerticalCorridorWall,
+            roomName,
+            subType: decorHash < 0.36 ? 0 : 1,
           };
         }
         return {
-          role: "wall",
+          role: "vase",
           rx,
           ry,
-          roomName: "Muralha do Corredor Subterrâneo",
-          subType: 0,
+          roomName,
+          subType: Math.floor(decorHash * 3) % 3,
         };
       }
 
-      // 3. Quadrantes entre os Corredores (arx > 2 e ary > 2 fora do Salão Principal):
-      // Em vez de rochedos de caverna, forma Câmaras de Canto e Galerias Laterais com paredes de mármore!
-      const isSectorBorder = arx === 10 || ary === 10;
-      if (isSectorBorder) {
-        // Portas conectando as galerias laterais entre setores vizinhos
-        if ((arx === 10 && ary === 6) || (ary === 10 && arx === 6)) {
-          return {
-            role: "door",
-            rx,
-            ry,
-            roomName: "Galeria Lateral Subterrânea",
-            subType: arx === 10 ? 1 : 0,
-            doorVertical: arx === 10,
-          };
-        }
-        return {
-          role: "wall",
-          rx,
-          ry,
-          roomName: "Muralha da Galeria Lateral",
-          subType: 0,
-        };
-      }
-
-      // Interior das Câmaras de Canto / Galerias Laterais (piso de terracota/mármore intacto e mobiliário ocasional)
-      if (arx === 6 && ary === 6 && decorHash < 0.45) {
-        return {
-          role: decorHash < 0.18 ? "chest" : decorHash < 0.32 ? "furniture" : "vase",
-          rx,
-          ry,
-          roomName: "Aposento Lateral do Palácio Subterrâneo",
-          subType: Math.floor(decorHash * 3) % 2,
-        };
-      }
-
+      // 5. Piso 100% Intacto (alternando entre mármore de templo e terracota real para diferenciar visualmente os salões conectados!)
       return {
-        role: "house_floor",
+        role: hallIndex === 2 ? "house_floor" : "temple_floor",
         rx,
         ry,
-        roomName: "Aposento Lateral do Palácio Subterrâneo",
+        roomName,
         subType: 0,
       };
     }
