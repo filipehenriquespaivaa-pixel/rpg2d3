@@ -1901,6 +1901,7 @@
       const u = this.hash2D(t, l, 97);
       const thisCave = this.getCaveEntranceAt(t, l);
       if (thisCave) {
+        const surfBiome = this._computeSurfaceBaseBiome(t, l);
         const cleanName = thisCave.namePt
           .replace("Entrada da ", "")
           .replace("Boca da ", "")
@@ -1915,6 +1916,7 @@
           prop: {
             kind: "cave_exit",
             subType: thisCave.subType || 0,
+            surfaceBiome: surfBiome,
             targetTx: t,
             targetTy: l,
             offsetX: 0,

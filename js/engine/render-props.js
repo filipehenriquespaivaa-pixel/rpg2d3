@@ -1418,28 +1418,302 @@
     }
     e.restore();
   }
-  function bg(e, t, l) {
-    ((e.fillStyle = "#1e293b"),
-      e.beginPath(),
-      e.arc(-16 * t, -12 * t, 14 * t, 0, Math.PI * 2),
-      e.arc(16 * t, -12 * t, 14 * t, 0, Math.PI * 2),
-      e.arc(0, -22 * t, 16 * t, 0, Math.PI * 2),
-      e.fill(),
-      (e.fillStyle = "#334155"),
-      e.beginPath(),
-      e.arc(-14 * t, -15 * t, 10 * t, 0, Math.PI * 2),
-      e.arc(14 * t, -15 * t, 10 * t, 0, Math.PI * 2),
-      e.arc(0, -25 * t, 11 * t, 0, Math.PI * 2),
-      e.fill());
+  function getCaveBiomeTheme(biome) {
+    const bId = (biome && biome.id) || "MEADOW";
+    const groundCol = (biome && biome.groundColor) || "#5fa743";
+    const accentCol = (biome && biome.groundAccentColor) || "#6cb64d";
+    // 1. Biomas de Areia (DESERT, BEACH): Pedra de Arenito dourado/amarelado com estratos e areia acumulada
+    if (bId === "DESERT" || bId === "BEACH") {
+      return {
+        kind: "sandstone",
+        rockOuter: "#92400e",
+        rockMid: "#b45309",
+        rockLight: "#d97706",
+        rockHighlight: "#f59e0b",
+        stratumCol: "rgba(120, 53, 15, 0.55)",
+        mossColor: groundCol,
+        mossAccent: accentCol,
+        hasMoss: !1,
+        hasSand: !0,
+      };
+    }
+    // 2. Cânion Vermelho (CANYON): Arenito avermelhado/terracota
+    if (bId === "CANYON") {
+      return {
+        kind: "canyon",
+        rockOuter: "#7c2d12",
+        rockMid: "#9a3412",
+        rockLight: "#c2410c",
+        rockHighlight: "#ea580c",
+        stratumCol: "rgba(67, 20, 7, 0.6)",
+        mossColor: groundCol,
+        mossAccent: accentCol,
+        hasMoss: !1,
+        hasSand: !0,
+      };
+    }
+    // 3. Biomas de Neve / Gelo (SNOW_TAIGA, SNOW_PEAK, GLACIER): Rocha alpina fria com cobertura de neve/gelo
+    if (bId === "SNOW_TAIGA" || bId === "SNOW_PEAK" || bId === "GLACIER") {
+      return {
+        kind: "snow",
+        rockOuter: "#1e293b",
+        rockMid: "#334155",
+        rockLight: "#475569",
+        rockHighlight: "#64748b",
+        stratumCol: "rgba(15, 23, 42, 0.6)",
+        mossColor: "#f8fafc",
+        mossAccent: "#bae6fd",
+        hasMoss: !0,
+        hasSand: !1,
+      };
+    }
+    // 4. Vulcão (VOLCANIC): Basalto vulcânico negro/obsidiana com veios incandescentes
+    if (bId === "VOLCANIC") {
+      return {
+        kind: "volcanic",
+        rockOuter: "#09090b",
+        rockMid: "#18181b",
+        rockLight: "#27272a",
+        rockHighlight: "#3f3f46",
+        stratumCol: "rgba(220, 38, 38, 0.55)",
+        mossColor: "#dc2626",
+        mossAccent: "#f97316",
+        hasMoss: !1,
+        hasSand: !1,
+      };
+    }
+    // 5. Biomas de Grama / Floresta / Savana / Oásis / Pântano / Montanha:
+    //    Rocha granítica irregular coberta com MUSGO DA EXATA COR DA GRAMA DO BIOMA!
+    return {
+      kind: "grass_moss",
+      rockOuter: "#1e293b",
+      rockMid: "#334155",
+      rockLight: "#475569",
+      rockHighlight: "#64748b",
+      stratumCol: "rgba(15, 23, 42, 0.55)",
+      mossColor: groundCol,
+      mossAccent: accentCol,
+      hasMoss: !0,
+      hasSand: !1,
+    };
+  }
+
+  function drawIrregularCaveRockFormation(e, t, theme, isExit = !1) {
+    // 1. Sombra de base irregular sob os rochedos
+    e.fillStyle = "rgba(2, 6, 23, 0.42)";
+    e.beginPath();
+    e.moveTo(-29 * t, 4 * t);
+    e.lineTo(-24 * t, 8 * t);
+    e.lineTo(25 * t, 8 * t);
+    e.lineTo(30 * t, 3 * t);
+    e.lineTo(24 * t, -4 * t);
+    e.lineTo(-24 * t, -4 * t);
+    e.closePath();
+    e.fill();
+
+    // 2. Maciço Rochoso Externo Irregular (Polígono angular escarpado em vez de círculos!)
+    e.fillStyle = theme.rockOuter;
+    e.beginPath();
+    e.moveTo(-28 * t, 4 * t);
+    e.lineTo(-30 * t, -5 * t);
+    e.lineTo(-26 * t, -16 * t);
+    e.lineTo(-21 * t, -23 * t);
+    e.lineTo(-15 * t, -21 * t);
+    e.lineTo(-11 * t, -32 * t);
+    e.lineTo(-3 * t, -37 * t);
+    e.lineTo(5 * t, -35 * t);
+    e.lineTo(12 * t, -29 * t);
+    e.lineTo(17 * t, -25 * t);
+    e.lineTo(24 * t, -21 * t);
+    e.lineTo(29 * t, -12 * t);
+    e.lineTo(27 * t, 4 * t);
+    e.closePath();
+    e.fill();
+
+    // 3. Facetas Rochosas Intermediárias Irregulares (3 blocos angulares lascados: esquerdo, central/topo e direito)
+    e.fillStyle = theme.rockMid;
+    // Bloco rochoso esquerdo
+    e.beginPath();
+    e.moveTo(-26 * t, 3 * t);
+    e.lineTo(-27 * t, -7 * t);
+    e.lineTo(-23 * t, -17 * t);
+    e.lineTo(-17 * t, -20 * t);
+    e.lineTo(-12 * t, -14 * t);
+    e.lineTo(-13 * t, 3 * t);
+    e.closePath();
+    e.fill();
+
+    // Crista rochosa superior
+    e.beginPath();
+    e.moveTo(-15 * t, -16 * t);
+    e.lineTo(-9 * t, -29 * t);
+    e.lineTo(-2 * t, -34 * t);
+    e.lineTo(6 * t, -32 * t);
+    e.lineTo(13 * t, -24 * t);
+    e.lineTo(9 * t, -15 * t);
+    e.closePath();
+    e.fill();
+
+    // Bloco rochoso direito
+    e.beginPath();
+    e.moveTo(12 * t, 3 * t);
+    e.lineTo(11 * t, -15 * t);
+    e.lineTo(17 * t, -22 * t);
+    e.lineTo(23 * t, -18 * t);
+    e.lineTo(26 * t, -9 * t);
+    e.lineTo(25 * t, 3 * t);
+    e.closePath();
+    e.fill();
+
+    // 4. Planos de Luz / Quinas de Pedra Lascada (facetas iluminadas angulares)
+    e.fillStyle = theme.rockLight;
+    e.beginPath();
+    // Faceta clara esquerda
+    e.moveTo(-24 * t, -6 * t);
+    e.lineTo(-21 * t, -16 * t);
+    e.lineTo(-16 * t, -18 * t);
+    e.lineTo(-15 * t, -8 * t);
+    e.closePath();
+    // Faceta clara topo
+    e.moveTo(-8 * t, -27 * t);
+    e.lineTo(-2 * t, -32 * t);
+    e.lineTo(5 * t, -30 * t);
+    e.lineTo(2 * t, -22 * t);
+    e.closePath();
+    // Faceta clara direita
+    e.moveTo(14 * t, -14 * t);
+    e.lineTo(17 * t, -20 * t);
+    e.lineTo(22 * t, -16 * t);
+    e.lineTo(19 * t, -7 * t);
+    e.closePath();
+    e.fill();
+
+    // 5. Fendas geológicas e estratos (no arenito desenha faixas horizontais de sedimentos)
+    e.strokeStyle = theme.stratumCol;
+    e.lineWidth = 1.3 * t;
+    e.beginPath();
+    if (theme.kind === "sandstone" || theme.kind === "canyon") {
+      // Camadas sedimentares de arenito
+      e.moveTo(-26 * t, -10 * t);
+      e.lineTo(-14 * t, -12 * t);
+      e.moveTo(-10 * t, -25 * t);
+      e.lineTo(9 * t, -24 * t);
+      e.moveTo(13 * t, -11 * t);
+      e.lineTo(25 * t, -9 * t);
+    } else {
+      // Fraturas angulares de rocha
+      e.moveTo(-21 * t, -19 * t);
+      e.lineTo(-17 * t, -11 * t);
+      e.lineTo(-22 * t, -4 * t);
+      e.moveTo(-3 * t, -33 * t);
+      e.lineTo(1 * t, -25 * t);
+      e.moveTo(19 * t, -21 * t);
+      e.lineTo(16 * t, -10 * t);
+    }
+    e.stroke();
+
+    // 6. Pedras irregulares menores caídas nas laterais da entrada
+    e.fillStyle = theme.rockMid;
+    e.beginPath();
+    e.moveTo(-29 * t, 4 * t);
+    e.lineTo(-27 * t, -2 * t);
+    e.lineTo(-21 * t, -1 * t);
+    e.lineTo(-19 * t, 5 * t);
+    e.closePath();
+    e.moveTo(19 * t, 5 * t);
+    e.lineTo(21 * t, -1 * t);
+    e.lineTo(27 * t, 0 * t);
+    e.lineTo(29 * t, 5 * t);
+    e.closePath();
+    e.fill();
+  }
+
+  function drawCaveBiomeOverlay(e, t, theme) {
+    // Se for bioma de grama/floresta/neve, aplica tapetes irregulares de MUSGO DA COR DA GRAMA (ou neve) sobre as cristas da pedra!
+    if (theme.hasMoss) {
+      e.fillStyle = theme.mossColor;
+      // Camada de musgo superior acompanhando a crista irregular da caverna
+      e.beginPath();
+      e.moveTo(-23 * t, -16 * t);
+      e.lineTo(-21 * t, -23 * t);
+      e.lineTo(-15 * t, -21 * t);
+      e.lineTo(-11 * t, -32 * t);
+      e.lineTo(-3 * t, -37 * t);
+      e.lineTo(5 * t, -35 * t);
+      e.lineTo(12 * t, -29 * t);
+      e.lineTo(17 * t, -25 * t);
+      e.lineTo(23 * t, -20 * t);
+      e.lineTo(18 * t, -16 * t);
+      e.lineTo(11 * t, -20 * t);
+      e.lineTo(4 * t, -26 * t);
+      e.lineTo(-4 * t, -27 * t);
+      e.lineTo(-12 * t, -18 * t);
+      e.lineTo(-18 * t, -14 * t);
+      e.closePath();
+      e.fill();
+
+      // Destaque secundário do musgo (groundAccentColor do bioma) e tufos pendentes sobre o arco
+      e.fillStyle = theme.mossAccent;
+      e.beginPath();
+      e.moveTo(-10 * t, -29 * t);
+      e.lineTo(-3 * t, -35 * t);
+      e.lineTo(4 * t, -33 * t);
+      e.lineTo(8 * t, -27 * t);
+      e.lineTo(1 * t, -28 * t);
+      e.closePath();
+      // Manchas de musgo descendo pela rocha esquerda e direita
+      e.moveTo(-25 * t, -8 * t);
+      e.lineTo(-22 * t, -14 * t);
+      e.lineTo(-16 * t, -12 * t);
+      e.lineTo(-18 * t, -6 * t);
+      e.closePath();
+      e.moveTo(16 * t, -12 * t);
+      e.lineTo(21 * t, -15 * t);
+      e.lineTo(25 * t, -9 * t);
+      e.lineTo(19 * t, -7 * t);
+      e.closePath();
+      e.fill();
+    } else if (theme.hasSand) {
+      // Dunas de areia / poeira de arenito acumulada na base e nas fendas da caverna
+      e.fillStyle = theme.mossColor;
+      e.beginPath();
+      e.moveTo(-30 * t, 4 * t);
+      e.quadraticCurveTo(-22 * t, -2 * t, -13 * t, 4 * t);
+      e.closePath();
+      e.moveTo(13 * t, 4 * t);
+      e.quadraticCurveTo(22 * t, -2 * t, 30 * t, 4 * t);
+      e.closePath();
+      e.fill();
+      e.fillStyle = theme.rockHighlight;
+      e.beginPath();
+      e.moveTo(-9 * t, -29 * t);
+      e.lineTo(-2 * t, -34 * t);
+      e.lineTo(5 * t, -32 * t);
+      e.lineTo(1 * t, -28 * t);
+      e.closePath();
+      e.fill();
+    }
+  }
+
+  function bg(e, t, l, biome = null) {
+    const theme = getCaveBiomeTheme(biome);
+    drawIrregularCaveRockFormation(e, t, theme, !1);
+
+    // Boca escura irregular da caverna (arco rochoso facetado em vez de elipse redonda)
     const o = e.createRadialGradient(0, 0, 2 * t, 0, -4 * t, 16 * t);
     (o.addColorStop(0, "#000000"),
       o.addColorStop(0.7, "#09090b"),
       o.addColorStop(1, "#18181b"),
       (e.fillStyle = o),
       e.beginPath(),
-      e.ellipse(0, -4 * t, 14 * t, 16 * t, 0, Math.PI, 0),
+      e.moveTo(-14 * t, 4 * t),
+      e.lineTo(-14 * t, -8 * t),
+      e.lineTo(-10 * t, -17 * t),
+      e.lineTo(-3 * t, -20 * t),
+      e.lineTo(4 * t, -20 * t),
+      e.lineTo(10 * t, -16 * t),
+      e.lineTo(14 * t, -8 * t),
       e.lineTo(14 * t, 4 * t),
-      e.lineTo(-14 * t, 4 * t),
       e.closePath(),
       e.fill(),
       (e.fillStyle = "#27272a"),
@@ -1460,28 +1734,17 @@
       (e.fillStyle = "#1e293b"),
       e.fillRect(4 * t, -9 * t, 4 * t, 5.5 * t));
     const u = Math.sin(l * 6) * 0.15;
-    ((e.fillStyle = `rgba(251, 191, 36, ${0.85 + u})`),
-      e.fillRect(4.8 * t, -8.2 * t, 2.4 * t, 3.8 * t),
-      (e.fillStyle = "#15803d"),
-      e.beginPath(),
-      e.arc(-8 * t, -17 * t, 3 * t, 0, Math.PI * 2),
-      e.arc(-4 * t, -16 * t, 2.5 * t, 0, Math.PI * 2),
-      e.arc(2 * t, -17 * t, 3 * t, 0, Math.PI * 2),
-      e.fill());
+    e.fillStyle = `rgba(251, 191, 36, ${0.85 + u})`;
+    e.fillRect(4.8 * t, -8.2 * t, 2.4 * t, 3.8 * t);
+
+    // Cobertura de musgo da cor da grama (ou areia/neve conforme o bioma)
+    drawCaveBiomeOverlay(e, t, theme);
   }
-  function yg(e, t, l = 0) {
-    ((e.fillStyle = "#1c1917"),
-      e.beginPath(),
-      e.arc(-16 * t, -12 * t, 14 * t, 0, Math.PI * 2),
-      e.arc(16 * t, -12 * t, 14 * t, 0, Math.PI * 2),
-      e.arc(0, -22 * t, 16 * t, 0, Math.PI * 2),
-      e.fill(),
-      (e.fillStyle = "#292524"),
-      e.beginPath(),
-      e.arc(-14 * t, -15 * t, 10 * t, 0, Math.PI * 2),
-      e.arc(14 * t, -15 * t, 10 * t, 0, Math.PI * 2),
-      e.arc(0, -25 * t, 11 * t, 0, Math.PI * 2),
-      e.fill());
+  function yg(e, t, l = 0, biome = null) {
+    const theme = getCaveBiomeTheme(biome);
+    drawIrregularCaveRockFormation(e, t, theme, !0);
+
+    // Luz do dia saindo pelo arco rochoso irregular da saída da caverna
     const o = e.createLinearGradient(0, -20 * t, 0, 4 * t);
     (o.addColorStop(0, "#0284c7"),
       o.addColorStop(0.35, "#38bdf8"),
@@ -1489,9 +1752,14 @@
       o.addColorStop(1, "#fde047"),
       (e.fillStyle = o),
       e.beginPath(),
-      e.ellipse(0, -4 * t, 14 * t, 16 * t, 0, Math.PI, 0),
+      e.moveTo(-14 * t, 4 * t),
+      e.lineTo(-14 * t, -8 * t),
+      e.lineTo(-10 * t, -17 * t),
+      e.lineTo(-3 * t, -20 * t),
+      e.lineTo(4 * t, -20 * t),
+      e.lineTo(10 * t, -16 * t),
+      e.lineTo(14 * t, -8 * t),
       e.lineTo(14 * t, 4 * t),
-      e.lineTo(-14 * t, 4 * t),
       e.closePath(),
       e.fill());
     const r = e.createLinearGradient(0, -2 * t, 0, 16 * t);
@@ -1532,14 +1800,11 @@
       (e.fillStyle = "#1e293b"),
       e.fillRect(4 * t, -9 * t, 4 * t, 5.5 * t));
     const u = Math.sin((l || 0) * 6) * 0.15;
-    ((e.fillStyle = `rgba(251, 191, 36, ${0.85 + u})`),
-      e.fillRect(4.8 * t, -8.2 * t, 2.4 * t, 3.8 * t),
-      (e.fillStyle = "#16a34a"),
-      e.beginPath(),
-      e.arc(-8 * t, -17 * t, 3 * t, 0, Math.PI * 2),
-      e.arc(-4 * t, -16 * t, 2.5 * t, 0, Math.PI * 2),
-      e.arc(2 * t, -17 * t, 3 * t, 0, Math.PI * 2),
-      e.fill());
+    e.fillStyle = `rgba(251, 191, 36, ${0.85 + u})`;
+    e.fillRect(4.8 * t, -8.2 * t, 2.4 * t, 3.8 * t);
+
+    // Cobertura de musgo/arenito/neve seguindo o bioma da superfície correspondente
+    drawCaveBiomeOverlay(e, t, theme);
   }
   function vg(e, t, l, o = !1) {
     if (
