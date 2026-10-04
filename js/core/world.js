@@ -3066,23 +3066,23 @@
         return { role: "dungeon_wall", roomName: "Muralha do Posto do Carcereiro" };
       }
 
-      // 2. Corredor Longo do Calabouço: dx in [-1, 1], dy in [3, 37]
-      if (dx >= -1 && dx <= 1 && dy >= 3 && dy <= 37) {
-        if ((dx === -1 || dx === 1) && (dy === 8 || dy === 14 || dy === 20 || dy === 26 || dy === 32)) {
+      // 2. Corredor Longo do Calabouço: dx in [-1, 1], dy in [3, 102]
+      if (dx >= -1 && dx <= 1 && dy >= 3 && dy <= 102) {
+        if ((dx === -1 || dx === 1) && (dy === 8 || dy === 14 || dy === 20 || dy === 26 || dy === 32 || dy === 38 || dy === 44 || dy === 50 || dy === 56 || dy === 62 || dy === 68 || dy === 74 || dy === 80 || dy === 86 || dy === 92 || dy === 98)) {
           return { role: "corridor_torch", roomName: "Grande Corredor das Masmorras" };
         }
         return { role: "corridor_floor", roomName: "Grande Corredor das Masmorras" };
       }
 
-      // 3. Prisões Pequenas com Grades (Ala Oeste): dx in [-7, -2], dy in [4, 37]
-      if (dx >= -7 && dx <= -2 && dy >= 4 && dy <= 37) {
+      // 3. Prisões Pequenas com Grades (Ala Oeste): dx in [-7, -2], dy in [4, 102]
+      if (dx >= -7 && dx <= -2 && dy >= 4 && dy <= 102) {
         if (dx === -7) {
           return { role: "dungeon_wall", roomName: "Muralha Externa das Celas" };
         }
-        if (dy === 37) {
-          return { role: "dungeon_wall", roomName: "Muralha das Celas" };
+        if (dy === 102) {
+          return { role: "dungeon_wall", roomName: "Muralha Sul das Celas" };
         }
-        const isPartition = dy === 8 || dy === 14 || dy === 20 || dy === 26 || dy === 32;
+        const isPartition = (dy % 6 === 2) && dy >= 8 && dy <= 98;
         if (isPartition) {
           return { role: "dungeon_wall", roomName: "Parede Divisória de Cela" };
         }
@@ -3094,24 +3094,41 @@
           if (dy === 17) return { role: "iron_bars_gate", cellIndex: 3, defaultOpened: false, roomName: "Grade da Cela 3 (Trancada)" };
           if (dy === 23) return { role: "iron_bars_gate", cellIndex: 4, defaultOpened: true, roomName: "Grade da Cela 4 (Aberta)" };
           if (dy === 29) return { role: "iron_bars_gate", cellIndex: 5, defaultOpened: false, roomName: "Grade da Cela 5 (Trancada)" };
-          if (dy === 34) return { role: "iron_bars_gate", cellIndex: 6, defaultOpened: true, roomName: "Grade da Cela 6 (Aberta)" };
+          if (dy === 35) return { role: "iron_bars_gate", cellIndex: 6, defaultOpened: true, roomName: "Grade da Cela 6 (Aberta)" };
+          if (dy === 41) return { role: "iron_bars_gate", cellIndex: 7, defaultOpened: false, roomName: "Grade da Cela 7 (Trancada)" };
+          if (dy === 47) return { role: "iron_bars_gate", cellIndex: 8, defaultOpened: true, roomName: "Grade da Cela 8 (Aberta)" };
+          if (dy === 53) return { role: "iron_bars_gate", cellIndex: 9, defaultOpened: false, roomName: "Grade da Cela 9 (Trancada)" };
+          if (dy === 59) return { role: "iron_bars_gate", cellIndex: 10, defaultOpened: true, roomName: "Grade da Cela 10 (Aberta)" };
+          if (dy === 65) return { role: "iron_bars_gate", cellIndex: 11, defaultOpened: false, roomName: "Grade da Cela 11 (Trancada)" };
+          if (dy === 71) return { role: "iron_bars_gate", cellIndex: 12, defaultOpened: true, roomName: "Grade da Cela 12 (Aberta)" };
+          if (dy === 77) return { role: "iron_bars_gate", cellIndex: 13, defaultOpened: false, roomName: "Grade da Cela 13 (Trancada)" };
+          if (dy === 83) return { role: "iron_bars_gate", cellIndex: 14, defaultOpened: true, roomName: "Grade da Cela 14 (Aberta)" };
+          if (dy === 89) return { role: "iron_bars_gate", cellIndex: 15, defaultOpened: false, roomName: "Grade da Cela 15 (Trancada)" };
+          if (dy === 95) return { role: "iron_bars_gate", cellIndex: 16, defaultOpened: true, roomName: "Grade da Cela 16 (Aberta)" };
+          if (dy === 100) return { role: "iron_bars_gate", cellIndex: 17, defaultOpened: true, roomName: "Grade da Cela 17 (Aberta)" };
           return { role: "dungeon_wall", roomName: "Frontispício das Celas" };
         }
 
-        let cellIdx = 1;
-        if (dy > 32) cellIdx = 6;
-        else if (dy > 26) cellIdx = 5;
-        else if (dy > 20) cellIdx = 4;
-        else if (dy > 14) cellIdx = 3;
-        else if (dy > 8) cellIdx = 2;
-
+        let cellIdx = Math.min(17, Math.floor((dy - 3) / 6) + 1);
         const cellName = `Cela Prisional #${cellIdx}`;
+
         if (cellIdx === 1 && dx === -5 && dy === 5) return { role: "dungeon_skeleton", roomName: cellName };
         if (cellIdx === 2 && dx === -5 && dy === 10) return { role: "dungeon_straw", roomName: cellName };
         if (cellIdx === 3 && dx === -5 && dy === 16) return { role: "chest", roomName: cellName };
         if (cellIdx === 4 && dx === -5 && dy === 22) return { role: "dungeon_latrine_bench", roomName: cellName };
         if (cellIdx === 5 && dx === -5 && dy === 28) return { role: "dungeon_skeleton", roomName: cellName };
         if (cellIdx === 6 && dx === -5 && dy === 35) return { role: "dungeon_straw", roomName: cellName };
+        if (cellIdx === 7 && dx === -5 && dy === 41) return { role: "chest", roomName: cellName };
+        if (cellIdx === 8 && dx === -5 && dy === 47) return { role: "dungeon_skeleton", roomName: cellName };
+        if (cellIdx === 9 && dx === -5 && dy === 53) return { role: "dungeon_straw", roomName: cellName };
+        if (cellIdx === 10 && dx === -5 && dy === 59) return { role: "dungeon_latrine_bench", roomName: cellName };
+        if (cellIdx === 11 && dx === -5 && dy === 64) return { role: "chest", roomName: cellName };
+        if (cellIdx === 12 && dx === -5 && dy === 71) return { role: "dungeon_skeleton", roomName: cellName };
+        if (cellIdx === 13 && dx === -5 && dy === 77) return { role: "dungeon_straw", roomName: cellName };
+        if (cellIdx === 14 && dx === -5 && dy === 83) return { role: "chest", roomName: cellName };
+        if (cellIdx === 15 && dx === -5 && dy === 89) return { role: "dungeon_skeleton", roomName: cellName };
+        if (cellIdx === 16 && dx === -5 && dy === 95) return { role: "dungeon_straw", roomName: cellName };
+        if (cellIdx === 17 && dx === -5 && dy === 100) return { role: "chest", roomName: cellName };
 
         return { role: "cell_floor", cellIndex: cellIdx, roomName: cellName };
       }
@@ -3140,7 +3157,7 @@
         return { role: "dungeon_wall", roomName: "Muralha Divisória de Salão" };
       }
 
-      // 5. Salão 2: A SALA DE TORTURA (Apenas UMA sala de tortura! dx in [2, 13], dy in [14, 25])
+      // 5. Salão 2: A SALA DE TORTURA (dx in [2, 13], dy in [14, 25])
       if (dx >= 2 && dx <= 13 && dy >= 14 && dy <= 25) {
         if (dy === 14 || dy === 25 || dx === 13) {
           return { role: "dungeon_wall", roomName: "Muralha da Câmara de Tortura" };
@@ -3168,7 +3185,7 @@
         return { role: "dungeon_wall", roomName: "Muralha Divisória de Salão" };
       }
 
-      // 6. Salão 3: SALÃO DA FOSSA (Banheiro medieval / Latrinas: dx in [2, 13], dy in [27, 36])
+      // 6. Salão 3: SALÃO DA FOSSA (Latrinas: dx in [2, 13], dy in [27, 36])
       if (dx >= 2 && dx <= 13 && dy >= 27 && dy <= 36) {
         if (dy === 27 || dy === 36 || dx === 13) {
           return { role: "dungeon_wall", roomName: "Muralha da Câmara da Fossa" };
@@ -3188,27 +3205,172 @@
         return { role: "latrine_floor", roomName };
       }
 
-      // Muralha sul fechando o Salão 3
+      // Parede divisória entre Salão 3 e Salão 4
       if (dy === 37 && dx >= 2 && dx <= 13) {
-        return { role: "dungeon_wall", roomName: "Muralha da Câmara da Fossa" };
+        return { role: "dungeon_wall", roomName: "Muralha Divisória de Salão" };
       }
 
-      // 7. Salão 4: Câmara de Provisões e Despojos (Final do Corredor fechado por porta: dx in [-4, 4], dy in [38, 45])
-      if (dx >= -4 && dx <= 4 && dy >= 38 && dy <= 45) {
-        if (dy === 38) {
-          if (dx === 0) {
-            return { role: "dungeon_door", doorVertical: false, defaultOpened: false, roomName: "Portão da Câmara de Despojos" };
+      // 7. Salão 4: Cripta dos Condenados e Catacumbas (dx in [2, 13], dy in [38, 48])
+      if (dx >= 2 && dx <= 13 && dy >= 38 && dy <= 48) {
+        if (dy === 38 || dy === 48 || dx === 13) {
+          return { role: "dungeon_wall", roomName: "Muralha da Cripta dos Condenados" };
+        }
+        if (dx === 2) {
+          if (dy === 43) {
+            return { role: "dungeon_door", doorVertical: true, defaultOpened: false, roomName: "Porta de Carvalho da Cripta" };
           }
-          return { role: "dungeon_wall", roomName: "Muralha Final do Corredor" };
+          return { role: "dungeon_wall", roomName: "Muralha do Corredor" };
         }
-        if (dx === -4 || dx === 4 || dy === 45) {
-          return { role: "dungeon_wall", roomName: "Muralha do Depósito" };
+        const roomName = "Cripta dos Condenados e Ossuário Subterrâneo";
+        if (dx === 8 && dy === 43) return { role: "hanging_cage", roomName };
+        if (dx === 5 && dy === 41) return { role: "dungeon_skeleton", roomName };
+        if (dx === 11 && dy === 41) return { role: "dungeon_skeleton", roomName };
+        if (dx === 8 && dy === 46) return { role: "chest", roomName };
+        if (dx === 11 && dy === 46) return { role: "corridor_torch", roomName };
+        return { role: "hall_floor", roomName };
+      }
+
+      // Parede divisória entre Salão 4 e Salão 5
+      if (dy === 49 && dx >= 2 && dx <= 13) {
+        return { role: "dungeon_wall", roomName: "Muralha Divisória de Salão" };
+      }
+
+      // 8. Salão 5: Armaria e Forja das Correntes (dx in [2, 13], dy in [50, 60])
+      if (dx >= 2 && dx <= 13 && dy >= 50 && dy <= 60) {
+        if (dy === 50 || dy === 60 || dx === 13) {
+          return { role: "dungeon_wall", roomName: "Muralha da Armaria das Masmorras" };
         }
-        const roomName = "Câmara de Provisões e Despojos do Calabouço";
-        if (dx === 0 && dy === 42) return { role: "chest", roomName };
-        if (dx === -2 && dy === 41) return { role: "dungeon_straw", roomName };
-        if (dx === 2 && dy === 41) return { role: "weapon_rack", roomName };
-        if (dx === 0 && dy === 44) return { role: "corridor_torch", roomName };
+        if (dx === 2) {
+          if (dy === 55) {
+            return { role: "dungeon_door", doorVertical: true, defaultOpened: false, roomName: "Porta Reforçada da Armaria" };
+          }
+          return { role: "dungeon_wall", roomName: "Muralha do Corredor" };
+        }
+        const roomName = "Armaria e Forja das Correntes das Masmorras";
+        if (dx === 7 && dy === 55) return { role: "torture_brazier", roomName };
+        if (dx === 11 && dy === 52) return { role: "weapon_rack", roomName };
+        if (dx === 4 && dy === 52) return { role: "weapon_rack", roomName };
+        if (dx === 10 && dy === 58) return { role: "chest", roomName };
+        if (dx === 11 && dy === 59) return { role: "corridor_torch", roomName };
+        return { role: "hall_floor", roomName };
+      }
+
+      // Parede divisória entre Salão 5 e Salão 6
+      if (dy === 61 && dx >= 2 && dx <= 13) {
+        return { role: "dungeon_wall", roomName: "Muralha Divisória de Salão" };
+      }
+
+      // 9. Salão 6: Laboratório Oculto e Alquimia Proibida (dx in [2, 13], dy in [62, 72])
+      if (dx >= 2 && dx <= 13 && dy >= 62 && dy <= 72) {
+        if (dy === 62 || dy === 72 || dx === 13) {
+          return { role: "dungeon_wall", roomName: "Muralha do Laboratório Oculto" };
+        }
+        if (dx === 2) {
+          if (dy === 67) {
+            return { role: "dungeon_door", doorVertical: true, defaultOpened: false, roomName: "Porta de Bronze do Laboratório" };
+          }
+          return { role: "dungeon_wall", roomName: "Muralha do Corredor" };
+        }
+        const roomName = "Laboratório Oculto das Masmorras";
+        if (dx === 8 && dy === 67) return { role: "torture_tools", roomName };
+        if (dx === 5 && dy === 64) return { role: "chest", roomName };
+        if (dx === 11 && dy === 64) return { role: "dungeon_skeleton", roomName };
+        if (dx === 5 && dy === 70) return { role: "dungeon_straw", roomName };
+        if (dx === 11 && dy === 70) return { role: "corridor_torch", roomName };
+        return { role: "hall_floor", roomName };
+      }
+
+      // Parede divisória entre Salão 6 e Salão 7
+      if (dy === 73 && dx >= 2 && dx <= 13) {
+        return { role: "dungeon_wall", roomName: "Muralha Divisória de Salão" };
+      }
+
+      // 10. Salão 7: Câmara de Julgamento do Tribunal Sombrio (dx in [2, 13], dy in [74, 84])
+      if (dx >= 2 && dx <= 13 && dy >= 74 && dy <= 84) {
+        if (dy === 74 || dy === 84 || dx === 13) {
+          return { role: "dungeon_wall", roomName: "Muralha da Câmara de Julgamento" };
+        }
+        if (dx === 2) {
+          if (dy === 79) {
+            return { role: "dungeon_door", doorVertical: true, defaultOpened: false, roomName: "Porta do Tribunal Sombrio" };
+          }
+          return { role: "dungeon_wall", roomName: "Muralha do Corredor" };
+        }
+        const roomName = "Câmara de Julgamento do Tribunal Sombrio";
+        if (dx === 8 && dy === 76) return { role: "jailer_table", roomName };
+        if (dx === 5 && dy === 81) return { role: "hanging_cage", roomName };
+        if (dx === 11 && dy === 81) return { role: "iron_maiden", roomName };
+        if (dx === 8 && dy === 82) return { role: "dungeon_skeleton", roomName };
+        if (dx === 11 && dy === 75) return { role: "corridor_torch", roomName };
+        return { role: "hall_floor", roomName };
+      }
+
+      // Parede divisória entre Salão 7 e Salão 8
+      if (dy === 85 && dx >= 2 && dx <= 13) {
+        return { role: "dungeon_wall", roomName: "Muralha Divisória de Salão" };
+      }
+
+      // 11. Salão 8: Aposentos do Grão-Inquisidor (dx in [2, 13], dy in [86, 96])
+      if (dx >= 2 && dx <= 13 && dy >= 86 && dy <= 96) {
+        if (dy === 86 || dy === 96 || dx === 13) {
+          return { role: "dungeon_wall", roomName: "Muralha dos Aposentos do Inquisidor" };
+        }
+        if (dx === 2) {
+          if (dy === 91) {
+            return { role: "dungeon_door", doorVertical: true, defaultOpened: false, roomName: "Porta dos Aposentos Secretos" };
+          }
+          return { role: "dungeon_wall", roomName: "Muralha do Corredor" };
+        }
+        const roomName = "Aposentos do Grão-Inquisidor das Masmorras";
+        if (dx === 8 && dy === 91) return { role: "chest", roomName };
+        if (dx === 5 && dy === 89) return { role: "weapon_rack", roomName };
+        if (dx === 11 && dy === 89) return { role: "dungeon_straw", roomName };
+        if (dx === 8 && dy === 94) return { role: "hanging_cage", roomName };
+        if (dx === 11 && dy === 94) return { role: "corridor_torch", roomName };
+        return { role: "hall_floor", roomName };
+      }
+
+      // Parede divisória entre Salão 8 e Salão 9
+      if (dy === 97 && dx >= 2 && dx <= 13) {
+        return { role: "dungeon_wall", roomName: "Muralha Divisória de Salão" };
+      }
+
+      // 12. Salão 9: Depósito de Suprimentos Subterrâneos (dx in [2, 13], dy in [98, 102])
+      if (dx >= 2 && dx <= 13 && dy >= 98 && dy <= 102) {
+        if (dy === 98 || dy === 102 || dx === 13) {
+          return { role: "dungeon_wall", roomName: "Muralha do Depósito Subterrâneo" };
+        }
+        if (dx === 2) {
+          if (dy === 100) {
+            return { role: "dungeon_door", doorVertical: true, defaultOpened: false, roomName: "Porta do Depósito Subterrâneo" };
+          }
+          return { role: "dungeon_wall", roomName: "Muralha do Corredor" };
+        }
+        const roomName = "Depósito de Suprimentos e Reservas";
+        if (dx === 7 && dy === 100) return { role: "chest", roomName };
+        if (dx === 10 && dy === 100) return { role: "weapon_rack", roomName };
+        if (dx === 11 && dy === 101) return { role: "corridor_torch", roomName };
+        return { role: "hall_floor", roomName };
+      }
+
+      // 13. Grande Santuário e Câmara do Tesouro Final (dx in [-6, 6], dy in [103, 118])
+      if (dx >= -6 && dx <= 6 && dy >= 103 && dy <= 118) {
+        if (dy === 103) {
+          if (dx === 0) {
+            return { role: "dungeon_door", doorVertical: false, defaultOpened: false, roomName: "Grande Portão do Santuário das Profundezas" };
+          }
+          return { role: "dungeon_wall", roomName: "Muralha Frontal do Santuário" };
+        }
+        if (dx === -6 || dx === 6 || dy === 118) {
+          return { role: "dungeon_wall", roomName: "Muralha do Santuário das Profundezas" };
+        }
+        const roomName = "Grande Santuário e Tesouro do Calabouço";
+        if ((dx === -3 || dx === 3) && (dy === 106 || dy === 112)) return { role: "corridor_torch", roomName };
+        if ((dx === -4 || dx === 4) && dy === 108) return { role: "weapon_rack", roomName };
+        if ((dx === -4 || dx === 4) && dy === 114) return { role: "hanging_cage", roomName };
+        if (dx === 0 && dy === 110) return { role: "torture_brazier", roomName };
+        if ((dx === -2 || dx === 0 || dx === 2) && dy === 116) return { role: "chest", roomName };
+        if ((dx === -4 || dx === 4) && dy === 116) return { role: "dungeon_skeleton", roomName };
         return { role: "hall_floor", roomName };
       }
 
@@ -3786,10 +3948,8 @@
         return {
           success: !0,
           action: "toggle_gate",
-          message: nextOpen
-            ? "Você empurrou a pesada grade de ferro da prisão: o portão rangeu e se recolheu!"
-            : "Você fechou as grades de ferro da cela.",
-          reward: nextOpen ? "Grade Aberta" : "Grade Fechada",
+          message: "",
+          reward: "",
         };
       }
       if (o.prop.kind === "dungeon_door") {
@@ -3799,10 +3959,9 @@
         this.invalidateTile(t, l);
         return {
           success: !0,
-          message: nextOpen
-            ? "Você abriu a pesada porta reforçada com ferro: a câmara está acessível!"
-            : "Você fechou a porta de madeira do calabouço.",
-          reward: nextOpen ? "Porta Aberta" : "Porta Fechada",
+          action: "dungeon_door",
+          message: "",
+          reward: "",
         };
       }
       if (o.prop.kind === "torture_rack") {
@@ -4121,15 +4280,14 @@
         if (o.prop.lit) {
           return {
             success: !0,
-            message: "Esta tocha do corredor já está acesa e iluminando o caminho!",
-            reward: "Tocha Acesa",
+            message: "",
+            reward: "",
           };
         }
         return {
           success: !0,
           action: "unlit_corridor_torch",
-          message:
-            "Este ponto de tocha está apagado. Segure uma Tocha na mão para acendê-lo!",
+          message: "",
         };
       }
       if (o.prop.kind === "greek_door") {
@@ -4138,10 +4296,9 @@
         this.invalidateTile(t, l);
         return {
           success: !0,
-          message: nextOpen
-            ? "Você empurrou os pesados batentes de cedro e bronze: a porta grega se abriu!"
-            : "Você fechou a porta de madeira e bronze das ruínas.",
-          reward: nextOpen ? "Porta Aberta" : "Porta Fechada",
+          action: "greek_door",
+          message: "",
+          reward: "",
         };
       }
       if (o.prop.kind === "greek_statue") {

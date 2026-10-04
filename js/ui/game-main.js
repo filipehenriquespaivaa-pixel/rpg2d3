@@ -945,7 +945,7 @@
                 ((F.name || "").toLowerCase().includes("tocha") ||
                   (F.id || "").toLowerCase().includes("torch")) &&
                   $ &&
-                  (z(!1), ve("🔥 Tocha apagada ao ser guardada no cinto.")));
+                  z(!1));
             else {
               ((ce = !0),
                 ((F.name || "").toLowerCase().includes("tocha") ||
@@ -2228,15 +2228,9 @@
                 c.current.scareMonstersNearFire &&
                 c.current.scareMonstersNearFire(qe, Ze, 110);
               _t((xp) => xp + 25);
-              ve(
-                "🔥 Você acendeu o ponto de tocha do corredor com a tocha da sua mão! (+25 XP)",
-              );
               return;
             } else {
               m.current.playPunchWhoosh();
-              ve(
-                "⚠️ Este ponto de tocha está apagado! Equipe uma Tocha na mão para acendê-lo.",
-              );
               return;
             }
           }
@@ -2328,12 +2322,8 @@
                     ia.name.toLowerCase().includes("tocha"))
                 )
                   ? (z(!0),
-                    m.current.playTorchIgnite(),
-                    ve("🔥 Tocha acesa! Iluminando as profundezas da caverna."))
-                  : (z(!1),
-                    ve(
-                      "Caverna escura! Você está na escuridão total sem uma tocha.",
-                    )));
+                    m.current.playTorchIgnite())
+                  : z(!1));
               trM > 0 &&
                 ve(
                   `⚠️ ${trM === 1 ? "A criatura que te perseguia atravessou" : `${trM} criaturas que te perseguiam atravessaram`} a caverna com você!`,
@@ -2509,7 +2499,6 @@
               if (hasKey) {
                 E.unlockAndOpenGate(Ke.tx || Ye.tx, Ke.ty || Ye.ty);
                 m.current.playChestChime && m.current.playChestChime();
-                ve("🔓 Você usou a Chave do Carcereiro para abrir o pesado cadeado da cela!");
               } else {
                 m.current.playPunchWhoosh && m.current.playPunchWhoosh();
                 ve(Ke.message);
@@ -2740,6 +2729,16 @@
                   : ve(
                       "💾 Ponto de Salve Registrado! Esta fogueira é seu novo ponto de retorno com HP e Vigor restaurados.",
                     );
+            } else if (
+              Ke.action === "toggle_gate" ||
+              Ke.action === "dungeon_door" ||
+              Ke.action === "greek_door"
+            ) {
+              m.current.playInventoryOpen && m.current.playInventoryOpen();
+              return;
+            } else if (Ke.action === "unlit_corridor_torch") {
+              m.current.playPunchWhoosh && m.current.playPunchWhoosh();
+              return;
             } else
               Ke.reward
                 ? m.current.playChestChime()
@@ -3720,14 +3719,8 @@
                         qe.mao_direita.name.toLowerCase().includes("tocha"))
                     )
                       ? (z(!0),
-                        m.current.playTorchIgnite(),
-                        ve(
-                          "🔥 Entrando na caverna! Tocha acesa iluminando as profundezas.",
-                        ))
-                      : (z(!1),
-                        ve(
-                          "Caverna escura! Você está na escuridão total sem uma tocha.",
-                        )));
+                        m.current.playTorchIgnite())
+                      : z(!1));
                   trM > 0 &&
                     ve(
                       `⚠️ ${trM === 1 ? "A criatura que te perseguia atravessou" : `${trM} criaturas que te perseguiam atravessaram`} a caverna com você!`,
