@@ -1221,9 +1221,11 @@
       }, [ve]),
       dt = J.useCallback(
         (E) => {
-          const D = o.current,
-            Q = BIOMES[E];
-          if (!D || !Q) return;
+          const D = o.current;
+          if (!D) return;
+          const isSpecialTarget = (E === "DUNGEON_LOWER" || E === "SUBSOLO_HALL" || E === "DUNGEON_STAIR_TARGET");
+          const Q = BIOMES[E] || (isSpecialTarget ? { namePt: "Calabouço / Escadaria", passable: true } : null);
+          if (!Q) return;
           c.current.reset();
           const isCave = Q.category === "cave" || E.startsWith("CAVE_");
           if (isCave && !D.isUnderground) {
@@ -1231,7 +1233,7 @@
               re = Math.floor(f.current.y / D.tileSize);
             D.enterCave(ge, re, f.current.x, f.current.y);
             m.current.playCaveEnter();
-          } else if (!isCave && D.isUnderground) {
+          } else if (!isCave && !isSpecialTarget && D.isUnderground) {
             const ge = D.exitCave();
             f.current.x = ge.x;
             f.current.y = ge.y;
@@ -1254,34 +1256,7 @@
 
           if (E === "DUNGEON_LOWER") {
             let stair = null;
-            for (let r = 0; r <= 35 && !stair; r++) {
-              for (let dy = -r; dy <= r && !stair; dy++) {
-                for (let dx = -r; dx <= r && !stair; dx++) {
-                  if (r > 0 && Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
-                  const sampleTx = originTx + dx * 24;
-                  const sampleTy = originTy + dy * 24;
-                  const candidate = D.getDungeonEntranceStairForBiome(sampleTx, sampleTy);
-                  if (candidate) {
-                    stair = candidate;
-                    break;
-                  }
-                }
-              }
-            }
-            if (!stair) stair = D.getDungeonEntranceStairForBiome(0, 0);
-            if (stair) {
-              D.enterDungeon(stair.tx, stair.ty, stair.tx * D.tileSize + 14, stair.ty * D.tileSize + 20);
-              targetPixelX = stair.tx * D.tileSize + 14;
-              targetPixelY = (stair.ty + 2) * D.tileSize + 14;
-              foundDist = 0;
-              found = !0;
-              ve(`⚡ Teleportado diretamente para o Calabouço Inferior em [${stair.tx}, ${stair.ty}]!`);
-            }
-          }
-
-          if (E === "SUBSOLO_HALL" || E === "DUNGEON_STAIR_TARGET") {
-            let stair = null;
-            if (D.isUnderground && D.getDungeonEntranceStairForBiome) {
+            if (D.getDungeonEntranceStairForBiome) {
               stair = D.getDungeonEntranceStairForBiome(originTx, originTy);
             }
             if (!stair) {
@@ -1302,6 +1277,48 @@
             }
             if (!stair) stair = D.getDungeonEntranceStairForBiome(0, 0);
             if (stair) {
+              if (!D.isUnderground) {
+                const ge = Math.floor(f.current.x / D.tileSize),
+                  re = Math.floor(f.current.y / D.tileSize);
+                D.enterCave(ge, re, f.current.x, f.current.y);
+              }
+              D.enterDungeon(stair.tx, stair.ty, stair.tx * D.tileSize + 14, stair.ty * D.tileSize + 20);
+              targetPixelX = stair.tx * D.tileSize + 14;
+              targetPixelY = (stair.ty + 2) * D.tileSize + 14;
+              foundDist = 0;
+              found = !0;
+              ve(`⚡ Teleportado diretamente para o Calabouço Inferior em [${stair.tx}, ${stair.ty}]!`);
+            }
+          }
+
+          if (E === "SUBSOLO_HALL" || E === "DUNGEON_STAIR_TARGET") {
+            let stair = null;
+            if (D.getDungeonEntranceStairForBiome) {
+              stair = D.getDungeonEntranceStairForBiome(originTx, originTy);
+            }
+            if (!stair) {
+              for (let r = 0; r <= 35 && !stair; r++) {
+                for (let dy = -r; dy <= r && !stair; dy++) {
+                  for (let dx = -r; dx <= r && !stair; dx++) {
+                    if (r > 0 && Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+                    const sampleTx = originTx + dx * 24;
+                    const sampleTy = originTy + dy * 24;
+                    const candidate = D.getDungeonEntranceStairForBiome(sampleTx, sampleTy);
+                    if (candidate) {
+                      stair = candidate;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+            if (!stair) stair = D.getDungeonEntranceStairForBiome(0, 0);
+            if (stair) {
+              if (!D.isUnderground) {
+                const ge = Math.floor(f.current.x / D.tileSize),
+                  re = Math.floor(f.current.y / D.tileSize);
+                D.enterCave(ge, re, f.current.x, f.current.y);
+              }
               D.isUnderground = !0;
               D.undergroundLevel = 1;
               D.clearTileCache();
@@ -1397,10 +1414,12 @@
             f.current.y = targetPixelY;
             Oa.current = { x: 0, y: 0 };
             D.clearTileCache();
-            ve(`Teletransportado para ${Q.namePt} (${foundDist} blocos de distância)!`);
+            if (!isSpecialTarget) {
+              ve(`Teletransportado para ${Q.namePt} (${foundDist} blocos de distância)!`);
+            }
             m.current.playShrineActivation();
           } else {
-            ve(`Nenhum ${Q.namePt} localizado no raio de 5000 blocos.`);
+            ve(isSpecialTarget ? "Escadaria do calabouço não localizada nas proximidades." : `Nenhum ${Q.namePt} localizado no raio de 5000 blocos.`);
           }
         },
         [ve],

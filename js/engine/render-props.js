@@ -1505,7 +1505,8 @@
     e.restore();
   }
 
-  function drawGreekCorridorTorch(e, t, isLit = !1, animTimer = 0) {
+  function drawGreekCorridorTorch(e, t = 1, isLit = !1, animTimer = 0) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     // 1. Sombra no piso do corredor
     e.fillStyle = "rgba(2, 6, 23, 0.36)";
@@ -3411,7 +3412,8 @@
   // ELEMENTOS DO CALABOUÇO E MASMORRAS SUBTERRÂNEAS (ANDAR INFERIOR)
   // =========================================================================
 
-  function drawDungeonStaircase(e, t, isUp = !1, animTimer = 0) {
+  function drawDungeonStaircase(e, t = 1, isUp = !1, animTimer = 0) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     e.save();
     const wMul = 1.15;
     const hMul = 1.15;

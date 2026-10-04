@@ -3278,6 +3278,7 @@
             kind: "corridor_torch",
             subType: 0,
             lit: !0,
+            scale: 1.05,
             interactive: !1,
             namePt: "Tocha do Calabouço (Acesa)",
             descriptionPt: "Braseiro de ferro negro ardendo em chamas, iluminando os corredores úmidos das masmorras.",

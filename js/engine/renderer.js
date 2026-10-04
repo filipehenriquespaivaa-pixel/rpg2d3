@@ -1465,7 +1465,7 @@
       }
       renderProp(t, l, o, u, m) {
         const c = this.ctx,
-          f = t.scale,
+          f = (typeof t.scale === "number" && !isNaN(t.scale) && t.scale > 0) ? t.scale : 1,
           g = (m == null ? void 0 : m.timeOfDay) ?? 0.5,
           y = this.getSunVector(g);
         switch (
@@ -3461,15 +3461,17 @@
             P.fillRect(0, 0, l, o),
             (P.globalCompositeOperation = "destination-out"));
           const x = !!m.lanternActive,
-            M = l / 2 + (t.x - f) * u,
-            $ = o / 2 + (t.y - g) * u;
-          if (x) {
+            safeU = (typeof u === "number" && isFinite(u) && u > 0) ? u : 1,
+            M = l / 2 + (t.x - f) * safeU,
+            $ = o / 2 + (t.y - g) * safeU;
+          if (x && isFinite(M) && isFinite($)) {
             const z = this.engine.isUnderground ? 220 : 165,
               K =
                 Math.sin(this.animTimer * 7) * 4.5 +
                 Math.cos(this.animTimer * 12) * 2.5,
-              V = Math.max(40, z * u + K),
-              O = P.createRadialGradient(M, $, 14 * u, M, $, V);
+              V = Math.max(40, z * safeU + K),
+              r0 = Math.max(1, Math.min(V * 0.5, 14 * safeU)),
+              O = P.createRadialGradient(M, $, r0, M, $, V);
             (O.addColorStop(0, "rgba(0, 0, 0, 1.0)"),
               O.addColorStop(0.45, "rgba(0, 0, 0, 0.92)"),
               O.addColorStop(0.75, "rgba(0, 0, 0, 0.55)"),
@@ -3480,11 +3482,13 @@
               P.fill());
           }
           for (const z of c) {
-            const K = l / 2 + (z.x - f) * u,
-              V = o / 2 + (z.y - g) * u,
-              O = z.radius * u;
-            if (K >= -O && K <= l + O && V >= -O && V <= o + O) {
-              const _ = P.createRadialGradient(K, V, 8 * u, K, V, O);
+            const rad = (typeof z.radius === "number" && isFinite(z.radius) && z.radius > 0) ? z.radius : 40,
+              K = l / 2 + (z.x - f) * safeU,
+              V = o / 2 + (z.y - g) * safeU,
+              O = rad * safeU;
+            if (isFinite(K) && isFinite(V) && isFinite(O) && O > 0 && K >= -O && K <= l + O && V >= -O && V <= o + O) {
+              const r0 = Math.max(1, Math.min(O * 0.5, 8 * safeU)),
+                _ = P.createRadialGradient(K, V, r0, K, V, O);
               (z.isCampfire
                 ? (_.addColorStop(0, "rgba(0, 0, 0, 1.0)"),
                   _.addColorStop(0.42, "rgba(0, 0, 0, 1.0)"),
@@ -3502,30 +3506,34 @@
           if (
             ((P.globalCompositeOperation = "source-over"),
             y.drawImage(this.lightCanvas, 0, 0),
-            x && v > 0.15)
+            x && v > 0.15 && isFinite(M) && isFinite($))
           ) {
-            const z = (this.engine.isUnderground ? 220 : 160) * u,
+            const z = (this.engine.isUnderground ? 220 : 160) * safeU,
               K = Math.sin(this.animTimer * 7) * 3.5,
-              V = y.createRadialGradient(M, $, 10 * u, M, $, z + K);
+              outerRad = Math.max(20, z + K),
+              r0 = Math.max(1, Math.min(outerRad * 0.5, 10 * safeU)),
+              V = y.createRadialGradient(M, $, r0, M, $, outerRad);
             (V.addColorStop(0, "rgba(251, 146, 60, 0.22)"),
               V.addColorStop(0.45, "rgba(245, 158, 11, 0.11)"),
               V.addColorStop(0.8, "rgba(234, 88, 12, 0.03)"),
               V.addColorStop(1, "rgba(0, 0, 0, 0)"),
               (y.fillStyle = V),
               y.beginPath(),
-              y.arc(M, $, z + K, 0, Math.PI * 2),
+              y.arc(M, $, outerRad, 0, Math.PI * 2),
               y.fill());
           }
           y.save();
           for (const z of c) {
             if (z.intensity < 0.4) continue;
-            const K = l / 2 + (z.x - f) * u,
-              V = o / 2 + (z.y - g) * u,
-              O = z.radius * u * 0.9;
-            if (K >= -O && K <= l + O && V >= -O && V <= o + O)
+            const rad = (typeof z.radius === "number" && isFinite(z.radius) && z.radius > 0) ? z.radius : 40,
+              K = l / 2 + (z.x - f) * safeU,
+              V = o / 2 + (z.y - g) * safeU,
+              O = rad * safeU * 0.9;
+            if (isFinite(K) && isFinite(V) && isFinite(O) && O > 0 && K >= -O && K <= l + O && V >= -O && V <= o + O)
               if (z.isCampfire) {
                 y.globalCompositeOperation = "lighter";
-                const _ = y.createRadialGradient(K, V, 8 * u, K, V, O);
+                const r0 = Math.max(1, Math.min(O * 0.5, 8 * safeU)),
+                  _ = y.createRadialGradient(K, V, r0, K, V, O);
                 (_.addColorStop(0, "rgba(251, 146, 60, 0.25)"),
                   _.addColorStop(0.38, "rgba(245, 158, 11, 0.14)"),
                   _.addColorStop(0.72, "rgba(234, 88, 12, 0.04)"),
@@ -3536,7 +3544,8 @@
                   y.fill(),
                   (y.globalCompositeOperation = "source-over"));
               } else {
-                const _ = y.createRadialGradient(K, V, 4 * u, K, V, O);
+                const r0 = Math.max(1, Math.min(O * 0.5, 4 * safeU)),
+                  _ = y.createRadialGradient(K, V, r0, K, V, O);
                 (_.addColorStop(0, z.color),
                   _.addColorStop(1, "rgba(0, 0, 0, 0)"),
                   (y.fillStyle = _),
@@ -3551,19 +3560,21 @@
               ((y.fillStyle = T), y.fillRect(0, 0, l, o)));
         }
         const S = Math.max(l, o),
-          p = Math.min(l, o),
-          j = y.createRadialGradient(
+          p = Math.min(l, o);
+        if (isFinite(l) && isFinite(o) && isFinite(S) && isFinite(p) && S > 0 && p > 0) {
+          const j = y.createRadialGradient(
             l / 2,
             o / 2,
-            p * 0.38,
+            Math.max(1, p * 0.38),
             l / 2,
             o / 2,
-            S * 0.72,
+            Math.max(2, S * 0.72),
           );
-        (j.addColorStop(0, "rgba(0, 0, 0, 0)"),
-          j.addColorStop(1, "rgba(5, 10, 20, 0.36)"),
-          (y.fillStyle = j),
-          y.fillRect(0, 0, l, o));
+          (j.addColorStop(0, "rgba(0, 0, 0, 0)"),
+            j.addColorStop(1, "rgba(5, 10, 20, 0.36)"),
+            (y.fillStyle = j),
+            y.fillRect(0, 0, l, o));
+        }
       }
     };
   ((WorldRenderer.GROUND_CHUNK_TILES = 8),
