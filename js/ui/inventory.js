@@ -810,11 +810,26 @@
     }) => {
       const [searchTerm, setSearchTerm] = J.useState(""),
         [selectedCategory, setSelectedCategory] = J.useState("todos"),
-        [quickMsg, setQuickMsg] = J.useState(null);
+        [quickMsg, setQuickMsg] = J.useState(null),
+        [collidersOn, setCollidersOn] = J.useState(() => typeof window !== "undefined" && !!window.__showColliders);
 
       const triggerMsg = (msg) => {
         setQuickMsg(msg);
         setTimeout(() => setQuickMsg(null), 2500);
+      };
+
+      const toggleCollidersInSidebar = () => {
+        const next = !collidersOn;
+        if (window.setColliders) {
+          window.setColliders(next);
+        } else {
+          window.__showColliders = next;
+          try {
+            localStorage.setItem("rpg2d_colliders", next ? "1" : "0");
+          } catch (e) {}
+        }
+        setCollidersOn(next);
+        triggerMsg(next ? "🛡️ Colisores Ativados (ON)!" : "⬜ Colisores Desativados (OFF)!");
       };
 
       const categories = [
@@ -933,8 +948,22 @@
               // Barra de Ações Rápidas
               h.jsxs("div", {
                 className:
-                  "grid grid-cols-3 gap-1.5 pt-1 border-t border-white/5 text-[10px] font-bold font-mono",
+                  "grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 border-t border-white/5 text-[10px] font-bold font-mono",
                 children: [
+                  h.jsxs("button", {
+                    type: "button",
+                    onClick: toggleCollidersInSidebar,
+                    className: `px-1.5 py-1 rounded border flex items-center justify-center gap-1 transition active:scale-95 cursor-pointer shadow-sm ${
+                      collidersOn
+                        ? "bg-emerald-950/90 border-emerald-500/60 text-emerald-300"
+                        : "bg-slate-900 border-white/10 text-slate-300 hover:text-white"
+                    }`,
+                    title: "Ativar/Desativar Caixas de Colisão de Depuração no Canvas",
+                    children: [
+                      h.jsx("span", { children: collidersOn ? "🛡️" : "⬜" }),
+                      h.jsx("span", { children: collidersOn ? "Colisor ON" : "Colisor OFF" }),
+                    ],
+                  }),
                   h.jsxs("button", {
                     type: "button",
                     onClick: () => {

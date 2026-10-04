@@ -3406,3 +3406,906 @@
 
     e.restore();
   }
+
+  // =========================================================================
+  // ELEMENTOS DO CALABOUÇO E MASMORRAS SUBTERRÂNEAS (ANDAR INFERIOR)
+  // =========================================================================
+
+  function drawDungeonStaircase(e, t, isUp = !1, animTimer = 0) {
+    e.save();
+    const wMul = 1.15;
+    const hMul = 1.15;
+
+    if (isUp) {
+      // Escadaria que SOBE de volta para o subsolo (luz dourada dos salões superiores descendo)
+      const floorGlow = e.createRadialGradient(0, 6 * t, 2 * t, 0, 8 * t, 28 * wMul * t);
+      floorGlow.addColorStop(0, "rgba(251, 191, 36, 0.35)");
+      floorGlow.addColorStop(0.6, "rgba(56, 189, 248, 0.12)");
+      floorGlow.addColorStop(1, "rgba(15, 23, 42, 0)");
+      e.fillStyle = floorGlow;
+      e.beginPath();
+      e.ellipse(0, 8 * t, 28 * wMul * t, 12 * t, 0, 0, Math.PI * 2);
+      e.fill();
+
+      // Sombra e base
+      e.fillStyle = "rgba(2, 6, 23, 0.65)";
+      e.fillRect(-22 * wMul * t, -32 * hMul * t, 44 * wMul * t, (32 * hMul + 10) * t);
+
+      // Paredes laterais de pedra escura
+      e.fillStyle = "#1e293b";
+      e.beginPath();
+      e.moveTo(-20 * wMul * t, 8 * t);
+      e.lineTo(-16 * wMul * t, -32 * hMul * t);
+      e.lineTo(16 * wMul * t, -32 * hMul * t);
+      e.lineTo(20 * wMul * t, 8 * t);
+      e.closePath();
+      e.fill();
+
+      // Corrimãos e pilares de ferro forjado
+      e.fillStyle = "#0f172a";
+      e.fillRect(-20 * wMul * t, 6 * t, 3 * t, 6 * t);
+      e.fillRect(17 * wMul * t, 6 * t, 3 * t, 6 * t);
+      e.strokeStyle = "#475569";
+      e.lineWidth = 1.6 * t;
+      e.beginPath();
+      e.moveTo(-18 * wMul * t, 7 * t);
+      e.lineTo(-14 * wMul * t, -30 * hMul * t);
+      e.moveTo(18 * wMul * t, 7 * t);
+      e.lineTo(14 * wMul * t, -30 * hMul * t);
+      e.stroke();
+
+      // Degraus ascendentes
+      const numSteps = 8;
+      for (let s = 0; s < numSteps; s++) {
+        const r0 = s / numSteps;
+        const r1 = (s + 1) / numSteps;
+        const yBottom = (8 - r0 * (32 * hMul)) * t;
+        const yTop = (8 - r1 * (32 * hMul)) * t;
+        const stepH = Math.max(2 * t, yBottom - yTop);
+        const halfW0 = (14.5 - r0 * 3.5) * wMul * t;
+        const halfW1 = (14.5 - r1 * 3.5) * wMul * t;
+
+        const riserLum = Math.round(55 + r0 * 85);
+        e.fillStyle = `rgb(${riserLum}, ${riserLum + 2}, ${riserLum + 8})`;
+        e.fillRect(-halfW0, yBottom - stepH * 0.55, halfW0 * 2, stepH * 0.55);
+
+        const treadLum = Math.round(90 + r1 * 105);
+        e.fillStyle = `rgb(${treadLum}, ${treadLum}, ${treadLum + 10})`;
+        e.fillRect(-halfW1, yTop, halfW1 * 2, stepH * 0.48);
+      }
+    } else {
+      // Escadaria que DESCE para o calabouço (poço escuro profundo com névoa sombria, tochas vivas e ferro forjado)
+      e.fillStyle = "rgba(2, 6, 23, 0.65)";
+      e.fillRect(-26 * wMul * t, -26 * hMul * t, 52 * wMul * t, (26 * hMul + 12) * t);
+
+      // Moldura externa pesada de cantaria de granito escuro chanfrado
+      e.fillStyle = "#1e293b";
+      e.fillRect(-24 * wMul * t, -24 * hMul * t, 48 * wMul * t, (24 * hMul + 10) * t);
+      e.fillStyle = "#334155";
+      e.fillRect(-23 * wMul * t, -23 * hMul * t, 46 * wMul * t, (23 * hMul + 8) * t);
+      e.strokeStyle = "#0f172a";
+      e.lineWidth = 1.6 * t;
+      e.strokeRect(-23 * wMul * t, -23 * hMul * t, 46 * wMul * t, (23 * hMul + 8) * t);
+
+      // Frisos de blocos de cantaria talhados na moldura
+      e.strokeStyle = "rgba(15, 23, 42, 0.75)";
+      e.lineWidth = 1 * t;
+      for (let by = -20; by <= 6; by += 7) {
+        e.beginPath();
+        e.moveTo(-23 * wMul * t, by * hMul * t);
+        e.lineTo(-17 * wMul * t, by * hMul * t);
+        e.moveTo(17 * wMul * t, by * hMul * t);
+        e.lineTo(23 * wMul * t, by * hMul * t);
+        e.stroke();
+      }
+
+      // Parapeitos e balaustradas de ferro negro forjado nas bordas
+      e.fillStyle = "#09090b";
+      e.fillRect(-22 * wMul * t, -26 * hMul * t, 44 * wMul * t, 4.5 * t);
+      e.fillRect(-22 * wMul * t, -24 * hMul * t, 4.5 * wMul * t, (24 * hMul + 6) * t);
+      e.fillRect(17.5 * wMul * t, -24 * hMul * t, 4.5 * wMul * t, (24 * hMul + 6) * t);
+
+      // Pontas afiadas / lanças de ferro forjado no topo do parapeito
+      e.fillStyle = "#475569";
+      for (let px = -18; px <= 18; px += 4.5) {
+        e.beginPath();
+        e.moveTo(px * wMul * t, -26 * hMul * t);
+        e.lineTo((px + 1) * wMul * t, -30 * hMul * t);
+        e.lineTo((px + 2) * wMul * t, -26 * hMul * t);
+        e.closePath();
+        e.fill();
+      }
+
+      // Vão central do fosso
+      const innerW = 31 * wMul * t;
+      const innerX = -15.5 * wMul * t;
+      const innerTopY = -21 * hMul * t;
+      const innerH = (21 * hMul + 7) * t;
+
+      // Gradiente abissal com toque avermelhado/sombrio do calabouço
+      const voidGrad = e.createLinearGradient(0, innerTopY, 0, innerTopY + innerH);
+      voidGrad.addColorStop(0, "#020617");
+      voidGrad.addColorStop(0.4, "#09090b");
+      voidGrad.addColorStop(0.8, "#1a0b16");
+      voidGrad.addColorStop(1, "#2e1022");
+      e.fillStyle = voidGrad;
+      e.fillRect(innerX, innerTopY, innerW, innerH);
+
+      // Brilho pulsante sutil que emana das profundezas (câmara de tortura/brasas lá embaixo)
+      const glowPulse = Math.sin((animTimer || 0) * 3) * 0.08 + 0.18;
+      const depthGlow = e.createRadialGradient(0, innerTopY + 4 * t, 2 * t, 0, innerTopY + 6 * t, 16 * wMul * t);
+      depthGlow.addColorStop(0, `rgba(225, 29, 72, ${glowPulse * 1.4})`);
+      depthGlow.addColorStop(0.5, `rgba(180, 83, 9, ${glowPulse * 0.8})`);
+      depthGlow.addColorStop(1, "rgba(2, 6, 23, 0)");
+      e.fillStyle = depthGlow;
+      e.beginPath();
+      e.ellipse(0, innerTopY + 5 * t, 15 * wMul * t, 8 * t, 0, 0, Math.PI * 2);
+      e.fill();
+
+      // Degraus descendentes na escuridão
+      const numSteps = 8;
+      for (let s = 0; s < numSteps; s++) {
+        const ratio = s / numSteps;
+        const nextRatio = (s + 1) / numSteps;
+        const stepY1 = 6 * t - ratio * (25 * hMul * t);
+        const stepY2 = 6 * t - nextRatio * (25 * hMul * t);
+        const stepH = Math.max(1.8 * t, stepY1 - stepY2);
+        const inset = ratio * 4.2 * wMul * t;
+        const sx = innerX + inset;
+        const sw = innerW - inset * 2;
+
+        const shade = Math.round(145 - ratio * 115);
+        e.fillStyle = `rgb(${shade}, ${shade}, ${shade + 6})`;
+        e.fillRect(sx, stepY2, sw, stepH * 0.7);
+
+        const riserShade = Math.max(10, shade - 48);
+        e.fillStyle = `rgb(${riserShade + 6}, ${riserShade}, ${riserShade + 8})`;
+        e.fillRect(sx, stepY2 + stepH * 0.7, sw, stepH * 0.3);
+
+        // Corrimão interno de ferro
+        e.strokeStyle = "#475569";
+        e.lineWidth = 1 * t;
+        e.strokeRect(sx, stepY2, sw, stepH);
+      }
+
+      // Correntes de ferro penduradas nas laterais
+      e.strokeStyle = "#64748b";
+      e.lineWidth = 1.3 * t;
+      for (const side of [-1, 1]) {
+        const cx = side * 14 * wMul * t;
+        e.beginPath();
+        e.moveTo(cx, -22 * hMul * t);
+        e.lineTo(cx + side * 1 * t, -12 * t);
+        e.stroke();
+        // Argola da corrente
+        e.fillStyle = "#334155";
+        e.beginPath();
+        e.arc(cx + side * 1 * t, -11 * t, 2 * t, 0, Math.PI * 2);
+        e.fill();
+      }
+
+      // Tochas de ferro negro nas laterais com chama tremeluzente
+      const flicker = Math.sin((animTimer || 0) * 6) * 0.15;
+      for (const side of [-1, 1]) {
+        const tx = side * 15 * wMul * t;
+        const ty = -6 * t;
+        // Suporte de ferro chumbado na rocha
+        e.fillStyle = "#09090b";
+        e.fillRect(tx - 1.5 * t, ty - 5 * t, 3 * t, 7 * t);
+        e.fillRect(tx - (side > 0 ? 3 : 0) * t, ty, 3 * t, 1.8 * t);
+
+        // Cesta da tocha
+        e.fillStyle = "#1e293b";
+        e.fillRect(tx - 2 * t, ty - 7 * t, 4 * t, 3 * t);
+
+        // Chama
+        e.fillStyle = `rgba(249, 115, 22, ${0.85 + flicker})`;
+        e.beginPath();
+        e.arc(tx, ty - 8.5 * t, 3 * t, 0, Math.PI * 2);
+        e.fill();
+        e.fillStyle = "rgba(254, 240, 138, 0.95)";
+        e.beginPath();
+        e.arc(tx, ty - 8.5 * t, 1.5 * t, 0, Math.PI * 2);
+        e.fill();
+      }
+    }
+    e.restore();
+  }
+
+  function drawDungeonWall25D(e, t, neighbors = null) {
+    e.save();
+    const nL = !!(neighbors && neighbors.left);
+    const nR = !!(neighbors && neighbors.right);
+    const nT = !!(neighbors && neighbors.top);
+    const nB = !!(neighbors && neighbors.bottom);
+    const half = 18 * t;
+    const leftX = nL ? -half - 1 * t : -half + 1 * t;
+    const rightX = nR ? half + 1 * t : half - 1 * t;
+    const w = rightX - leftX;
+    const wallH = 26 * t;
+    const baseY = 18 * t;
+    const topFrontY = baseY - wallH;
+
+    // Sombra projetada na base
+    if (!nB) {
+      e.fillStyle = "rgba(2, 6, 23, 0.75)";
+      e.fillRect(leftX - 1 * t, baseY - 2 * t, w + 2 * t, 9.5 * t);
+    }
+
+    // Face frontal da muralha de granito/ardósia escuro
+    const frontGrad = e.createLinearGradient(0, topFrontY, 0, baseY);
+    frontGrad.addColorStop(0, "#475569");
+    frontGrad.addColorStop(0.4, "#334155");
+    frontGrad.addColorStop(1, "#1e293b");
+    e.fillStyle = frontGrad;
+    e.fillRect(leftX, topFrontY, w, wallH);
+
+    // Rodapé de cantaria bruta
+    e.fillStyle = "#0f172a";
+    e.fillRect(leftX, baseY - 3.5 * t, w, 3.5 * t);
+
+    // Linhas de argamassa e blocos de pedra
+    e.strokeStyle = "rgba(15, 23, 42, 0.85)";
+    e.lineWidth = 1.3 * t;
+    e.beginPath();
+    // Linhas horizontais
+    e.moveTo(leftX, topFrontY + 8.5 * t);
+    e.lineTo(rightX, topFrontY + 8.5 * t);
+    e.moveTo(leftX, topFrontY + 17 * t);
+    e.lineTo(rightX, topFrontY + 17 * t);
+    // Linhas verticais alternadas
+    e.moveTo(0, topFrontY);
+    e.lineTo(0, topFrontY + 8.5 * t);
+    e.moveTo(-6 * t, topFrontY + 8.5 * t);
+    e.lineTo(-6 * t, topFrontY + 17 * t);
+    e.moveTo(6 * t, topFrontY + 8.5 * t);
+    e.lineTo(6 * t, topFrontY + 17 * t);
+    e.moveTo(0, topFrontY + 17 * t);
+    e.lineTo(0, baseY - 3.5 * t);
+    e.stroke();
+
+    // Topo da parede (visível se não tiver parede acima)
+    if (!nT) {
+      e.fillStyle = "#64748b";
+      e.fillRect(leftX, topFrontY - 3 * t, w, 3 * t);
+      e.fillStyle = "#334155";
+      e.fillRect(leftX, topFrontY - 4 * t, w, 1 * t);
+    }
+
+    // Manchas de umidade e musgo na base
+    e.fillStyle = "rgba(22, 101, 52, 0.35)";
+    e.fillRect(leftX, baseY - 5 * t, w, 2 * t);
+
+    e.restore();
+  }
+
+  function drawIronBarsGate(e, t, isVert = !1, isOpened = !1) {
+    e.save();
+    const half = 18 * t;
+
+    if (isOpened) {
+      // Grade aberta (recolhida em perspectiva a 45 graus)
+      e.fillStyle = "rgba(2, 6, 23, 0.45)";
+      e.fillRect(-14 * t, -16 * t, 28 * t, 32 * t);
+
+      // Batentes laterais
+      e.fillStyle = "#1e293b";
+      e.fillRect(-16 * t, -18 * t, 4 * t, 36 * t);
+      e.fillRect(12 * t, -18 * t, 4 * t, 36 * t);
+
+      // Folha da grade aberta virada para a esquerda
+      e.strokeStyle = "#475569";
+      e.lineWidth = 2 * t;
+      e.beginPath();
+      e.moveTo(-14 * t, -16 * t);
+      e.lineTo(-6 * t, -12 * t);
+      e.lineTo(-6 * t, 14 * t);
+      e.lineTo(-14 * t, 16 * t);
+      e.closePath();
+      e.stroke();
+
+      // Barras verticais da grade aberta
+      for (let i = 1; i <= 3; i++) {
+        const rx = -14 * t + i * 2 * t;
+        const ryTop = -16 * t + i * 1 * t;
+        const ryBot = 16 * t - i * 0.5 * t;
+        e.beginPath();
+        e.moveTo(rx, ryTop);
+        e.lineTo(rx, ryBot);
+        e.stroke();
+      }
+    } else {
+      // Grade fechada e trancada
+      // Sombra
+      e.fillStyle = "rgba(2, 6, 23, 0.55)";
+      e.fillRect(-16 * t, -18 * t, 32 * t, 36 * t);
+
+      // Montantes de alvenaria e pilares laterais
+      e.fillStyle = "#1e293b";
+      e.fillRect(-17 * t, -20 * t, 4.5 * t, 38 * t);
+      e.fillRect(12.5 * t, -20 * t, 4.5 * t, 38 * t);
+
+      // Vigas horizontais da grade de ferro
+      e.fillStyle = "#0f172a";
+      e.fillRect(-14 * t, -16 * t, 28 * t, 3.5 * t);
+      e.fillRect(-14 * t, -1 * t, 28 * t, 3.5 * t);
+      e.fillRect(-14 * t, 13 * t, 28 * t, 3.5 * t);
+
+      // Barras verticais espessas com pontas afiadas
+      e.fillStyle = "#334155";
+      for (let bx = -11; bx <= 11; bx += 4.5) {
+        e.fillRect((bx - 1) * t, -18 * t, 2.2 * t, 33 * t);
+        // Pontas afiadas no topo
+        e.beginPath();
+        e.moveTo((bx - 1) * t, -18 * t);
+        e.lineTo(bx * t, -21 * t);
+        e.lineTo((bx + 1.2) * t, -18 * t);
+        e.closePath();
+        e.fill();
+      }
+
+      // Tranca e cadeado central de ferro enferrujado
+      e.fillStyle = "#78350f";
+      e.fillRect(-3 * t, -3 * t, 6 * t, 7 * t);
+      e.strokeStyle = "#94a3b8";
+      e.lineWidth = 1.2 * t;
+      e.strokeRect(-3 * t, -3 * t, 6 * t, 7 * t);
+      e.beginPath();
+      e.arc(0, -4 * t, 2.5 * t, Math.PI, 0);
+      e.stroke();
+    }
+    e.restore();
+  }
+
+  function drawDungeonDoor(e, t, isVert = !1, isOpened = !1) {
+    e.save();
+    if (isOpened) {
+      // Porta de carvalho aberta
+      e.fillStyle = "#1e293b";
+      e.fillRect(-16 * t, -18 * t, 4 * t, 36 * t);
+      e.fillRect(12 * t, -18 * t, 4 * t, 36 * t);
+
+      e.fillStyle = "#451a03";
+      e.beginPath();
+      e.moveTo(-14 * t, -16 * t);
+      e.lineTo(-4 * t, -12 * t);
+      e.lineTo(-4 * t, 14 * t);
+      e.lineTo(-14 * t, 16 * t);
+      e.closePath();
+      e.fill();
+    } else {
+      // Porta fechada de carvalho maciço reforçada com faixas de ferro
+      e.fillStyle = "#1e293b";
+      e.fillRect(-16 * t, -19 * t, 32 * t, 37 * t);
+
+      // Pranchas de carvalho
+      e.fillStyle = "#5c2e0b";
+      e.fillRect(-13 * t, -17 * t, 26 * t, 33 * t);
+
+      // Frisos entre as tábuas
+      e.strokeStyle = "#381c07";
+      e.lineWidth = 1 * t;
+      e.beginPath();
+      e.moveTo(-5 * t, -17 * t); e.lineTo(-5 * t, 16 * t);
+      e.moveTo(4 * t, -17 * t); e.lineTo(4 * t, 16 * t);
+      e.stroke();
+
+      // Cintas de ferro forjado
+      e.fillStyle = "#0f172a";
+      e.fillRect(-13 * t, -12 * t, 26 * t, 3.5 * t);
+      e.fillRect(-13 * t, 8 * t, 26 * t, 3.5 * t);
+
+      // Rebites
+      e.fillStyle = "#94a3b8";
+      for (const rx of [-9, -1, 7]) {
+        e.beginPath();
+        e.arc(rx * t, -10.2 * t, 1.2 * t, 0, Math.PI * 2);
+        e.arc(rx * t, 9.8 * t, 1.2 * t, 0, Math.PI * 2);
+        e.fill();
+      }
+
+      // Argola de puxar
+      e.strokeStyle = "#cbd5e1";
+      e.lineWidth = 1.3 * t;
+      e.beginPath();
+      e.arc(6 * t, 0, 3 * t, 0, Math.PI * 2);
+      e.stroke();
+    }
+    e.restore();
+  }
+
+  function drawTortureRack(e, t) {
+    e.save();
+    // Sombra
+    e.fillStyle = "rgba(2, 6, 23, 0.6)";
+    e.fillRect(-18 * t, -8 * t, 36 * t, 20 * t);
+
+    // Estrutura de vigas de madeira escura
+    e.fillStyle = "#3e2723";
+    e.fillRect(-16 * t, -12 * t, 32 * t, 4 * t);
+    e.fillRect(-16 * t, 8 * t, 32 * t, 4 * t);
+    e.fillRect(-16 * t, -12 * t, 4 * t, 24 * t);
+    e.fillRect(12 * t, -12 * t, 4 * t, 24 * t);
+
+    // Prancha central manchada de sangue antigo
+    e.fillStyle = "#5d4037";
+    e.fillRect(-12 * t, -8 * t, 24 * t, 16 * t);
+    e.fillStyle = "rgba(127, 29, 29, 0.75)";
+    e.beginPath();
+    e.ellipse(0, 0, 8 * t, 5 * t, 0.3, 0, Math.PI * 2);
+    e.fill();
+
+    // Rolos cilíndricos com manivelas nas pontas
+    e.fillStyle = "#1e293b";
+    e.fillRect(-14 * t, -7 * t, 3 * t, 14 * t);
+    e.fillRect(11 * t, -7 * t, 3 * t, 14 * t);
+
+    // Manivelas dentadas
+    e.strokeStyle = "#475569";
+    e.lineWidth = 1.8 * t;
+    e.beginPath();
+    e.moveTo(13 * t, -10 * t); e.lineTo(17 * t, -14 * t);
+    e.moveTo(13 * t, 10 * t); e.lineTo(17 * t, 14 * t);
+    e.stroke();
+
+    // Correntes de ferro esticadas
+    e.strokeStyle = "#94a3b8";
+    e.lineWidth = 1.2 * t;
+    e.beginPath();
+    e.moveTo(-11 * t, -4 * t); e.lineTo(-5 * t, -2 * t);
+    e.moveTo(-11 * t, 4 * t); e.lineTo(-5 * t, 2 * t);
+    e.moveTo(11 * t, -4 * t); e.lineTo(5 * t, -2 * t);
+    e.moveTo(11 * t, 4 * t); e.lineTo(5 * t, 2 * t);
+    e.stroke();
+
+    // Manoplas de couro/ferro
+    e.fillStyle = "#78350f";
+    e.fillRect(-6 * t, -4 * t, 2 * t, 3 * t);
+    e.fillRect(-6 * t, 1 * t, 2 * t, 3 * t);
+    e.fillRect(4 * t, -4 * t, 2 * t, 3 * t);
+    e.fillRect(4 * t, 1 * t, 2 * t, 3 * t);
+
+    e.restore();
+  }
+
+  function drawIronMaiden(e, t) {
+    e.save();
+    // Sombra
+    e.fillStyle = "rgba(2, 6, 23, 0.65)";
+    e.beginPath();
+    e.ellipse(0, 12 * t, 14 * t, 6 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Corpo do sarcófago de ferro negro
+    e.fillStyle = "#1e293b";
+    e.fillRect(-9 * t, -24 * t, 18 * t, 34 * t);
+
+    // Topo em arco
+    e.beginPath();
+    e.arc(0, -24 * t, 9 * t, Math.PI, 0);
+    e.fill();
+
+    // Borda metálica e rebites
+    e.strokeStyle = "#475569";
+    e.lineWidth = 1.5 * t;
+    e.strokeRect(-9 * t, -24 * t, 18 * t, 34 * t);
+
+    // Rosto moldado na porta em agonia
+    e.fillStyle = "#334155";
+    e.beginPath();
+    e.ellipse(0, -22 * t, 5 * t, 6 * t, 0, 0, Math.PI * 2);
+    e.fill();
+    e.fillStyle = "#0f172a";
+    e.fillRect(-2.5 * t, -24 * t, 1.8 * t, 2 * t);
+    e.fillRect(0.8 * t, -24 * t, 1.8 * t, 2 * t);
+    e.fillRect(-2 * t, -19 * t, 4 * t, 2.5 * t);
+
+    // Porta ligeiramente entreaberta mostrando espinhos afiados por dentro
+    e.fillStyle = "#09090b";
+    e.fillRect(2 * t, -18 * t, 6 * t, 27 * t);
+
+    // Espinhos pontiagudos internos brilhando
+    e.fillStyle = "#cbd5e1";
+    for (let sy = -14; sy <= 6; sy += 5) {
+      e.beginPath();
+      e.moveTo(8 * t, sy * t);
+      e.lineTo(3 * t, (sy + 1.5) * t);
+      e.lineTo(8 * t, (sy + 3) * t);
+      e.closePath();
+      e.fill();
+    }
+
+    e.restore();
+  }
+
+  function drawHangingCage(e, t, animTimer = 0) {
+    e.save();
+    const sway = Math.sin((animTimer || 0) * 1.6) * 0.04;
+    e.rotate(sway);
+
+    // Corrente pendurada no teto
+    e.strokeStyle = "#475569";
+    e.lineWidth = 1.4 * t;
+    e.beginPath();
+    e.moveTo(0, -32 * t);
+    e.lineTo(0, -14 * t);
+    e.stroke();
+
+    // Sombra no chão
+    e.fillStyle = "rgba(2, 6, 23, 0.45)";
+    e.beginPath();
+    e.ellipse(0, 10 * t, 10 * t, 4 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Cúpula e anéis da gaiola
+    e.fillStyle = "#1e293b";
+    e.beginPath();
+    e.ellipse(0, -14 * t, 8 * t, 3 * t, 0, 0, Math.PI * 2);
+    e.ellipse(0, 2 * t, 8 * t, 3 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Barras verticais da gaiola
+    e.strokeStyle = "#334155";
+    e.lineWidth = 1.6 * t;
+    for (const bx of [-7, -3.5, 0, 3.5, 7]) {
+      e.beginPath();
+      e.moveTo(bx * t, -14 * t);
+      e.lineTo(bx * t, 2 * t);
+      e.stroke();
+    }
+
+    // Ossadas e crânio dentro da gaiola
+    e.fillStyle = "#e2e8f0";
+    // Crânio
+    e.beginPath();
+    e.arc(1 * t, -4 * t, 3 * t, 0, Math.PI * 2);
+    e.fill();
+    e.fillStyle = "#0f172a";
+    e.fillRect(0, -4.5 * t, 1 * t, 1.2 * t);
+    e.fillRect(2 * t, -4.5 * t, 1 * t, 1.2 * t);
+    // Costelas / ossos
+    e.strokeStyle = "#cbd5e1";
+    e.lineWidth = 1.2 * t;
+    e.beginPath();
+    e.moveTo(-2 * t, -1 * t); e.lineTo(3 * t, 0);
+    e.stroke();
+
+    e.restore();
+  }
+
+  function drawTortureBrazier(e, t, animTimer = 0) {
+    e.save();
+    // Sombra
+    e.fillStyle = "rgba(2, 6, 23, 0.55)";
+    e.beginPath();
+    e.ellipse(0, 8 * t, 12 * t, 5 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Tripé de ferro forjado
+    e.strokeStyle = "#1e293b";
+    e.lineWidth = 2 * t;
+    e.beginPath();
+    e.moveTo(0, 2 * t); e.lineTo(-8 * t, 8 * t);
+    e.moveTo(0, 2 * t); e.lineTo(8 * t, 8 * t);
+    e.moveTo(0, 2 * t); e.lineTo(0, 8 * t);
+    e.stroke();
+
+    // Bacia de ferro
+    e.fillStyle = "#0f172a";
+    e.beginPath();
+    e.ellipse(0, 0, 11 * t, 5 * t, 0, 0, Math.PI * 2);
+    e.fill();
+    e.strokeStyle = "#334155";
+    e.lineWidth = 1.5 * t;
+    e.stroke();
+
+    // Carvão em brasa ardente
+    const flicker = Math.sin((animTimer || 0) * 7) * 0.15;
+    e.fillStyle = `rgba(239, 68, 68, ${0.85 + flicker})`;
+    e.beginPath();
+    e.ellipse(0, -1 * t, 9 * t, 3.8 * t, 0, 0, Math.PI * 2);
+    e.fill();
+    e.fillStyle = "rgba(249, 115, 22, 0.9)";
+    e.beginPath();
+    e.ellipse(0, -1.5 * t, 6 * t, 2.5 * t, 0, 0, Math.PI * 2);
+    e.fill();
+    e.fillStyle = "rgba(254, 240, 138, 0.95)";
+    e.beginPath();
+    e.ellipse(0, -2 * t, 3 * t, 1.5 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Ferros de marcar a brasa compridos saindo do braseiro
+    e.strokeStyle = "#1e293b";
+    e.lineWidth = 1.6 * t;
+    e.beginPath();
+    e.moveTo(-3 * t, -1 * t); e.lineTo(-11 * t, -12 * t);
+    e.moveTo(2 * t, -1 * t); e.lineTo(10 * t, -11 * t);
+    e.stroke();
+    // Pontas incandescentes dos ferros
+    e.strokeStyle = "#ef4444";
+    e.lineWidth = 2.2 * t;
+    e.beginPath();
+    e.moveTo(-1 * t, -1 * t); e.lineTo(-4 * t, -3 * t);
+    e.moveTo(1 * t, -1 * t); e.lineTo(3.5 * t, -3 * t);
+    e.stroke();
+
+    e.restore();
+  }
+
+  function drawTortureTools(e, t) {
+    e.save();
+    // Mesa rústica ensanguentada
+    e.fillStyle = "rgba(2, 6, 23, 0.5)";
+    e.fillRect(-14 * t, -4 * t, 28 * t, 14 * t);
+
+    e.fillStyle = "#292524";
+    e.fillRect(-12 * t, -8 * t, 24 * t, 12 * t);
+    e.strokeStyle = "#1c1917";
+    e.lineWidth = 1.2 * t;
+    e.strokeRect(-12 * t, -8 * t, 24 * t, 12 * t);
+
+    // Manchas de sangue
+    e.fillStyle = "rgba(185, 28, 28, 0.7)";
+    e.beginPath();
+    e.ellipse(-4 * t, -2 * t, 4 * t, 2 * t, 0.2, 0, Math.PI * 2);
+    e.fill();
+
+    // Ferramentas: serra, tenaz, pinças
+    e.strokeStyle = "#94a3b8";
+    e.lineWidth = 1.3 * t;
+    // Serra
+    e.beginPath();
+    e.moveTo(2 * t, -6 * t); e.lineTo(9 * t, -2 * t);
+    e.stroke();
+    // Pinças / Alicates
+    e.beginPath();
+    e.moveTo(-8 * t, -5 * t); e.lineTo(-4 * t, -1 * t);
+    e.moveTo(-8 * t, -1 * t); e.lineTo(-4 * t, -5 * t);
+    e.stroke();
+
+    e.restore();
+  }
+
+  function drawLatrinePit(e, t, animTimer = 0) {
+    e.save();
+    // Borda de pedra escavada da fossa
+    e.fillStyle = "#1e293b";
+    e.beginPath();
+    e.ellipse(0, 0, 18 * t, 14 * t, 0, 0, Math.PI * 2);
+    e.fill();
+    e.strokeStyle = "#0f172a";
+    e.lineWidth = 2 * t;
+    e.stroke();
+
+    // Poço profundo escuro
+    e.fillStyle = "#020617";
+    e.beginPath();
+    e.ellipse(0, 0, 15 * t, 11 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Água pútrida/lama com reflexos verdes de limo
+    const wave = Math.sin((animTimer || 0) * 2) * 0.5 * t;
+    e.fillStyle = "rgba(20, 83, 45, 0.55)";
+    e.beginPath();
+    e.ellipse(0, wave, 13 * t, 9 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Grade de escoamento de ferro cruzando a fossa
+    e.strokeStyle = "#334155";
+    e.lineWidth = 1.5 * t;
+    e.beginPath();
+    for (let gx = -10; gx <= 10; gx += 4) {
+      e.moveTo(gx * t, -7 * t);
+      e.lineTo(gx * t, 7 * t);
+    }
+    e.moveTo(-12 * t, 0);
+    e.lineTo(12 * t, 0);
+    e.stroke();
+
+    // Pranchas podres de contenção nas bordas
+    e.fillStyle = "#3e2723";
+    e.fillRect(-16 * t, -12 * t, 9 * t, 3.5 * t);
+    e.fillRect(7 * t, 8 * t, 10 * t, 3.5 * t);
+
+    e.restore();
+  }
+
+  function drawLatrineBench(e, t) {
+    e.save();
+    // Bancos de latrina em alvenaria
+    e.fillStyle = "rgba(2, 6, 23, 0.5)";
+    e.fillRect(-12 * t, -4 * t, 24 * t, 14 * t);
+
+    // Bloco de cantaria da latrina
+    e.fillStyle = "#334155";
+    e.fillRect(-10 * t, -8 * t, 20 * t, 14 * t);
+    e.strokeStyle = "#1e293b";
+    e.lineWidth = 1.3 * t;
+    e.strokeRect(-10 * t, -8 * t, 20 * t, 14 * t);
+
+    // Orifícios escavados na pedra
+    e.fillStyle = "#020617";
+    e.beginPath();
+    e.ellipse(-4 * t, -2 * t, 3 * t, 3.5 * t, 0, 0, Math.PI * 2);
+    e.ellipse(4 * t, -2 * t, 3 * t, 3.5 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Tampo de madeira encostado na parede
+    e.fillStyle = "#451a03";
+    e.fillRect(-9 * t, -11 * t, 18 * t, 3 * t);
+
+    e.restore();
+  }
+
+  function drawDungeonSkeleton(e, t) {
+    e.save();
+    // Sombra
+    e.fillStyle = "rgba(2, 6, 23, 0.4)";
+    e.beginPath();
+    e.ellipse(0, 2 * t, 10 * t, 5 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Correntes e grilhões presos na parede
+    e.strokeStyle = "#475569";
+    e.lineWidth = 1.3 * t;
+    e.beginPath();
+    e.moveTo(-8 * t, -8 * t); e.lineTo(-5 * t, -3 * t);
+    e.moveTo(8 * t, -8 * t); e.lineTo(5 * t, -3 * t);
+    e.stroke();
+
+    // Crânio
+    e.fillStyle = "#cbd5e1";
+    e.beginPath();
+    e.arc(0, -3 * t, 3.2 * t, 0, Math.PI * 2);
+    e.fill();
+    e.fillStyle = "#0f172a";
+    e.fillRect(-1.5 * t, -3.5 * t, 1 * t, 1 * t);
+    e.fillRect(0.5 * t, -3.5 * t, 1 * t, 1 * t);
+
+    // Costelas e ossos caídos
+    e.strokeStyle = "#94a3b8";
+    e.lineWidth = 1.2 * t;
+    e.beginPath();
+    e.moveTo(-3 * t, 0); e.lineTo(3 * t, 0);
+    e.moveTo(-2.5 * t, 2 * t); e.lineTo(2.5 * t, 2 * t);
+    e.moveTo(-4 * t, 4 * t); e.lineTo(-1 * t, 7 * t);
+    e.moveTo(4 * t, 4 * t); e.lineTo(1 * t, 7 * t);
+    e.stroke();
+
+    e.restore();
+  }
+
+  function drawDungeonStraw(e, t) {
+    e.save();
+    // Monte de palha mofada
+    e.fillStyle = "#713f12";
+    e.beginPath();
+    e.ellipse(0, 0, 11 * t, 6 * t, 0.1, 0, Math.PI * 2);
+    e.fill();
+    e.strokeStyle = "#a16207";
+    e.lineWidth = 1 * t;
+    for (let i = -7; i <= 7; i += 3) {
+      e.beginPath();
+      e.moveTo(i * t, -3 * t);
+      e.lineTo((i + 2) * t, 3 * t);
+      e.stroke();
+    }
+    // Tigela de barro quebrada
+    e.fillStyle = "#9a3412";
+    e.beginPath();
+    e.arc(6 * t, 2 * t, 2.2 * t, 0, Math.PI);
+    e.fill();
+    e.restore();
+  }
+
+  function drawJailerTable(e, t) {
+    e.save();
+    e.fillStyle = "rgba(2, 6, 23, 0.5)";
+    e.fillRect(-13 * t, -4 * t, 26 * t, 14 * t);
+
+    e.fillStyle = "#3e2723";
+    e.fillRect(-11 * t, -8 * t, 22 * t, 12 * t);
+    e.strokeStyle = "#1b0f0a";
+    e.lineWidth = 1.2 * t;
+    e.strokeRect(-11 * t, -8 * t, 22 * t, 12 * t);
+
+    // Livro de registros de prisioneiros
+    e.fillStyle = "#fef3c7";
+    e.fillRect(-6 * t, -6 * t, 6 * t, 8 * t);
+    e.strokeStyle = "#78350f";
+    e.lineWidth = 0.8 * t;
+    e.strokeRect(-6 * t, -6 * t, 6 * t, 8 * t);
+
+    // Garrafa e chaveiro
+    e.fillStyle = "#15803d";
+    e.fillRect(3 * t, -6 * t, 2.5 * t, 5 * t);
+    // Argola com chaves de ferro
+    e.strokeStyle = "#cbd5e1";
+    e.lineWidth = 1.1 * t;
+    e.beginPath();
+    e.arc(6 * t, 0, 2 * t, 0, Math.PI * 2);
+    e.moveTo(6 * t, 2 * t); e.lineTo(7 * t, 4 * t);
+    e.stroke();
+
+    e.restore();
+  }
+
+  function drawWeaponRack(e, t) {
+    e.save();
+    e.fillStyle = "rgba(2, 6, 23, 0.45)";
+    e.fillRect(-11 * t, -2 * t, 22 * t, 10 * t);
+
+    // Suporte de madeira
+    e.fillStyle = "#451a03";
+    e.fillRect(-9 * t, -12 * t, 3 * t, 18 * t);
+    e.fillRect(6 * t, -12 * t, 3 * t, 18 * t);
+    e.fillRect(-9 * t, -6 * t, 18 * t, 2.5 * t);
+
+    // Lanças e alabardas enferrujadas
+    e.strokeStyle = "#78350f";
+    e.lineWidth = 1.4 * t;
+    e.beginPath();
+    e.moveTo(-5 * t, 4 * t); e.lineTo(-2 * t, -16 * t);
+    e.moveTo(2 * t, 4 * t); e.lineTo(5 * t, -16 * t);
+    e.stroke();
+
+    // Pontas de metal
+    e.fillStyle = "#94a3b8";
+    e.beginPath();
+    e.moveTo(-2 * t, -18 * t); e.lineTo(-3.5 * t, -15 * t); e.lineTo(-0.5 * t, -15 * t);
+    e.closePath();
+    e.fill();
+    e.beginPath();
+    e.moveTo(5 * t, -18 * t); e.lineTo(3.5 * t, -15 * t); e.lineTo(6.5 * t, -15 * t);
+    e.closePath();
+    e.fill();
+
+    e.restore();
+  }
+
+  function drawPedregulhos(e, t, subType = 0) {
+    e.save();
+    // Pilha de pedregulhos e cascalho da escavação
+    const colors = ["#475569", "#334155", "#64748b", "#1e293b"];
+    const col0 = colors[subType % 4];
+    const col1 = colors[(subType + 1) % 4];
+
+    // Sombra das pedras
+    e.fillStyle = "rgba(2, 6, 23, 0.4)";
+    e.beginPath();
+    e.ellipse(0, 3 * t, 12 * t, 6 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Pedra maior
+    e.fillStyle = col0;
+    e.beginPath();
+    e.moveTo(-6 * t, 2 * t);
+    e.lineTo(-3 * t, -5 * t);
+    e.lineTo(3 * t, -4 * t);
+    e.lineTo(5 * t, 3 * t);
+    e.lineTo(-1 * t, 5 * t);
+    e.closePath();
+    e.fill();
+    e.strokeStyle = "#0f172a";
+    e.lineWidth = 0.9 * t;
+    e.stroke();
+
+    // Pedra média
+    e.fillStyle = col1;
+    e.beginPath();
+    e.moveTo(3 * t, 0);
+    e.lineTo(8 * t, -3 * t);
+    e.lineTo(9 * t, 3 * t);
+    e.lineTo(5 * t, 4 * t);
+    e.closePath();
+    e.fill();
+    e.stroke();
+
+    // Pedregulhos menores espalhados
+    e.fillStyle = "#64748b";
+    e.fillRect(-8 * t, -1 * t, 2.5 * t, 2 * t);
+    e.fillRect(-2 * t, 4 * t, 2 * t, 1.8 * t);
+    e.fillRect(6 * t, -4 * t, 1.8 * t, 1.5 * t);
+
+    e.restore();
+  }

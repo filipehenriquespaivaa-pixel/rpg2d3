@@ -106,7 +106,9 @@
         (this.islandNoise = new SimplexNoise(t + 707)),
         (this.featureNoise = new SimplexNoise(t + 808)),
         (this.canyonNoise = new SimplexNoise(t + 909)),
-        (this.lakeNoise = new SimplexNoise(t + 1010)));
+        (this.lakeNoise = new SimplexNoise(t + 1010)),
+        (this.undergroundLevel = 0),
+        (this._dungeonStairCache = new Map()));
     }
     setSeed(t) {
       ((this.seed = t),
@@ -124,22 +126,26 @@
         this.interactedProps.clear(),
         this.collectedGroundItems.clear(),
         this.customPlacedProps.clear(),
+        this._dungeonStairCache && this._dungeonStairCache.clear(),
         this.clearTileCache(),
-        (this.isUnderground = !1));
+        (this.isUnderground = !1),
+        (this.undergroundLevel = 0));
     }
     _tk(t, l, c) {
+      const lvl = typeof c === "number" ? c : (c ? (this.undergroundLevel || 1) : 0);
       return Number.isInteger(t) &&
         Number.isInteger(l) &&
         t > -1048576 &&
         t < 1048576 &&
         l > -1048576 &&
         l < 1048576
-        ? (t + 1048576) * 2097152 + (l + 1048576) + (c ? 4398046511104 : 0)
-        : `${c ? "c" : "s"}_${t},${l}`;
+        ? (t + 1048576) * 2097152 + (l + 1048576) + lvl * 4398046511104
+        : `${lvl}_${t},${l}`;
     }
     invalidateTile(t, l) {
-      (this.tileCache.delete(this._tk(t, l, !1)),
-        this.tileCache.delete(this._tk(t, l, !0)),
+      (this.tileCache.delete(this._tk(t, l, 0)),
+        this.tileCache.delete(this._tk(t, l, 1)),
+        this.tileCache.delete(this._tk(t, l, 2)),
         this.closestCampfireCache.clear());
     }
     clearTileCache() {
@@ -801,6 +807,7 @@
         (surfB && surfB.id === BiomeId.MEADOW)
       );
       this.isUnderground = !0;
+      this.undergroundLevel = 1;
       this.activeCaveSeed = (this.seed + 88888) >>> 0;
       this.caveWallNoise.seed(this.activeCaveSeed + 404);
       this.caveRoomNoise.seed(this.activeCaveSeed + 505);
@@ -809,6 +816,7 @@
     }
     exitCave(t, l) {
       this.isUnderground = !1;
+      this.undergroundLevel = 0;
       this.clearTileCache();
       if (t !== undefined && l !== undefined) {
         return {
@@ -817,6 +825,25 @@
         };
       }
       return this.surfaceCoords;
+    }
+    enterDungeon(t, l, o, u) {
+      this.subsoloCoords = { x: o, y: u };
+      this.activeDungeonStairCoords = { tx: t, ty: l };
+      this.isUnderground = !0;
+      this.undergroundLevel = 2;
+      this.clearTileCache();
+    }
+    exitDungeon(t, l) {
+      this.isUnderground = !0;
+      this.undergroundLevel = 1;
+      this.clearTileCache();
+      if (t !== undefined && l !== undefined) {
+        return {
+          x: t * this.tileSize + 14,
+          y: l * this.tileSize + 20,
+        };
+      }
+      return this.subsoloCoords || { x: t * this.tileSize + 14, y: l * this.tileSize + 20 };
     }
     _isRawCaveCandidateAt(t, l) {
       if (!this.rawCaveCandidateCache) this.rawCaveCandidateCache = new Map();
@@ -1071,10 +1098,14 @@
       );
     }
     getTile(t, l) {
-      const o = this._tk(t, l, this.isUnderground),
+      const o = this._tk(t, l, this.undergroundLevel || (this.isUnderground ? 1 : 0)),
         u = this.tileCache.get(o);
       if (u) return u;
       if (this.isUnderground) {
+        if (this.undergroundLevel === 2) {
+          const ue = this.getDungeonTile(t, l);
+          return (this.tileCache.set(o, ue), ue);
+        }
         const ue = this.getUndergroundTile(t, l);
         return (this.tileCache.set(o, ue), ue);
       }
@@ -2138,6 +2169,56 @@
       }
       return (this.tileCache.set(o, se), se);
     }
+    getDungeonEntranceStairForBiome(t, l) {
+      const city = this._getMeadowCityDistrict(t, l);
+      if (!city) return null;
+      if (!this._dungeonStairCache) this._dungeonStairCache = new Map();
+      const key = `city_${city.cx},${city.cy}`;
+      if (this._dungeonStairCache.has(key)) {
+        return this._dungeonStairCache.get(key);
+      }
+      const bx = Math.floor(city.cx / 32);
+      const by = Math.floor(city.cy / 32);
+      const candidates = [
+        { lx: 25, ly: 11 },
+        { lx: 26, ly: 10 },
+        { lx: 24, ly: 12 },
+        { lx: 20, ly: 11 },
+        { lx: 18, ly: 10 },
+        { lx: 25, ly: 24 },
+        { lx: 20, ly: 25 },
+        { lx: 10, ly: 10 },
+        { lx: 14, ly: 10 },
+        { lx: 10, ly: 24 }
+      ];
+      let chosen = null;
+      for (const cand of candidates) {
+        const tx = bx * 32 + cand.lx;
+        const ty = by * 32 + cand.ly;
+        const cell = this._getUndergroundGreekSanctuaryCellAt(tx, ty);
+        if (cell && (cell.role === "temple_floor" || cell.role === "house_floor" || cell.role === "mosaic_center")) {
+          const caveEnt = this.getCaveEntranceAt(tx, ty);
+          if (!caveEnt) {
+            chosen = { tx, ty, bx, by, lx: cand.lx, ly: cand.ly, city };
+            break;
+          }
+        }
+      }
+      if (!chosen) {
+        chosen = { tx: bx * 32 + 25, ty: by * 32 + 11, bx, by, lx: 25, ly: 11, city };
+      }
+      this._dungeonStairCache.set(key, chosen);
+      return chosen;
+    }
+    isDungeonEntranceStairAt(t, l) {
+      const surfB = this._computeSurfaceBaseBiome(t, l);
+      if (!surfB || (surfB.id !== BiomeId.MEADOW && surfB.id !== BiomeId.MEADOW_LAKE)) return null;
+      const stair = this.getDungeonEntranceStairForBiome(t, l);
+      if (stair && stair.tx === t && stair.ty === l) {
+        return stair;
+      }
+      return null;
+    }
     _getUndergroundGreekSanctuaryCellAt(t, l) {
       // Verifica se este ponto subterrâneo está ESTRITAMENTE abaixo do bioma que tem Ruínas Gregas (MEADOW).
       // Cavernas abaixo de quaisquer outros biomas continuam sendo cavernas naturais normais!
@@ -2179,6 +2260,23 @@
           roomName: "Pátio da Escadaria Subterrânea",
           subType: 0,
         };
+      }
+
+      // Se este tile for a Escadaria do Calabouço (ou imediatamente ao lado dela, dist <= 1),
+      // garante piso de mosaico aberto no salão para nunca bloquear a escadaria!
+      const city = this._getMeadowCityDistrict(t, l);
+      if (city) {
+        const dStairKey = `city_${city.cx},${city.cy}`;
+        const dStair = this._dungeonStairCache ? this._dungeonStairCache.get(dStairKey) : null;
+        if (dStair && Math.abs(t - dStair.tx) <= 1 && Math.abs(l - dStair.ty) <= 1) {
+          return {
+            role: "mosaic_center",
+            rx: t - dStair.tx,
+            ry: l - dStair.ty,
+            roomName: "Pátio da Escadaria do Calabouço",
+            subType: 0,
+          };
+        }
       }
 
       // =========================================================================
@@ -2585,6 +2683,41 @@
       const p = `cave_${t},${l}`;
       const sanctuary = this._getUndergroundGreekSanctuaryCellAt(t, l);
       if (sanctuary) {
+        const dStair = this.isDungeonEntranceStairAt(t, l);
+        if (dStair) {
+          return {
+            tx: t,
+            ty: l,
+            elevation: 0.15,
+            moisture: 0.5,
+            temperature: 0.5,
+            biome: BIOMES[BiomeId.CAVE_FLOOR],
+            isGreekRuin: !0,
+            greekRuinRole: "mosaic_center",
+            greekRuinRx: 0,
+            greekRuinRy: 0,
+            greekRoomName: "Salão com Escadaria do Calabouço",
+            greekFloorFailed: !1,
+            isGreekWall: !1,
+            isGreekDoor: !1,
+            isGreekDoorOpen: !1,
+            prop: {
+              kind: "dungeon_staircase_down",
+              subType: 0,
+              targetTx: t,
+              targetTy: l,
+              offsetX: 0,
+              offsetY: -4,
+              scale: 1.35,
+              interactive: !0,
+              namePt: "Escadaria de Ferro para o Calabouço Inferior",
+              descriptionPt:
+                "Uma imponente escadaria de ardósia escura com grades e correntes de ferro forjado descendo para as masmorras subterrâneas do andar inferior. Pressione [F] para descer!",
+            },
+            detailHash: u,
+          };
+        }
+
         const intState =
           this.interactedProps.get(p) ||
           this.interactedProps.get(`underground_${t},${l}`) ||
@@ -2902,6 +3035,480 @@
         detailHash: u,
       };
     }
+    _getDungeonCellAt(dx, dy) {
+      // 1. Vestíbulo da Escadaria: dx in [-3, 3], dy in [-4, 2]
+      if (dx >= -3 && dx <= 3 && dy >= -4 && dy <= 2) {
+        if (dy === -4 || dx === -3 || dx === 3 || (dy === 2 && (dx < -1 || dx > 1))) {
+          return { role: "dungeon_wall", roomName: "Muralha do Vestíbulo da Escadaria" };
+        }
+        if (dx === 0 && dy === 0) {
+          return { role: "dungeon_staircase_up", roomName: "Vestíbulo da Escadaria do Calabouço" };
+        }
+        if ((dx === -2 && dy === -3) || (dx === 2 && dy === -3)) {
+          return { role: "corridor_torch", roomName: "Vestíbulo da Escadaria do Calabouço" };
+        }
+        return { role: "dungeon_floor", roomName: "Vestíbulo da Escadaria do Calabouço" };
+      }
+
+      // 2. Corredor Longo do Calabouço: dx in [-1, 1], dy in [3, 37]
+      if (dx >= -1 && dx <= 1 && dy >= 3 && dy <= 37) {
+        if ((dx === -1 || dx === 1) && (dy === 8 || dy === 14 || dy === 20 || dy === 26 || dy === 32)) {
+          return { role: "corridor_torch", roomName: "Grande Corredor das Masmorras" };
+        }
+        return { role: "corridor_floor", roomName: "Grande Corredor das Masmorras" };
+      }
+
+      // 3. Prisões Pequenas com Grades (Ala Oeste): dx in [-7, -2], dy in [3, 37]
+      if (dx >= -7 && dx <= -2 && dy >= 3 && dy <= 37) {
+        if (dx === -7) {
+          return { role: "dungeon_wall", roomName: "Muralha Externa das Celas" };
+        }
+        if (dy === 3 || dy === 37) {
+          return { role: "dungeon_wall", roomName: "Muralha das Celas" };
+        }
+        const isPartition = dy === 8 || dy === 14 || dy === 20 || dy === 26 || dy === 32;
+        if (isPartition) {
+          return { role: "dungeon_wall", roomName: "Parede Divisória de Cela" };
+        }
+
+        // Frente voltada para o corredor (dx === -2)
+        if (dx === -2) {
+          if (dy === 6) return { role: "iron_bars_gate", cellIndex: 1, defaultOpened: false, roomName: "Grade de Ferro da Cela 1" };
+          if (dy === 11) return { role: "iron_bars_gate", cellIndex: 2, defaultOpened: true, roomName: "Grade de Ferro da Cela 2" };
+          if (dy === 17) return { role: "iron_bars_gate", cellIndex: 3, defaultOpened: false, roomName: "Grade de Ferro da Cela 3" };
+          if (dy === 23) return { role: "iron_bars_gate", cellIndex: 4, defaultOpened: true, roomName: "Grade de Ferro da Cela 4" };
+          if (dy === 29) return { role: "iron_bars_gate", cellIndex: 5, defaultOpened: false, roomName: "Grade de Ferro da Cela 5" };
+          if (dy === 34) return { role: "iron_bars_gate", cellIndex: 6, defaultOpened: true, roomName: "Grade de Ferro da Cela 6" };
+          return { role: "dungeon_wall", roomName: "Frontispício das Celas" };
+        }
+
+        let cellIdx = 1;
+        if (dy > 32) cellIdx = 6;
+        else if (dy > 26) cellIdx = 5;
+        else if (dy > 20) cellIdx = 4;
+        else if (dy > 14) cellIdx = 3;
+        else if (dy > 8) cellIdx = 2;
+
+        const cellName = `Cela Prisional #${cellIdx}`;
+        if (cellIdx === 1 && dx === -5 && dy === 5) return { role: "dungeon_skeleton", roomName: cellName };
+        if (cellIdx === 2 && dx === -5 && dy === 10) return { role: "dungeon_straw", roomName: cellName };
+        if (cellIdx === 3 && dx === -5 && dy === 16) return { role: "chest", roomName: cellName };
+        if (cellIdx === 4 && dx === -5 && dy === 22) return { role: "dungeon_latrine_bench", roomName: cellName };
+        if (cellIdx === 5 && dx === -5 && dy === 28) return { role: "dungeon_skeleton", roomName: cellName };
+        if (cellIdx === 6 && dx === -5 && dy === 35) return { role: "dungeon_straw", roomName: cellName };
+
+        return { role: "cell_floor", cellIndex: cellIdx, roomName: cellName };
+      }
+
+      // 4. Salão 1: Posto do Carcereiro (dx in [2, 11], dy in [4, 12])
+      if (dx >= 2 && dx <= 11 && dy >= 4 && dy <= 12) {
+        if (dy === 4 || dy === 12 || dx === 11) {
+          return { role: "dungeon_wall", roomName: "Muralha do Posto do Carcereiro" };
+        }
+        if (dx === 2) {
+          if (dy === 8) {
+            return { role: "dungeon_door", doorVertical: true, defaultOpened: false, roomName: "Porta do Posto do Carcereiro" };
+          }
+          return { role: "dungeon_wall", roomName: "Muralha do Corredor" };
+        }
+        const roomName = "Posto do Carcereiro das Masmorras";
+        if (dx === 7 && dy === 8) return { role: "jailer_table", roomName };
+        if (dx === 9 && dy === 6) return { role: "weapon_rack", roomName };
+        if (dx === 4 && dy === 6) return { role: "chest", roomName };
+        if (dx === 9 && dy === 10) return { role: "corridor_torch", roomName };
+        return { role: "hall_floor", roomName };
+      }
+
+      // 5. Salão 2: A SALA DE TORTURA (Apenas UMA sala de tortura! dx in [2, 14], dy in [14, 25])
+      if (dx >= 2 && dx <= 14 && dy >= 14 && dy <= 25) {
+        if (dy === 14 || dy === 25 || dx === 14) {
+          return { role: "dungeon_wall", roomName: "Muralha da Câmara de Tortura" };
+        }
+        if (dx === 2) {
+          if (dy === 19) {
+            return { role: "dungeon_door", doorVertical: true, defaultOpened: false, roomName: "Porta Blindada da Câmara de Tortura" };
+          }
+          return { role: "dungeon_wall", roomName: "Muralha do Corredor" };
+        }
+        const roomName = "Câmara de Tortura das Masmorras";
+        if (dx === 8 && dy === 19) return { role: "torture_rack", roomName };
+        if (dx === 12 && dy === 17) return { role: "iron_maiden", roomName };
+        if (dx === 11 && dy === 22) return { role: "hanging_cage", roomName };
+        if (dx === 5 && dy === 22) return { role: "torture_brazier", roomName };
+        if (dx === 5 && dy === 16) return { role: "torture_tools", roomName };
+        if (dx === 8 && dy === 15) return { role: "dungeon_skeleton", roomName };
+        if (dx === 8 && dy === 24) return { role: "dungeon_straw", roomName };
+        return { role: "torture_floor", roomName };
+      }
+
+      // 6. Salão 3: SALÃO DA FOSSA (Banheiro medieval / Latrinas para ambientação: dx in [2, 13], dy in [27, 36])
+      if (dx >= 2 && dx <= 13 && dy >= 27 && dy <= 36) {
+        if (dy === 27 || dy === 36 || dx === 13) {
+          return { role: "dungeon_wall", roomName: "Muralha da Câmara da Fossa" };
+        }
+        if (dx === 2) {
+          if (dy === 31) {
+            return { role: "dungeon_door", doorVertical: true, defaultOpened: false, roomName: "Porta da Câmara da Fossa" };
+          }
+          return { role: "dungeon_wall", roomName: "Muralha do Corredor" };
+        }
+        const roomName = "Câmara da Fossa e Latrinas Subterrâneas";
+        if (dx === 7 && dy === 31) return { role: "dungeon_latrine_pit", roomName };
+        if (dx === 11 && dy === 29) return { role: "dungeon_latrine_bench", roomName };
+        if (dx === 11 && dy === 33) return { role: "dungeon_latrine_bench", roomName };
+        if (dx === 4 && dy === 34) return { role: "dungeon_latrine_bench", roomName };
+        return { role: "latrine_floor", roomName };
+      }
+
+      // 7. Salão 4: Câmara de Provisões e Despojos (Final do Corredor: dx in [-5, 5], dy in [38, 46])
+      if (dx >= -5 && dx <= 5 && dy >= 38 && dy <= 46) {
+        if (dx === -5 || dx === 5 || dy === 46) {
+          return { role: "dungeon_wall", roomName: "Muralha do Depósito" };
+        }
+        if (dy === 38 && (dx < -1 || dx > 1)) {
+          return { role: "dungeon_wall", roomName: "Muralha do Depósito" };
+        }
+        const roomName = "Câmara de Provisões e Despojos do Calabouço";
+        if (dx === 0 && dy === 43) return { role: "chest", roomName };
+        if (dx === -3 && dy === 41) return { role: "dungeon_straw", roomName };
+        if (dx === 3 && dy === 41) return { role: "weapon_rack", roomName };
+        return { role: "hall_floor", roomName };
+      }
+
+      if (dy === 3 && dx >= 2 && dx <= 3) return { role: "dungeon_wall", roomName: "Muralha" };
+      if (dy === 13 && dx === 2) return { role: "dungeon_wall", roomName: "Muralha" };
+      if (dy === 26 && dx === 2) return { role: "dungeon_wall", roomName: "Muralha" };
+      if (dy === 37 && dx >= 2 && dx <= 5) return { role: "dungeon_wall", roomName: "Muralha" };
+
+      return null;
+    }
+    _isNearDungeonWall(dx, dy) {
+      for (let ndy = -2; ndy <= 2; ndy++) {
+        for (let ndx = -2; ndx <= 2; ndx++) {
+          const cell = this._getDungeonCellAt(dx + ndx, dy + ndy);
+          if (cell && cell.role === "dungeon_wall") {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    getDungeonTile(t, l) {
+      const u = this.hash2D(t, l, 98);
+      const stair = this.getDungeonEntranceStairForBiome(t, l);
+      const stairTx = stair ? stair.tx : (this.activeDungeonStairCoords ? this.activeDungeonStairCoords.tx : t);
+      const stairTy = stair ? stair.ty : (this.activeDungeonStairCoords ? this.activeDungeonStairCoords.ty : l);
+      const dx = t - stairTx;
+      const dy = l - stairTy;
+
+      const pKey = `dungeon_${t},${l}`;
+      const intState =
+        this.interactedProps.get(pKey) ||
+        this.interactedProps.get(`underground_${t},${l}`) ||
+        this.interactedProps.get(`${t},${l}`) ||
+        {};
+
+      const cell = this._getDungeonCellAt(dx, dy);
+
+      if (cell) {
+        let isDungeonWall = !1;
+        let isDungeonDoor = !1;
+        let isDungeonDoorOpen = !1;
+        let isIronBars = !1;
+        let isIronBarsOpen = !1;
+        let sProp = null;
+
+        if (this.customPlacedProps.has(pKey)) {
+          sProp = { ...this.customPlacedProps.get(pKey) };
+        } else if (cell.role === "dungeon_wall") {
+          isDungeonWall = !0;
+          sProp = {
+            kind: "dungeon_wall",
+            subType: 0,
+            scale: 1,
+            namePt: "Muralha de Cantaria do Calabouço",
+            descriptionPt: `Muralha sólida e maciça de granito escuro selando o interior de: ${cell.roomName}.`,
+          };
+        } else if (cell.role === "dungeon_staircase_up") {
+          sProp = {
+            kind: "dungeon_staircase_up",
+            targetTx: stairTx,
+            targetTy: stairTy,
+            scale: 1.35,
+            interactive: !0,
+            namePt: "Escadaria Ascendente do Calabouço",
+            descriptionPt: `Escadaria robusta de pedra e ferro que sobe de volta para os salões do subsolo em [${stairTx}, ${stairTy}]. Pressione [F] para subir ao subsolo!`,
+          };
+        } else if (cell.role === "iron_bars_gate") {
+          const isOpen = intState.opened !== undefined ? !!intState.opened : !!cell.defaultOpened;
+          isIronBars = !0;
+          isIronBarsOpen = isOpen;
+          sProp = {
+            kind: "iron_bars_gate",
+            doorVertical: !1,
+            opened: isOpen,
+            scale: 1,
+            interactive: !0,
+            namePt: isOpen
+              ? `${cell.roomName} (Aberta / Arrombada)`
+              : `${cell.roomName} (Fechada)`,
+            descriptionPt: isOpen
+              ? "As pesadas barras de ferro forjado desta cela estão abertas. Pressione [F] para fechar a grade."
+              : "Uma grade pesada de barras verticais de ferro forjado e tranca enferrujada. Pressione [F] para abrir!",
+          };
+        } else if (cell.role === "dungeon_door") {
+          const isOpen = intState.opened !== undefined ? !!intState.opened : !!cell.defaultOpened;
+          isDungeonDoor = !0;
+          isDungeonDoorOpen = isOpen;
+          sProp = {
+            kind: "dungeon_door",
+            doorVertical: !!cell.doorVertical,
+            opened: isOpen,
+            scale: 1,
+            interactive: !0,
+            namePt: isOpen
+              ? `${cell.roomName} (Porta Aberta)`
+              : `${cell.roomName} (Porta Fechada)`,
+            descriptionPt: isOpen
+              ? "A pesada porta de madeira reforçada com ferro está aberta. Pressione [F] para fechar."
+              : `Porta maciça de madeira com ferragens forjadas dando acesso a: ${cell.roomName}. Pressione [F] para abrir!`,
+          };
+        } else if (cell.role === "corridor_torch") {
+          sProp = {
+            kind: "corridor_torch",
+            subType: 0,
+            lit: !0,
+            interactive: !1,
+            namePt: "Tocha do Calabouço (Acesa)",
+            descriptionPt: "Braseiro de ferro negro ardendo em chamas, iluminando os corredores úmidos das masmorras.",
+          };
+        } else if (cell.role === "torture_rack") {
+          sProp = {
+            kind: "torture_rack",
+            subType: 0,
+            scale: 1.25,
+            interactive: !0,
+            namePt: "Cavalete de Tortura (Mesa de Estiramento)",
+            descriptionPt: "Estrutura sinistra de madeira maciça, manivelas dentadas e correntes de ferro usadas para estirar membros de prisioneiros.",
+          };
+        } else if (cell.role === "iron_maiden") {
+          sProp = {
+            kind: "iron_maiden",
+            subType: 0,
+            scale: 1.25,
+            interactive: !0,
+            namePt: "Donzela de Ferro (Sarcófago de Espinhos)",
+            descriptionPt: "Sarcófago de ferro forjado em pé com o rosto moldado em agonia e o interior forrado de pontas afiadas de metal.",
+          };
+        } else if (cell.role === "hanging_cage") {
+          sProp = {
+            kind: "hanging_cage",
+            subType: 0,
+            scale: 1.2,
+            interactive: !0,
+            namePt: "Gaiola de Ferro Suspensa com Ossadas",
+            descriptionPt: "Gaiola esférica de barras de ferro pendurada no teto por grossas correntes, guardando os restos mortais de uma antiga vítima.",
+          };
+        } else if (cell.role === "torture_brazier") {
+          sProp = {
+            kind: "torture_brazier",
+            subType: 0,
+            scale: 1.15,
+            interactive: !0,
+            namePt: "Braseiro de Tortura com Ferros em Brasa",
+            descriptionPt: "Braseiro de ferro com carvão incandescente e ferros compridos de marcar a brasa aquecendo entre as chamas.",
+          };
+        } else if (cell.role === "torture_tools") {
+          sProp = {
+            kind: "torture_tools",
+            subType: 0,
+            scale: 1.1,
+            interactive: !0,
+            namePt: "Mesa de Instrumentos de Suplício",
+            descriptionPt: "Mesa ensanguentada com tenazes de ferro, pinças, serras e chicotes usados nos interrogatórios da masmorra.",
+          };
+        } else if (cell.role === "dungeon_latrine_pit") {
+          sProp = {
+            kind: "dungeon_latrine_pit",
+            subType: 0,
+            scale: 1.35,
+            interactive: !0,
+            namePt: "Fossa Negra de Dejetos e Esgoto Subterrâneo",
+            descriptionPt: "Poço profundo e fétido escavado na rocha, coberto por tábuas podres e grades de ferro escorrendo líquido escuro.",
+          };
+        } else if (cell.role === "dungeon_latrine_bench") {
+          sProp = {
+            kind: "dungeon_latrine_bench",
+            subType: 0,
+            scale: 1.15,
+            interactive: !0,
+            namePt: "Assentos de Latrina em Alvenaria",
+            descriptionPt: "Bancos rústicos de pedra com orifícios talhados conduzindo à fossa subterrânea.",
+          };
+        } else if (cell.role === "jailer_table") {
+          sProp = {
+            kind: "jailer_table",
+            subType: 0,
+            scale: 1.2,
+            interactive: !0,
+            namePt: "Mesa do Carcereiro",
+            descriptionPt: "Mesa pesada de madeira carcomida com um diário de prisioneiros, garrafa de rum e molho de chaves de ferro.",
+          };
+        } else if (cell.role === "weapon_rack") {
+          sProp = {
+            kind: "weapon_rack",
+            subType: 0,
+            scale: 1.15,
+            interactive: !0,
+            namePt: "Suporte de Armas Enferrujadas",
+            descriptionPt: "Alabardas, maças e espadas enferrujadas usadas pelos antigos guardas da masmorra.",
+          };
+        } else if (cell.role === "dungeon_skeleton") {
+          sProp = {
+            kind: "dungeon_skeleton",
+            subType: 0,
+            scale: 1.1,
+            interactive: !0,
+            namePt: "Ossadas de Prisioneiro Acorrentado",
+            descriptionPt: "Restos mortais de um prisioneiro cujos pulsos ainda permanecem presos a grilhões chumbados na rocha.",
+          };
+        } else if (cell.role === "dungeon_straw") {
+          sProp = {
+            kind: "dungeon_straw",
+            subType: 0,
+            scale: 1.05,
+            interactive: !0,
+            namePt: "Cama de Palha Úmida",
+            descriptionPt: "Um monte de palha mofada e úmida servindo de leito desconfortável nas celas frias do calabouço.",
+          };
+        } else if (cell.role === "chest") {
+          const opened = !!intState.opened;
+          sProp = {
+            kind: "chest",
+            subType: 0,
+            scale: 1.05,
+            interactive: !opened,
+            opened: opened,
+            namePt: opened
+              ? "Baú do Calabouço (Aberto)"
+              : "Baú Reforçado do Calabouço",
+            descriptionPt: opened
+              ? "Os tesouros deste baú já foram recolhidos."
+              : `Baú de carvalho com guarnições de ferro guardado em: ${cell.roomName}. Pressione [F] para abrir!`,
+          };
+        }
+
+        return {
+          tx: t,
+          ty: l,
+          elevation: 0.1,
+          moisture: 0.7,
+          temperature: 0.35,
+          biome: BIOMES[BiomeId.CAVE_FLOOR],
+          isDungeonFloor: !0,
+          isDungeonWall,
+          isDungeonDoor,
+          isDungeonDoorOpen,
+          isIronBars,
+          isIronBarsOpen,
+          dungeonRole: cell.role,
+          dungeonRoomName: cell.roomName,
+          prop: sProp,
+          detailHash: u,
+        };
+      }
+
+      // FORA DA CONSTRUÇÃO DO CALABOUÇO: CAVERNA COMUM
+      const m = Math.abs(this.caveWallNoise.noise2D(t * 0.07, l * 0.07)),
+        c = this.caveRoomNoise.noise2D(t * 0.04, l * 0.04),
+        f = this.caveDetailNoise.noise2D(t * 0.07 + 77, l * 0.07 + 77);
+      const isOpen = m < 0.15 || Math.abs(f) < 0.14 || c > 0.46;
+
+      if (!isOpen) {
+        return {
+          tx: t,
+          ty: l,
+          elevation: 0.9,
+          moisture: 0.2,
+          temperature: 0.4,
+          biome: BIOMES[BiomeId.CAVE_WALL],
+          prop: null,
+          detailHash: u,
+        };
+      }
+
+      // Caverna comum aberta: verifica se está junto às paredes de construção para colocar PEDREGULHOS!
+      const isNearWall = this._isNearDungeonWall(dx, dy);
+      let caveProp = null;
+      let isPedregulhos = !1;
+
+      if (isNearWall) {
+        isPedregulhos = !0;
+        caveProp = {
+          kind: "pedregulhos",
+          subType: Math.abs(t * 17 + l * 23) % 4,
+          scale: 1.15,
+          interactive: !0,
+          namePt: "Pedregulhos e Cascalho da Escavação",
+          descriptionPt: "Pilhas de pedregulhos pontiagudos e cascalho solto acumulados na caverna ao lado das muralhas de cantaria do calabouço.",
+        };
+      } else {
+        // Recursos naturais da caverna comum
+        const rHash = this.hash2D(t, l, 513);
+        if (rHash < 0.035) {
+          const opened = !!intState.opened;
+          caveProp = {
+            kind: "crystal_cluster",
+            subType: Math.floor(rHash * 100) % 4,
+            scale: 1.1,
+            interactive: !opened,
+            opened: opened,
+            namePt: "Formação de Cristais Subterrâneos",
+            descriptionPt: "Cristais brilhantes incrustados na rocha da caverna. Pressione [F] para minerar!",
+          };
+        } else if (rHash < 0.065) {
+          const opened = !!intState.opened;
+          caveProp = {
+            kind: "ore_vein",
+            subType: Math.floor(rHash * 100) % 3,
+            scale: 1.1,
+            interactive: !opened,
+            opened: opened,
+            namePt: "Veio Mineral Bruto",
+            descriptionPt: "Um rico veio de minério despontando da parede rochosa. Pressione [F] para extrair!",
+          };
+        } else if (rHash < 0.095) {
+          caveProp = {
+            kind: "glowing_mushroom",
+            subType: Math.floor(rHash * 100) % 3,
+            scale: 1.05,
+            interactive: !0,
+            namePt: "Cogumelo Bioluminescente das Profundezas",
+            descriptionPt: "Fungo raro que emite luz azulada nas cavernas. Pressione [F] para colher!",
+          };
+        } else if (rHash < 0.12) {
+          caveProp = {
+            kind: "stalagmite",
+            subType: Math.floor(rHash * 100) % 4,
+            scale: 1.1,
+            namePt: "Estalagmite de Rocha Calcária",
+            descriptionPt: "Coluna cônica de calcário erguida pelo gotejamento secular das águas da caverna.",
+          };
+        }
+      }
+
+      return {
+        tx: t,
+        ty: l,
+        elevation: 0.1,
+        moisture: 0.6,
+        temperature: 0.45,
+        biome: BIOMES[BiomeId.CAVE_FLOOR],
+        isPedregulhos,
+        prop: caveProp,
+        detailHash: u,
+      };
+    }
     generateProp(t, l, o, u, m) {
       const c = `${t},${l}`,
         f = this.interactedProps.get(c);
@@ -3068,6 +3675,134 @@
             "Atravessando o portal de pedra de volta à luz da superfície!",
           reward: "Retorno à Superfície",
         };
+      if (o.prop.kind === "dungeon_staircase_down")
+        return {
+          success: !0,
+          action: "enter_dungeon",
+          entranceTx: t,
+          entranceTy: l,
+          message: "Descendo a escadaria úmida para as masmorras e calabouços...",
+          reward: "Calabouço Descoberto (+150 XP)",
+        };
+      if (o.prop.kind === "dungeon_staircase_up")
+        return {
+          success: !0,
+          action: "exit_dungeon",
+          targetTx: o.prop.targetTx !== undefined ? o.prop.targetTx : t,
+          targetTy: o.prop.targetTy !== undefined ? o.prop.targetTy : l,
+          message: "Subindo os degraus de pedra de volta aos salões do subsolo!",
+          reward: "Retorno ao Subsolo",
+        };
+      if (o.prop.kind === "iron_bars_gate") {
+        const nextOpen = !o.prop.opened;
+        const pKey = `dungeon_${t},${l}`;
+        this.interactedProps.set(pKey, { ...m, opened: nextOpen });
+        this.invalidateTile(t, l);
+        return {
+          success: !0,
+          message: nextOpen
+            ? "Você empurrou a pesada grade de ferro da prisão: o portão se abriu com um rangido metálico!"
+            : "Você fechou as grades de ferro da cela.",
+          reward: nextOpen ? "Grade Aberta" : "Grade Fechada",
+        };
+      }
+      if (o.prop.kind === "dungeon_door") {
+        const nextOpen = !o.prop.opened;
+        const pKey = `dungeon_${t},${l}`;
+        this.interactedProps.set(pKey, { ...m, opened: nextOpen });
+        this.invalidateTile(t, l);
+        return {
+          success: !0,
+          message: nextOpen
+            ? "Você abriu a pesada porta reforçada com ferro: a câmara está acessível!"
+            : "Você fechou a porta de madeira do calabouço.",
+          reward: nextOpen ? "Porta Aberta" : "Porta Fechada",
+        };
+      }
+      if (o.prop.kind === "torture_rack") {
+        return {
+          success: !0,
+          message: "O cavalete de estiramento range com suas manivelas dentadas, manoplas de ferro e manchas sombrias de sangue antigo.",
+          reward: "Horror do Passado (+50 XP)",
+        };
+      }
+      if (o.prop.kind === "iron_maiden") {
+        return {
+          success: !0,
+          message: "A pesada porta da donzela de ferro revela dezenas de espinhos pontiagudos projetados para supliciar quem entrasse.",
+          reward: "Donzela Inspecionada (+60 XP)",
+        };
+      }
+      if (o.prop.kind === "hanging_cage") {
+        return {
+          success: !0,
+          message: "A gaiola de ferro suspensa balança suavemente no teto abobadado, guardando restos mortais seculares.",
+          reward: "Ossadas Examinadas (+40 XP)",
+        };
+      }
+      if (o.prop.kind === "torture_brazier") {
+        return {
+          success: !0,
+          message: "O braseiro de tortura estala com brasas rubras e ferros compridos de marcar a brasa aquecendo entre as chamas.",
+          reward: "Calor Abrasador",
+        };
+      }
+      if (o.prop.kind === "torture_tools") {
+        return {
+          success: !0,
+          message: "Mesa ensanguentada com tenazes de ferro, pinças, serras e chicotes usados nos interrogatórios da masmorra.",
+          reward: "Instrumentos Antigos (+30 XP)",
+        };
+      }
+      if (o.prop.kind === "dungeon_latrine_pit") {
+        return {
+          success: !0,
+          message: "Uma lufada fétida e úmida emana do fosso de dejetos escavado no chão de rocha com grades de escoamento enferrujadas.",
+          reward: "Odor Nauseante",
+        };
+      }
+      if (o.prop.kind === "dungeon_latrine_bench") {
+        return {
+          success: !0,
+          message: "Antigos assentos de latrina de alvenaria talhados para os prisioneiros e guardas das masmorras.",
+          reward: "Ambiente Rústico",
+        };
+      }
+      if (o.prop.kind === "jailer_table") {
+        return {
+          success: !0,
+          message: "A mesa do carcereiro guarda um livro de registros com nomes de antigos prisioneiros esquecidos e uma caneca de estanho.",
+          reward: "Registros da Prisão (+50 XP)",
+        };
+      }
+      if (o.prop.kind === "weapon_rack") {
+        return {
+          success: !0,
+          message: "Suporte de madeira carcomida com alabardas pontiagudas e espadas curtas enferrujadas dos guardas da masmorra.",
+          reward: "Armas Antigas (+40 XP)",
+        };
+      }
+      if (o.prop.kind === "dungeon_skeleton") {
+        return {
+          success: !0,
+          message: "Restos mortais de um prisioneiro cujos pulsos ainda permanecem presos a grilhões chumbados na rocha.",
+          reward: "Vítima das Masmorras (+30 XP)",
+        };
+      }
+      if (o.prop.kind === "dungeon_straw") {
+        return {
+          success: !0,
+          message: "Um monte de palha mofada e úmida servindo de leito desconfortável nas celas frias do calabouço.",
+          reward: "Palha Úmida",
+        };
+      }
+      if (o.prop.kind === "pedregulhos") {
+        return {
+          success: !0,
+          message: "Pilhas de pedregulhos e cascalho pontiagudo amontoados durante a escavação das muralhas de cantaria do calabouço.",
+          reward: "Cascalho da Escavação",
+        };
+      }
       if (o.prop.kind === "crystal_cluster") {
         if (m.opened)
           return {
@@ -3371,6 +4106,19 @@
       if (this.isUnderground && o.biome.id === BiomeId.CAVE_WALL) return !1;
       if (o && o.isGreekWall) return !1;
       if (o && o.isGreekDoor && !o.isGreekDoorOpen) return !1;
+      if (o && o.isDungeonWall) return !1;
+      if (o && o.isDungeonDoor && !o.isDungeonDoorOpen) return !1;
+      if (o && o.isIronBars && !o.isIronBarsOpen) return !1;
+      if (
+        o &&
+        o.prop &&
+        (o.prop.kind === "torture_rack" ||
+          o.prop.kind === "iron_maiden" ||
+          o.prop.kind === "dungeon_latrine_pit" ||
+          o.prop.kind === "jailer_table" ||
+          o.prop.kind === "weapon_rack")
+      )
+        return !1;
       // Permite subir e andar livremente em cima de todo o paredão (isCliffWall)!
       const southTile = this.getTile(t, l + 1);
       if (
@@ -3522,6 +4270,30 @@
               return {
                 action:
                   t.prop.kind === "cave_entrance" ? "enter_cave" : "exit_cave",
+                tx: t.tx,
+                ty: t.ty,
+                prop: t.prop,
+              };
+            }
+          }
+          if (
+            t &&
+            t.prop &&
+            (t.prop.kind === "dungeon_staircase_down" || t.prop.kind === "dungeon_staircase_up")
+          ) {
+            const doorHalfW = 14;
+            const topTriggerY = -10;
+            const cx = t.tx * this.tileSize + this.tileSize / 2;
+            const cy =
+              t.ty * this.tileSize + this.tileSize / 2 + (t.prop.offsetY || -4);
+            const rx = x - cx;
+            const ry = y - cy;
+            if (Math.abs(rx) <= doorHalfW && ry >= topTriggerY && ry <= 11) {
+              return {
+                action:
+                  t.prop.kind === "dungeon_staircase_down"
+                    ? "enter_dungeon"
+                    : "exit_dungeon",
                 tx: t.tx,
                 ty: t.ty,
                 prop: t.prop,

@@ -65,6 +65,10 @@
       [Ue, $a] = J.useState(!0),
       [Ie, ee] = J.useState(() => !isDevMode),
       [He, Sa] = J.useState(!1),
+      [showDevSettings, setShowDevSettings] = J.useState(!1),
+      [collidersActive, setCollidersActive] = J.useState(
+        () => typeof window !== "undefined" && !!window.__showColliders,
+      ),
       isImmersive = !isDevMode || Ie,
       oa = !!(oe && oe.prop.lit !== !1),
       ga = !!(C && oe && C.tx === oe.tx && C.ty === oe.ty),
@@ -110,6 +114,13 @@
         (So = oe == null ? void 0 : oe.prop) == null ? void 0 : So.roastingFish,
       [Oe, Wa] = J.useState(0),
       [isPebbleAiming, setIsPebbleAiming] = J.useState(!1);
+
+    J.useEffect(() => {
+      window.__onCollidersChanged = (val) => setCollidersActive(val);
+      return () => {
+        if (window.__onCollidersChanged) delete window.__onCollidersChanged;
+      };
+    }, []);
     const pebbleAimTouchStart = J.useRef(null);
     const pebbleAimStartTime = J.useRef(0);
     const pebbleAimHasDragged = J.useRef(!1);
@@ -405,11 +416,42 @@
                   }),
                   h.jsx("button", {
                     type: "button",
+                    onClick: () => p && p("SUBSOLO_HALL"),
+                    className:
+                      "px-2 py-0.5 rounded-full bg-indigo-700 hover:bg-indigo-600 text-white font-bold text-[10px] transition cursor-pointer active:scale-95 whitespace-nowrap shadow",
+                    title: "Teleportar direto para os Salões do Subsolo",
+                    children: "Ir p/ Subsolo",
+                  }),
+                  h.jsx("button", {
+                    type: "button",
+                    onClick: () => p && p("DUNGEON_LOWER"),
+                    className:
+                      "px-2 py-0.5 rounded-full bg-red-700 hover:bg-red-600 text-white font-bold text-[10px] transition cursor-pointer active:scale-95 whitespace-nowrap shadow",
+                    title: "Teleportar direto para o Calabouço Inferior",
+                    children: "Ir p/ Calabouço",
+                  }),
+                  h.jsx("button", {
+                    type: "button",
                     onClick: () => p && p("MOUNTAIN_25D"),
                     className:
                       "px-2 py-0.5 rounded-full bg-amber-600 hover:bg-amber-500 text-white font-bold text-[10px] transition cursor-pointer active:scale-95 whitespace-nowrap shadow",
                     title: "Ir direto para Montanhas 2.5D (Paredões)",
                     children: "Ir p/ Montanhas 2.5D",
+                  }),
+                  h.jsxs("button", {
+                    id: "hud-dev-settings-sidebar-toggle-btn",
+                    type: "button",
+                    onClick: () => setShowDevSettings(!showDevSettings),
+                    className: `px-2.5 py-0.5 rounded-full font-bold text-[10px] transition cursor-pointer active:scale-95 whitespace-nowrap shadow flex items-center gap-1 border ${
+                      showDevSettings
+                        ? "bg-amber-600 hover:bg-amber-500 text-white border-amber-300 shadow-amber-950/60"
+                        : "bg-slate-900 hover:bg-slate-800 text-amber-300 hover:text-white border-amber-500/50"
+                    }`,
+                    title: "Abrir/Fechar Sidebar de Configurações Dev",
+                    children: [
+                      h.jsx("span", { children: "⚙️" }),
+                      h.jsx("span", { children: "Configurações" }),
+                    ],
                   }),
                 ],
               }),
@@ -1068,17 +1110,6 @@
                               children: [
                                 h.jsx(Gp, { className: "h-3 w-3" }),
                                 h.jsx("span", { children: "Seed" }),
-                              ],
-                            }),
-                            h.jsxs("button", {
-                              id: "hud-download-html-btn",
-                              onClick: Lo,
-                              className:
-                                "flex items-center gap-1 px-2 py-1 rounded bg-blue-600/90 hover:bg-blue-500 text-white text-[10px] font-semibold transition shadow-sm",
-                              title: "Exportar HTML autônomo offline",
-                              children: [
-                                h.jsx(Rp, { className: "h-3 w-3" }),
-                                h.jsx("span", { children: "HTML" }),
                               ],
                             }),
                           ],
@@ -1927,6 +1958,368 @@
                 }),
               ],
             }),
+          }),
+        showDevSettings &&
+          h.jsxs("aside", {
+            id: "hud-dev-settings-sidebar",
+            className:
+              "pointer-events-auto fixed top-0 right-0 bottom-0 w-80 sm:w-96 bg-slate-950/95 border-l border-amber-500/40 text-slate-100 z-50 flex flex-col shadow-2xl backdrop-blur-md select-none",
+            children: [
+              h.jsxs("div", {
+                className:
+                  "p-3.5 border-b border-white/10 bg-slate-900/90 flex items-center justify-between",
+                children: [
+                  h.jsxs("div", {
+                    className: "flex items-center gap-2",
+                    children: [
+                      h.jsx("span", { className: "text-lg", children: "⚙️" }),
+                      h.jsxs("div", {
+                        children: [
+                          h.jsx("h3", {
+                            className:
+                              "text-xs font-bold font-serif uppercase tracking-wider text-amber-300",
+                            children: "Configurações Dev",
+                          }),
+                          h.jsx("p", {
+                            className: "text-[10px] text-slate-400 font-mono",
+                            children: "Opções de Depuração e Cenário",
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  h.jsx("button", {
+                    type: "button",
+                    onClick: () => setShowDevSettings(!1),
+                    className:
+                      "p-1 rounded-lg bg-slate-800 hover:bg-rose-900/80 text-slate-300 hover:text-white transition border border-white/10 cursor-pointer text-xs font-bold",
+                    title: "Fechar Sidebar",
+                    children: "✖",
+                  }),
+                ],
+              }),
+              h.jsxs("div", {
+                className:
+                  "flex-1 overflow-y-auto p-4 flex flex-col gap-4 text-xs font-sans",
+                children: [
+                  h.jsxs("div", {
+                    className:
+                      "p-3 rounded-xl bg-slate-900/80 border border-amber-500/30 flex flex-col gap-2 shadow-sm",
+                    children: [
+                      h.jsxs("div", {
+                        className: "flex items-center justify-between",
+                        children: [
+                          h.jsxs("div", {
+                            className: "flex items-center gap-1.5",
+                            children: [
+                              h.jsx("span", {
+                                className: "text-sm",
+                                children: "🛡️",
+                              }),
+                              h.jsx("span", {
+                                className: "font-bold text-slate-200",
+                                children: "Caixas de Colisão",
+                              }),
+                            ],
+                          }),
+                          h.jsx("span", {
+                            className: `text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase ${
+                              collidersActive
+                                ? "bg-emerald-950 border border-emerald-500/50 text-emerald-400"
+                                : "bg-slate-800 border border-slate-600 text-slate-400"
+                            }`,
+                            children: collidersActive ? "ON" : "OFF",
+                          }),
+                        ],
+                      }),
+                      h.jsx("p", {
+                        className: "text-[11px] text-slate-400 leading-relaxed",
+                        children:
+                          "Desenha os colisores e caixas físicas de árvores, rochas, paredes, montanhas e entidades diretamente no canvas.",
+                      }),
+                      h.jsxs("button", {
+                        type: "button",
+                        onClick: () => {
+                          const next = !collidersActive;
+                          if (window.setColliders) {
+                            window.setColliders(next);
+                          } else {
+                            window.__showColliders = next;
+                            try {
+                              localStorage.setItem(
+                                "rpg2d_colliders",
+                                next ? "1" : "0",
+                              );
+                            } catch (e) {}
+                          }
+                          setCollidersActive(next);
+                        },
+                        className: `w-full py-2 px-3 rounded-lg font-bold font-mono text-xs flex items-center justify-center gap-2 transition cursor-pointer active:scale-98 shadow ${
+                          collidersActive
+                            ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60"
+                            : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10"
+                        }`,
+                        children: [
+                          h.jsx("span", {
+                            children: collidersActive ? "🟩" : "⬜",
+                          }),
+                          h.jsx("span", {
+                            children: collidersActive
+                              ? "Colisores: ATIVADOS (ON)"
+                              : "Colisores: DESATIVADOS (OFF)",
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  h.jsxs("div", {
+                    className:
+                      "p-3 rounded-xl bg-slate-900/80 border border-white/10 flex flex-col gap-2 shadow-sm",
+                    children: [
+                      h.jsxs("div", {
+                        className: "flex items-center justify-between",
+                        children: [
+                          h.jsxs("div", {
+                            className: "flex items-center gap-1.5",
+                            children: [
+                              h.jsx("span", {
+                                className: "text-sm",
+                                children: "👁️",
+                              }),
+                              h.jsx("span", {
+                                className: "font-bold text-slate-200",
+                                children: "Modo Imersivo",
+                              }),
+                            ],
+                          }),
+                          h.jsx("span", {
+                            className: `text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase ${
+                              Ie
+                                ? "bg-sky-950 border border-sky-500/50 text-sky-400"
+                                : "bg-slate-800 border border-slate-600 text-slate-400"
+                            }`,
+                            children: Ie ? "OCULTO" : "VISÍVEL",
+                          }),
+                        ],
+                      }),
+                      h.jsx("p", {
+                        className: "text-[11px] text-slate-400 leading-relaxed",
+                        children:
+                          "Oculta a interface e botões para visualização limpa e cinematográfica do mapa.",
+                      }),
+                      h.jsx("button", {
+                        type: "button",
+                        onClick: () => ee(!Ie),
+                        className:
+                          "w-full py-2 px-3 rounded-lg font-bold text-xs bg-slate-800 hover:bg-slate-700 text-sky-300 hover:text-white border border-white/10 transition cursor-pointer flex items-center justify-center gap-2",
+                        children: Ie
+                          ? "Exibir Interface Completa"
+                          : "Ativar Modo Imersivo (Ocultar HUD)",
+                      }),
+                    ],
+                  }),
+                  h.jsxs("div", {
+                    className:
+                      "p-3 rounded-xl bg-slate-900/80 border border-white/10 flex flex-col gap-2 shadow-sm",
+                    children: [
+                      h.jsxs("div", {
+                        className: "flex items-center justify-between",
+                        children: [
+                          h.jsxs("div", {
+                            className: "flex items-center gap-1.5",
+                            children: [
+                              h.jsx("span", {
+                                className: "text-sm",
+                                children: "☀️",
+                              }),
+                              h.jsx("span", {
+                                className: "font-bold text-slate-200",
+                                children: "Ciclo Dia / Noite",
+                              }),
+                            ],
+                          }),
+                          h.jsx("span", {
+                            className:
+                              "text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/80 border border-amber-500/40 text-amber-300 font-bold",
+                            children: tr(),
+                          }),
+                        ],
+                      }),
+                      h.jsx("input", {
+                        type: "range",
+                        min: "0",
+                        max: "1",
+                        step: "0.01",
+                        value: o,
+                        onChange: (We) => u(parseFloat(We.target.value)),
+                        className:
+                          "w-full accent-amber-400 cursor-pointer h-1.5 bg-slate-700 rounded my-1",
+                      }),
+                      h.jsxs("div", {
+                        className: "grid grid-cols-4 gap-1 pt-1",
+                        children: [
+                          h.jsx("button", {
+                            type: "button",
+                            onClick: () => u(0.25),
+                            className:
+                              "py-1 px-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-amber-300 text-center transition",
+                            children: "Amanhecer",
+                          }),
+                          h.jsx("button", {
+                            type: "button",
+                            onClick: () => u(0.5),
+                            className:
+                              "py-1 px-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-yellow-300 text-center transition",
+                            children: "Meio-dia",
+                          }),
+                          h.jsx("button", {
+                            type: "button",
+                            onClick: () => u(0.72),
+                            className:
+                              "py-1 px-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-orange-400 text-center transition",
+                            children: "Pôr do Sol",
+                          }),
+                          h.jsx("button", {
+                            type: "button",
+                            onClick: () => u(0.9),
+                            className:
+                              "py-1 px-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-indigo-300 text-center transition",
+                            children: "Noite",
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  h.jsxs("div", {
+                    className:
+                      "p-3 rounded-xl bg-slate-900/80 border border-white/10 flex flex-col gap-2 shadow-sm",
+                    children: [
+                      h.jsxs("div", {
+                        className: "flex items-center gap-1.5",
+                        children: [
+                          h.jsx("span", {
+                            className: "text-sm",
+                            children: "⚡",
+                          }),
+                          h.jsx("span", {
+                            className: "font-bold text-slate-200",
+                            children: "Teleportes Imediatos",
+                          }),
+                        ],
+                      }),
+                      h.jsxs("div", {
+                        className: "flex flex-col gap-1.5 pt-1",
+                        children: [
+                          h.jsxs("button", {
+                            type: "button",
+                            onClick: () => {
+                              p && p("DUNGEON_LOWER");
+                              setShowDevSettings(!1);
+                            },
+                            className:
+                              "py-2 px-3 rounded-lg bg-red-950/80 hover:bg-red-900 border border-red-500/50 text-red-200 hover:text-white font-bold text-xs flex items-center justify-between transition cursor-pointer shadow-sm",
+                            children: [
+                              h.jsx("span", {
+                                children: "🏰 Calabouço Inferior (Masmorras)",
+                              }),
+                              h.jsx("span", {
+                                className: "text-[10px] font-mono text-red-400",
+                                children: "Nível 2",
+                              }),
+                            ],
+                          }),
+                          h.jsxs("button", {
+                            type: "button",
+                            onClick: () => {
+                              p && p("SUBSOLO_HALL");
+                              setShowDevSettings(!1);
+                            },
+                            className:
+                              "py-2 px-3 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/50 text-indigo-200 hover:text-white font-bold text-xs flex items-center justify-between transition cursor-pointer shadow-sm",
+                            children: [
+                              h.jsx("span", {
+                                children: "🏛️ Salões do Subsolo (Escadaria)",
+                              }),
+                              h.jsx("span", {
+                                className:
+                                  "text-[10px] font-mono text-indigo-400",
+                                children: "Nível 1",
+                              }),
+                            ],
+                          }),
+                          h.jsxs("button", {
+                            type: "button",
+                            onClick: () => {
+                              p && p("MOUNTAIN_25D");
+                              setShowDevSettings(!1);
+                            },
+                            className:
+                              "py-2 px-3 rounded-lg bg-amber-950/80 hover:bg-amber-900 border border-amber-500/50 text-amber-200 hover:text-white font-bold text-xs flex items-center justify-between transition cursor-pointer shadow-sm",
+                            children: [
+                              h.jsx("span", {
+                                children: "⛰️ Montanhas 2.5D (Paredões)",
+                              }),
+                              h.jsx("span", {
+                                className:
+                                  "text-[10px] font-mono text-amber-400",
+                                children: "Superfície",
+                              }),
+                            ],
+                          }),
+                          h.jsxs("button", {
+                            type: "button",
+                            onClick: () => {
+                              p && p("MEADOW");
+                              setShowDevSettings(!1);
+                            },
+                            className:
+                              "py-2 px-3 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-200 hover:text-white font-bold text-xs flex items-center justify-between transition cursor-pointer shadow-sm",
+                            children: [
+                              h.jsx("span", {
+                                children: "🌸 Cidades Helênicas (Planície)",
+                              }),
+                              h.jsx("span", {
+                                className:
+                                  "text-[10px] font-mono text-emerald-400",
+                                children: "Superfície",
+                              }),
+                            ],
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  h.jsxs("div", {
+                    className:
+                      "p-3 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-between shadow-sm",
+                    children: [
+                      h.jsxs("div", {
+                        children: [
+                          h.jsx("span", {
+                            className: "font-bold text-slate-200 block text-xs",
+                            children: "🎲 Seed do Mundo",
+                          }),
+                          h.jsxs("span", {
+                            className: "text-[10px] text-slate-400 font-mono",
+                            children: ["Atual: #", l],
+                          }),
+                        ],
+                      }),
+                      h.jsxs("button", {
+                        type: "button",
+                        onClick: S,
+                        className:
+                          "px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow",
+                        children: [
+                          h.jsx(Gp, { className: "h-3.5 w-3.5" }),
+                          h.jsx("span", { children: "Nova Seed" }),
+                        ],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
           }),
       ],
     });

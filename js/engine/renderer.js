@@ -388,7 +388,8 @@
         c.restore();
       }
       invalidateGroundBitmapsIfNeeded() {
-        const t = `${this.engine.isUnderground ? "c" : "s"}_${this.engine.seed}_${window.__rpgQuality?.terrain ?? 1}`;
+        const uLvl = this.engine.undergroundLevel ?? (this.engine.isUnderground ? 1 : 0);
+        const t = `lvl${uLvl}_${this.engine.seed}_${window.__rpgQuality?.terrain ?? 1}`;
         t !== this.cachedGroundCacheId &&
           (this.groundBitmapCache.clear(), (this.cachedGroundCacheId = t));
       }
@@ -591,7 +592,55 @@
             g.fill(),
             (g.globalAlpha = 1));
         const T = t.detailHash;
-        if (t.isGreekRuin) {
+        if (t.isDungeonFloor) {
+          // Lajes maciças de pedra escura do calabouço
+          const isAlt = (Math.abs(t.tx + t.ty) % 2) === 0;
+          g.fillStyle = isAlt ? "#1e293b" : "#172033";
+          g.fillRect(l, o, u, u);
+
+          // Borda de argamassa escura / rejunte entre as lajes
+          g.strokeStyle = "rgba(2, 6, 23, 0.75)";
+          g.lineWidth = 1.2;
+          g.strokeRect(l + 0.5, o + 0.5, u - 1, u - 1);
+
+          // Detalhes por sala
+          if (t.dungeonRole === "torture_floor") {
+            // Manchas escuras de sangue antigo impregnado na rocha
+            if (T > 0.45) {
+              g.fillStyle = "rgba(127, 29, 29, 0.45)";
+              g.beginPath();
+              g.ellipse(l + u * 0.5, o + u * 0.5, u * 0.3, u * 0.22, T * 3, 0, Math.PI * 2);
+              g.fill();
+            }
+          } else if (t.dungeonRole === "latrine_floor") {
+            // Umidade pútrida e limo verde no chão da fossa
+            g.fillStyle = "rgba(20, 83, 45, 0.35)";
+            g.fillRect(l + 2, o + 2, u - 4, u - 4);
+            if (T > 0.6) {
+              g.fillStyle = "rgba(2, 6, 23, 0.5)";
+              g.beginPath();
+              g.arc(l + u * 0.5, o + u * 0.5, 3, 0, Math.PI * 2);
+              g.fill();
+            }
+          } else if (t.dungeonRole === "cell_floor") {
+            // Poeira e marcas de grilhões arrastados
+            if (T > 0.5) {
+              g.fillStyle = "rgba(2, 6, 23, 0.4)";
+              g.fillRect(l + 4, o + 4, u - 8, 2);
+            }
+          }
+
+          // Fissuras ou rachaduras nas lajes
+          if (T > 0.7) {
+            g.strokeStyle = "rgba(15, 23, 42, 0.9)";
+            g.lineWidth = 0.9;
+            g.beginPath();
+            g.moveTo(l + u * 0.2, o + u * 0.3);
+            g.lineTo(l + u * 0.5, o + u * 0.6);
+            g.lineTo(l + u * 0.8, o + u * 0.55);
+            g.stroke();
+          }
+        } else if (t.isGreekRuin) {
           // Pisos em tons de Terracota Helênica, Travertino Dourado e Calcário Escuro para contrastar fortemente
           // com as Paredes de Mármore Branco/Marfim e Topo de Telha/Cornija!
           const rx = t.greekRuinRx || 0,
@@ -1496,6 +1545,67 @@
             break;
           case "chest":
             pg(c, f, t.opened, this.animTimer);
+            break;
+          case "dungeon_wall": {
+            const eng = this.engine,
+              tx = u.tx,
+              ty = u.ty,
+              nb = {
+                left: !!eng.getTile(tx - 1, ty).isDungeonWall,
+                right: !!eng.getTile(tx + 1, ty).isDungeonWall,
+                top: !!eng.getTile(tx, ty - 1).isDungeonWall,
+                bottom: !!eng.getTile(tx, ty + 1).isDungeonWall,
+              };
+            drawDungeonWall25D(c, f, nb);
+            break;
+          }
+          case "dungeon_staircase_down":
+            drawDungeonStaircase(c, f, !1, this.animTimer);
+            break;
+          case "dungeon_staircase_up":
+            drawDungeonStaircase(c, f, !0, this.animTimer);
+            break;
+          case "iron_bars_gate":
+            drawIronBarsGate(c, f, !1, !!t.opened);
+            break;
+          case "dungeon_door":
+            drawDungeonDoor(c, f, !!t.doorVertical, !!t.opened);
+            break;
+          case "torture_rack":
+            drawTortureRack(c, f);
+            break;
+          case "iron_maiden":
+            drawIronMaiden(c, f);
+            break;
+          case "hanging_cage":
+            drawHangingCage(c, f, this.animTimer);
+            break;
+          case "torture_brazier":
+            drawTortureBrazier(c, f, this.animTimer);
+            break;
+          case "torture_tools":
+            drawTortureTools(c, f);
+            break;
+          case "dungeon_latrine_pit":
+            drawLatrinePit(c, f, this.animTimer);
+            break;
+          case "dungeon_latrine_bench":
+            drawLatrineBench(c, f);
+            break;
+          case "jailer_table":
+            drawJailerTable(c, f);
+            break;
+          case "weapon_rack":
+            drawWeaponRack(c, f);
+            break;
+          case "dungeon_skeleton":
+            drawDungeonSkeleton(c, f);
+            break;
+          case "dungeon_straw":
+            drawDungeonStraw(c, f);
+            break;
+          case "pedregulhos":
+            drawPedregulhos(c, f, t.subType || 0);
             break;
           case "ruin_pillar":
             gg(c, f, t.subType);

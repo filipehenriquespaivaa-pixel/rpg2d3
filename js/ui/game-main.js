@@ -1082,6 +1082,8 @@
             tx: E,
             ty: D,
             isUnderground: !!q.isUnderground,
+            undergroundLevel: q.undergroundLevel !== undefined ? q.undergroundLevel : (q.isUnderground ? 1 : 0),
+            activeDungeonStairCoords: q.activeDungeonStairCoords || null,
             x: F.x,
             y: F.y,
             savedAt: Date.now(),
@@ -1133,6 +1135,8 @@
               (Ie(E.checkpoint),
               (ee.current = E.checkpoint),
               (o.current.isUnderground = !!E.checkpoint.isUnderground),
+              (o.current.undergroundLevel = E.checkpoint.undergroundLevel !== undefined ? E.checkpoint.undergroundLevel : (E.checkpoint.isUnderground ? 1 : 0)),
+              (o.current.activeDungeonStairCoords = E.checkpoint.activeDungeonStairCoords || null),
               (f.current.x = E.checkpoint.x),
               (f.current.y = E.checkpoint.y),
               S({
@@ -1164,9 +1168,9 @@
         D = o.current,
         Q = ee.current;
       if (Q) {
-        Q.isUnderground && !D.isUnderground
-          ? (D.isUnderground = !0)
-          : !Q.isUnderground && D.isUnderground && (D.isUnderground = !1);
+        D.isUnderground = !!Q.isUnderground;
+        D.undergroundLevel = Q.undergroundLevel !== undefined ? Q.undergroundLevel : (Q.isUnderground ? 1 : 0);
+        if (Q.activeDungeonStairCoords) D.activeDungeonStairCoords = Q.activeDungeonStairCoords;
         const q = Q.tx * D.tileSize + D.tileSize / 2,
           F = Q.ty * D.tileSize + D.tileSize / 2 + D.tileSize * 0.7;
         (c.current.respawnPlayer(E, q, F),
@@ -1246,6 +1250,62 @@
             { minR: 600, maxR: 2000, rStep: 20, arcStep: 20 },
             { minR: 2000, maxR: 5000, rStep: 35, arcStep: 35 }
           ];
+
+          if (E === "DUNGEON_LOWER") {
+            let stair = null;
+            for (let r = 0; r <= 35 && !stair; r++) {
+              for (let dy = -r; dy <= r && !stair; dy++) {
+                for (let dx = -r; dx <= r && !stair; dx++) {
+                  if (r > 0 && Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+                  const sampleTx = originTx + dx * 24;
+                  const sampleTy = originTy + dy * 24;
+                  const candidate = D.getDungeonEntranceStairForBiome(sampleTx, sampleTy);
+                  if (candidate) {
+                    stair = candidate;
+                    break;
+                  }
+                }
+              }
+            }
+            if (!stair) stair = D.getDungeonEntranceStairForBiome(0, 0);
+            if (stair) {
+              D.enterDungeon(stair.tx, stair.ty, stair.tx * D.tileSize + 14, stair.ty * D.tileSize + 20);
+              targetPixelX = stair.tx * D.tileSize + 14;
+              targetPixelY = (stair.ty + 2) * D.tileSize + 14;
+              foundDist = 0;
+              found = !0;
+              ve(`⚡ Teleportado diretamente para o Calabouço Inferior em [${stair.tx}, ${stair.ty}]!`);
+            }
+          }
+
+          if (E === "SUBSOLO_HALL") {
+            let stair = null;
+            for (let r = 0; r <= 35 && !stair; r++) {
+              for (let dy = -r; dy <= r && !stair; dy++) {
+                for (let dx = -r; dx <= r && !stair; dx++) {
+                  if (r > 0 && Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+                  const sampleTx = originTx + dx * 24;
+                  const sampleTy = originTy + dy * 24;
+                  const candidate = D.getDungeonEntranceStairForBiome(sampleTx, sampleTy);
+                  if (candidate) {
+                    stair = candidate;
+                    break;
+                  }
+                }
+              }
+            }
+            if (!stair) stair = D.getDungeonEntranceStairForBiome(0, 0);
+            if (stair) {
+              D.isUnderground = !0;
+              D.undergroundLevel = 1;
+              D.clearTileCache();
+              targetPixelX = stair.tx * D.tileSize + 14;
+              targetPixelY = (stair.ty + 2) * D.tileSize + 14;
+              foundDist = 0;
+              found = !0;
+              ve(`⚡ Teleportado para o Salão Subterrâneo em frente à Escadaria do Calabouço em [${stair.tx}, ${stair.ty}]!`);
+            }
+          }
 
           if (E === "MEADOW" && !D.isUnderground) {
             // Ao teleportar para Planície Florida (MEADOW), leva direto para a Cidade Grega (com 1 a 3 Salões e várias Casas de 4 salas)!
@@ -2279,6 +2339,42 @@
                 ve(
                   `⚠️ ${trM === 1 ? "A criatura que te perseguia atravessou" : `${trM} criaturas que te perseguiam atravessaram`} a saída com você!`,
                 );
+            } else if (Ke.action === "enter_dungeon") {
+              __autoCaveTimer.current = 1.0;
+              const oldX = D.x,
+                oldY = D.y;
+              m.current.playCaveEnter();
+              E.enterDungeon(Ye.tx, Ye.ty, oldX, oldY);
+              Oa.current = { x: 0, y: 0 };
+              Et(!1);
+              D.x = Ye.tx * Q + 14;
+              D.y = (Ye.ty + 1) * Q + 14;
+              D.vx = 0;
+              D.vy = 0;
+              D.direction = "down";
+              v(E.getTile(Ye.tx, Ye.ty + 1).biome);
+              S({ tx: Ye.tx, ty: Ye.ty + 1 });
+              ve("Descendo a escadaria úmida para as masmorras e calabouços sombrios...");
+            } else if (Ke.action === "exit_dungeon") {
+              __autoCaveTimer.current = 1.0;
+              m.current.playCaveExit();
+              const targetTx =
+                  Ke.targetTx !== undefined ? Ke.targetTx : Math.floor(D.x / Q),
+                targetTy =
+                  Ke.targetTy !== undefined ? Ke.targetTy : Math.floor(D.y / Q);
+              const De = E.exitDungeon(targetTx, targetTy);
+              Oa.current = { x: 0, y: 0 };
+              Et(!1);
+              D.x = De.x;
+              D.y = De.y;
+              D.vx = 0;
+              D.vy = 0;
+              D.direction = "down";
+              const qe = Math.floor(D.x / Q),
+                Ze = Math.floor(D.y / Q);
+              v(E.getTile(qe, Ze).biome);
+              S({ tx: qe, ty: Ze });
+              ve("Subindo os degraus de pedra de volta aos salões do subsolo!");
             } else if (Ke.action === "mine_crystal") {
               m.current.playMineCrystal();
               const De = pi("crystal", aa);
@@ -3531,6 +3627,40 @@
                     ve(
                       `⚠️ ${trM === 1 ? "A criatura que te perseguia atravessou" : `${trM} criaturas que te perseguiam atravessaram`} a saída com você!`,
                     );
+                } else if (autoC.action === "enter_dungeon") {
+                  m.current.playCaveEnter();
+                  Q.enterDungeon(autoC.tx, autoC.ty, oldX, oldY);
+                  Oa.current = { x: 0, y: 0 };
+                  Et(!1);
+                  he.x = autoC.tx * Q.tileSize + 14;
+                  he.y = (autoC.ty + 1) * Q.tileSize + 14;
+                  he.vx = 0;
+                  he.vy = 0;
+                  he.direction = "down";
+                  const qe_t = Math.floor(he.x / Q.tileSize),
+                    Ze_t = Math.floor(he.y / Q.tileSize);
+                  v(Q.getTile(qe_t, Ze_t).biome);
+                  S({ tx: qe_t, ty: Ze_t });
+                  ve("Descendo a escadaria para as masmorras e calabouços sombrios...");
+                } else if (autoC.action === "exit_dungeon") {
+                  m.current.playCaveExit();
+                  const targetTx =
+                      autoC.prop?.targetTx !== undefined ? autoC.prop.targetTx : autoC.tx,
+                    targetTy =
+                      autoC.prop?.targetTy !== undefined ? autoC.prop.targetTy : autoC.ty;
+                  const De = Q.exitDungeon(targetTx, targetTy);
+                  Oa.current = { x: 0, y: 0 };
+                  Et(!1);
+                  he.x = De.x;
+                  he.y = De.y;
+                  he.vx = 0;
+                  he.vy = 0;
+                  he.direction = "down";
+                  const qe_t = Math.floor(he.x / Q.tileSize),
+                    Ze_t = Math.floor(he.y / Q.tileSize);
+                  v(Q.getTile(qe_t, Ze_t).biome);
+                  S({ tx: qe_t, ty: Ze_t });
+                  ve("Subindo os degraus de volta aos salões do subsolo!");
                 }
               }
             }

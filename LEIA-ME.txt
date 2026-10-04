@@ -49,9 +49,21 @@ MELHORIAS NO SISTEMA DE CAVERNAS:
    - Você pode entrar por uma caverna na superfície, viajar pelos túneis subterrâneos e sair por outro portal de caverna em uma região diferente do mundo superior!
    - Nem todas as cavernas são conectadas entre si: maciços rochosos intransponíveis (paredões) separam diferentes setores subterrâneos, criando atalhos secretos entre algumas regiões enquanto outras cavernas formam redes locais independentes.
 
+5. Escadaria para o Calabouço Inferior (Masmorra Subterrânea):
+   - No subsolo dos biomas com construção (salões gregos), existe exatamente UMA escadaria descendente de ardósia e ferro por bioma que conduz ao andar inferior.
+   - Andar Inferior (Calabouço e Masmorras):
+     * Corredor longo iluminado por tochas de ferro negro.
+     * Prisões pequenas com grades de ferro forjado (algumas trancadas, outras abertas/arrombadas). Pressione [F] ou [E] para abrir/fechar as grades.
+     * Celas contendo ossadas acorrentadas, camas de palha mofada e baús de tesouro.
+     * Posto do carcereiro com mesa de registros e armas enferrujadas.
+     * Sala de Tortura ÚNICA com cavalete de estiramento com manivelas e sangue antigo, donzela de ferro com espinhos internos, gaiola suspensa com ossadas, braseiro ardente com ferros em brasa e mesa de instrumentos de suplício.
+     * Salão da Fossa e Latrinas com poço fétido de esgoto sob grades de ferro e assentos de latrina talhados na alvenaria.
+     * Câmara de provisões e despojos ao final do corredor.
+     * O andar inferior compartilha ambientação com a caverna natural comum, mas as muralhas de cantaria do calabouço são 100% sólidas (sem portas para a caverna comum) e circundadas por pilhas de pedregulhos e cascalho da escavação.
+
 CONTROLES:
 - W, A, S, D ou Setas: Movimentação do personagem
-- E ou Botão de Interagir: Entrar/Sair de cavernas, abrir baús, minerar veios, acender fogueira, descansar
+- E ou F ou Botão de Interagir: Entrar/Sair de cavernas e calabouços, abrir baús e grades, minerar veios, acender fogueira, descansar
 - Espaço / Botão ATK: Atacar corpo a corpo com a arma equipada
 - Shift / Botão SEIXO (Inferior Esquerdo): Mirar e arremessar seixos (segure para mirar com a mira guia e solte para arremessar; toque rápido mira no monstro mais próximo)
 - 2x Toque na direção: Correr (consome Stamina)
