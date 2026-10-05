@@ -4226,11 +4226,28 @@
                 ? props.devMode
                 : Boolean(window.__devMode),
             onDevAddItem: (item, count = 1) => {
-              const maxSlots = ot(Da.current.mochila);
+              if (!Da.current.mochila || Da.current.mochila.id !== "item_mochila_reforcada") {
+                const devBackpack = {
+                  id: "item_mochila_reforcada",
+                  name: "Mochila de Couro Reforçada",
+                  icon: "🎒",
+                  color: "#6366f1",
+                  slot: "mochila",
+                  categoryType: "equipment",
+                  isEquippable: true,
+                  rarity: "raro",
+                  description: "Mochila resistente com múltiplos compartimentos (+15 slots extras).",
+                  value: 120,
+                };
+                Wa((prevEq) => ({ ...prevEq, mochila: devBackpack }));
+                Da.current.mochila = devBackpack;
+              }
+              const maxSlots = 21;
               const isStackable =
                 item.stackCount !== undefined ||
                 item.categoryType === "material" ||
                 item.categoryType === "consumable";
+              const baseId = (item.id || "item").replace(/^dev_/, "");
               ra((prev) => {
                 const idx = prev.findIndex((i) => i.name === item.name);
                 if (idx >= 0 && isStackable) {
@@ -4241,28 +4258,35 @@
                   };
                   return next;
                 }
-                if (prev.length >= maxSlots) {
-                  ve(`⚠️ Inventário cheio (${prev.length}/${maxSlots} slots)!`);
-                  return prev;
-                }
                 const newItem = {
                   ...item,
-                  id: `dev_${item.id || "item"}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+                  id: `item_${baseId}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
                   stackCount: count,
                 };
+                if (prev.length >= maxSlots) {
+                  return [...prev.slice(1), newItem];
+                }
                 return [...prev, newItem];
               });
-              ve(`🛠️ [DEV] +${count}x ${item.name} adicionado!`);
+              ve(`🎒 [DEV] +${count}x ${item.name} no inventário comum!`);
               m.current && m.current.playChestChime && m.current.playChestChime();
             },
             onDevEquipItem: (item) => {
               if (item.isEquippable && item.slot) {
+                const baseId = (item.id || "item").replace(/^dev_/, "");
                 const newItem = {
                   ...item,
-                  id: `dev_eq_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+                  id: `eq_${baseId}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
                 };
                 Wa((prev) => ({ ...prev, [item.slot]: newItem }));
-                ve(`🛠️ [DEV] Equipado: ${item.name}!`);
+                ra((prev) => {
+                  const maxSlots = 21;
+                  const idx = prev.findIndex((i) => i.name === item.name);
+                  if (idx >= 0) return prev;
+                  if (prev.length >= maxSlots) return [...prev.slice(1), { ...newItem, id: `inv_${newItem.id}` }];
+                  return [...prev, { ...newItem, id: `inv_${newItem.id}` }];
+                });
+                ve(`⚡ [DEV] Equipado e adicionado à mochila: ${item.name}!`);
                 m.current && m.current.playEquipItem && m.current.playEquipItem();
               }
             },

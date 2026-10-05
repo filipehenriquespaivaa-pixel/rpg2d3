@@ -1184,12 +1184,17 @@
                         "pt-2 first:pt-0 flex flex-col gap-1.5 p-2 rounded-xl bg-slate-900/40 hover:bg-slate-900/80 border border-white/5 hover:border-amber-500/30 transition group",
                       children: [
                         h.jsxs("div", {
-                          className: "flex items-start gap-2.5",
+                          className: "flex items-start gap-2.5 cursor-pointer group/card",
+                          onClick: () => {
+                            onAddItem && onAddItem(item, 1);
+                            triggerMsg(`🎒 +1 ${item.name} no Inventário Comum!`);
+                          },
+                          title: `Clique para adicionar ${item.name} ao inventário comum`,
                           children: [
                             // Ícone
                             h.jsx("div", {
                               className:
-                                "w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 bg-slate-950 shadow-inner",
+                                "w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 bg-slate-950 shadow-inner group-hover/card:scale-105 transition",
                               style: {
                                 borderColor: item.color || "#38bdf8",
                                 boxShadow: `0 0 8px ${item.color || "#38bdf8"}30`,
@@ -1209,7 +1214,7 @@
                                   children: [
                                     h.jsx("h5", {
                                       className:
-                                        "text-xs font-bold text-slate-100 truncate group-hover:text-amber-300 transition",
+                                        "text-xs font-bold text-slate-100 truncate group-hover/card:text-amber-300 transition",
                                       title: item.name,
                                       children: item.name,
                                     }),
@@ -1318,25 +1323,25 @@
                               type: "button",
                               onClick: () => {
                                 onAddItem && onAddItem(item, 1);
-                                triggerMsg(`+1 ${item.name}!`);
+                                triggerMsg(`🎒 +1 ${item.name} no Inventário Comum!`);
                               },
                               className:
-                                "px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white border border-amber-500/30 font-bold transition active:scale-95 cursor-pointer shadow-sm",
-                              title: "Adicionar 1 unidade à mochila",
+                                "px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold transition active:scale-95 cursor-pointer shadow-sm border border-amber-400/50 flex items-center gap-1",
+                              title: "Pegar 1 unidade e colocar no inventário comum",
                               children: [
-                                h.jsx("span", { children: "+" }),
-                                "1",
+                                h.jsx("span", { children: "🎒" }),
+                                h.jsx("span", { children: "Pegar +1" }),
                               ],
                             }),
                             h.jsxs("button", {
                               type: "button",
                               onClick: () => {
                                 onAddItem && onAddItem(item, 10);
-                                triggerMsg(`+10 ${item.name}!`);
+                                triggerMsg(`🎒 +10 ${item.name} no Inventário Comum!`);
                               },
                               className:
                                 "px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 hover:text-white border border-sky-500/30 font-bold transition active:scale-95 cursor-pointer shadow-sm",
-                              title: "Adicionar lote de 10 unidades à mochila",
+                              title: "Pegar lote de 10 unidades para o inventário comum",
                               children: [
                                 h.jsx("span", { children: "+" }),
                                 "10",
@@ -1348,11 +1353,12 @@
                                 type: "button",
                                 onClick: () => {
                                   onEquipItem && onEquipItem(item);
-                                  triggerMsg(`Equipado: ${item.name}!`);
+                                  onAddItem && onAddItem(item, 1);
+                                  triggerMsg(`⚡ Equipado e no Inventário: ${item.name}!`);
                                 },
                                 className:
-                                  "px-2.5 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold transition active:scale-95 cursor-pointer shadow-sm border border-amber-400/50 flex items-center gap-1",
-                                title: `Equipar diretamente no slot ${slotLabel || item.slot}`,
+                                  "px-2.5 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition active:scale-95 cursor-pointer shadow-sm border border-emerald-400/50 flex items-center gap-1",
+                                title: `Equipar diretamente no slot ${slotLabel || item.slot} (e adiciona à mochila)`,
                                 children: [
                                   h.jsx("span", { children: "⚡" }),
                                   h.jsx("span", { children: "Equipar" }),
