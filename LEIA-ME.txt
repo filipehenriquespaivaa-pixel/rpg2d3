@@ -53,9 +53,10 @@ SISTEMA DE LIVROS, PERGAMINHOS E BIBLIOTECA:
      * ⚒️ Receitas de Criação & Forja: Culinária (Vol. I & II), Ferramentas Primitivas, Construção Básica e Armas & Equipamentos Comuns.
      * 📚 Catálogos: Catálogo Ilustrado de Recursos da Terra (minerais, vegetais, caça e aquáticos).
      * 🗺️ Mapas & Atlas: Atlas Geográfico de Biomas & Bestiário Silvestre (florestas, desertos, oásis, pântanos, montanhas e hábitos da fauna).
-   - Acesso permanente: o jogador pode clicar em "Acessar / Reler Manuscrito" em qualquer slot aprendido para consultar e reler o conteúdo completo a qualquer momento.
-   - Indicador de progresso: mostra barra de estudo em tempo real e atalho direto para estudar caso o item esteja na mochila.
-   - Pergaminhos de Runas Ancestrais: permanecem com aviso místico de bloqueio; não entram nos slots de aprendizado no momento pois necessitam de sistema futuro de decifração.
+   - Início totalmente vazio e sem spoilers: a aba de conhecimento inicia 100% vazia, sem exibir nomes, referências nem contadores de livros/pergaminhos não aprendidos. Dessa forma o jogador não saberá quantos existem e explorará o mundo em busca de sabedoria.
+   - Slots de Aprendizado Permanentes: à medida que cada livro ou pergaminho é estudado com atenção pelo jogador, ele é catalogado em seu respectivo slot por tipo de aprendizado (Receitas, Catálogos e Mapas).
+   - Acesso e releitura livres: o jogador pode clicar em "Acessar / Reler Manuscrito" a qualquer momento no slot aprendido para reler páginas, fórmulas e conteúdos.
+   - Pergaminhos de Runas Ancestrais: não entram nos slots de aprendizado ainda, pois para aprender seu conteúdo o jogador precisará decifrá-los através de um futuro sistema de decifração.
 
 MELHORIAS NO SISTEMA DE CAVERNAS:
 1. Paredões e Túneis Realistas:

@@ -1400,12 +1400,13 @@
       }, []);
 
       const knowledgeData = (window.Game && window.Game.RecipeKnowledge && typeof window.Game.RecipeKnowledge.getKnowledgeSlots === "function")
-        ? window.Game.RecipeKnowledge.getKnowledgeSlots()
-        : { categories: { receitas: [], catalogo: [], mapas: [] }, totalCount: 7, completedCount: 0 };
+        ? window.Game.RecipeKnowledge.getKnowledgeSlots(false)
+        : { categories: { receitas: [], catalogo: [], mapas: [] }, completedCount: 0 };
 
-      const { categories, totalCount, completedCount } = knowledgeData;
+      const { categories, completedCount } = knowledgeData;
+      const isEmpty = !completedCount || completedCount === 0;
 
-      // Abrir um livro no modal de leitura
+      // Abrir um livro no modal de leitura imersiva
       const handleAccessBook = (slot) => {
         const itemObj = {
           id: slot.id || slot.key,
@@ -1445,77 +1446,30 @@
         if (onNotify) onNotify("🔄 Progresso de estudo resetado no Modo Dev.");
       };
 
-      const handleDevCompleteOne = (e, slot) => {
-        e.stopPropagation();
-        if (!window.Game || !window.Game.RecipeKnowledge) return;
-        window.Game.RecipeKnowledge.completeBookStudy(slot.id || slot.key);
-        setUpdateKey((k) => k + 1);
-        if (onNotify) onNotify(`✨ "${slot.shortTitle || slot.name}" marcado como estudado!`);
-      };
-
-      // Verifica se o item está na mochila
-      const isItemInBackpack = (slot) => {
-        if (!Array.isArray(backpack)) return false;
-        const slotId = (slot.id || "").toLowerCase();
-        const slotKey = (slot.key || "").toLowerCase();
-        const slotName = (slot.name || "").toLowerCase();
-
-        return backpack.some((it) => {
-          const itId = (it.id || "").toLowerCase();
-          const itName = (it.name || "").toLowerCase();
-          return (
-            itId === slotId ||
-            itId.includes(slotKey) ||
-            (slotKey === "culinaria_vol1" && itName.includes("culinária") && (itName.includes("volume i") || itName.includes("pratos"))) ||
-            (slotKey === "culinaria_vol2" && itName.includes("culinária") && (itName.includes("volume ii") || itName.includes("banquetes"))) ||
-            (slotKey === "ferramentas_primitivas" && (itName.includes("ferramentas") || itName.includes("primitiv"))) ||
-            (slotKey === "itens_basicos" && (itName.includes("itens básicos") || itName.includes("construção"))) ||
-            (slotKey === "armas_e_equipamentos" && (itName.includes("armas") || itName.includes("equipamentos"))) ||
-            (slotKey === "catalogo_itens" && (itName.includes("catálogo") || itName.includes("recursos da terra"))) ||
-            (slotKey === "geografia_biomas" && (itName.includes("geográfico") || itName.includes("bestiário") || itName.includes("biomas")))
-          );
-        });
-      };
-
-      // Render de um card de slot de aprendizado
+      // Render de um card de slot de aprendizado dominado
       const renderSlotCard = (slot) => {
-        const inBackpack = isItemInBackpack(slot);
-        const isCompleted = slot.isCompleted;
-        const prog = slot.studyProgress || { seconds: 0, totalSeconds: slot.studyTime || 60, percentage: 0 };
-        const pct = prog.percentage || 0;
-
         return h.jsxs("div", {
           key: slot.id || slot.key,
-          className: `rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 border ${
-            isCompleted
-              ? "bg-gradient-to-b from-[#1c140d]/95 via-slate-950/95 to-slate-950 border-amber-500/50 shadow-lg shadow-amber-950/30 hover:border-amber-400"
-              : inBackpack
-              ? "bg-slate-950/90 border-emerald-500/40 shadow-md shadow-emerald-950/20"
-              : "bg-slate-950/70 border-slate-800 shadow-inner opacity-90"
-          }`,
+          className:
+            "rounded-2xl p-4 flex flex-col justify-between transition-all duration-200 border bg-gradient-to-b from-[#1c140d]/95 via-slate-950/95 to-slate-950 border-amber-500/50 shadow-lg shadow-amber-950/30 hover:border-amber-400 group",
           children: [
             // Cabeçalho do Card
             h.jsxs("div", {
               className: "flex items-start gap-3",
               children: [
-                // Ícone com moldura
+                // Ícone com moldura dourada
                 h.jsxs("div", {
-                  className: `w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-md border ${
-                    isCompleted
-                      ? "border-amber-400/80 bg-[#2d1b0d] shadow-amber-900/40"
-                      : inBackpack
-                      ? "border-emerald-500/60 bg-emerald-950/40 text-emerald-300"
-                      : "border-slate-700 bg-slate-900/70 text-slate-500"
-                  }`,
+                  className:
+                    "w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-md border border-amber-400/80 bg-[#2d1b0d] shadow-amber-900/40 group-hover:scale-105 transition-transform",
                   style: {
-                    color: isCompleted ? (slot.accentColor || "#fbbf24") : undefined,
+                    color: slot.accentColor || "#fbbf24",
                   },
                   children: [
                     slot.icon || (slot.type === "scroll" ? "📜" : "📖"),
                   ],
                 }),
 
-                // Título, Autor e Badge
+                // Título, Autor e Badges
                 h.jsxs("div", {
                   className: "flex-1 min-w-0",
                   children: [
@@ -1523,29 +1477,19 @@
                       className: "flex items-center justify-between gap-1 flex-wrap",
                       children: [
                         h.jsx("span", {
-                          className: `text-[10px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded-full border ${
-                            isCompleted
-                              ? "bg-emerald-950/80 border-emerald-500/60 text-emerald-300"
-                              : inBackpack
-                              ? "bg-amber-950/80 border-amber-500/50 text-amber-300"
-                              : "bg-slate-900 border-slate-700 text-slate-400"
-                          }`,
-                          children: isCompleted
-                            ? "✓ Estudado & Aprendido"
-                            : inBackpack
-                            ? "🎒 Na Mochila"
-                            : "🔒 Não Estudado",
+                          className:
+                            "text-[10px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded-full border bg-emerald-950/80 border-emerald-500/60 text-emerald-300 shadow-sm",
+                          children: "✓ Estudado & Dominado",
                         }),
                         h.jsx("span", {
-                          className: "text-[10px] text-slate-500 font-mono",
+                          className: "text-[10px] text-amber-400/80 font-mono font-semibold",
                           children: slot.type === "scroll" ? "Pergaminho" : "Livro",
                         }),
                       ],
                     }),
                     h.jsx("h4", {
-                      className: `text-sm font-bold font-serif leading-tight mt-1 truncate ${
-                        isCompleted ? "text-amber-200" : "text-slate-200"
-                      }`,
+                      className:
+                        "text-sm font-bold font-serif leading-tight mt-1 text-amber-200 group-hover:text-amber-100 transition-colors",
                       title: slot.name,
                       children: slot.name,
                     }),
@@ -1560,21 +1504,21 @@
 
             // Descrição e Conteúdo Aprendido
             h.jsxs("div", {
-              className: "mt-2.5 pt-2 border-t border-white/5 flex flex-col gap-2",
+              className: "mt-3 pt-2.5 border-t border-white/10 flex flex-col gap-2",
               children: [
                 h.jsx("p", {
-                  className: "text-xs text-slate-300/90 leading-relaxed line-clamp-2",
+                  className: "text-xs text-slate-300 leading-relaxed line-clamp-2 font-serif",
                   children: slot.description,
                 }),
 
-                // Se tiver receitas vinculadas e estiver concluído: exibir pílulas das receitas aprendidas
-                isCompleted && Array.isArray(slot.recipeIds) && slot.recipeIds.length > 0 &&
+                // Se tiver receitas vinculadas: exibir pílulas das receitas aprendidas para a Forja
+                Array.isArray(slot.recipeIds) && slot.recipeIds.length > 0 &&
                   h.jsxs("div", {
                     className: "flex flex-wrap items-center gap-1.5 pt-1",
                     children: [
                       h.jsx("span", {
-                        className: "text-[10px] font-mono text-amber-400/90 font-bold",
-                        children: "Receitas na Forja:",
+                        className: "text-[10px] font-mono text-amber-400 font-bold",
+                        children: "Fórmulas na Forja:",
                       }),
                       slot.recipeIds.map((rid) => {
                         const fRecipe = window.Game && window.Game.FUSION_RECIPES
@@ -1583,15 +1527,15 @@
                         const rName = fRecipe ? fRecipe.name : rid.replace("fuse_", "").replace(/_/g, " ");
                         return h.jsx("span", {
                           key: rid,
-                          className: "text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-950/60 border border-amber-500/30 text-amber-200",
+                          className: "text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-950/70 border border-amber-500/40 text-amber-200",
                           children: rName,
                         });
                       }),
                     ],
                   }),
 
-                // Se for o atlas ou catálogo e estiver concluído: exibir resumo dos capítulos
-                isCompleted && slot.category === "mapas" &&
+                // Se for mapa ou atlas: resumo geográfico
+                (slot.category === "mapas" || slot.learningType === "mapas") &&
                   h.jsxs("div", {
                     className: "flex flex-wrap items-center gap-1 text-[10px] font-mono text-teal-300 pt-0.5",
                     children: [
@@ -1600,106 +1544,50 @@
                       h.jsx("span", { className: "px-1.5 py-0.5 rounded bg-teal-950/60 border border-teal-500/30", children: "🏜️ Deserto & Oásis" }),
                       h.jsx("span", { className: "px-1.5 py-0.5 rounded bg-teal-950/60 border border-teal-500/30", children: "🌾 Pântanos" }),
                       h.jsx("span", { className: "px-1.5 py-0.5 rounded bg-teal-950/60 border border-teal-500/30", children: "❄️ Montanhas" }),
-                      h.jsx("span", { className: "px-1.5 py-0.5 rounded bg-teal-950/60 border border-teal-500/30", children: "🐺 Bestiário" }),
+                      h.jsx("span", { className: "px-1.5 py-0.5 rounded bg-teal-950/60 border border-teal-500/30", children: "🐺 Fauna Silvestre" }),
                     ],
                   }),
 
-                isCompleted && slot.category === "catalogo" &&
+                // Se for catálogo: resumo de recursos
+                (slot.category === "catalogo" || slot.learningType === "catalogo") &&
                   h.jsxs("div", {
                     className: "flex flex-wrap items-center gap-1 text-[10px] font-mono text-yellow-300 pt-0.5",
                     children: [
-                      h.jsx("span", { className: "text-slate-400 font-bold", children: "Categorias:" }),
+                      h.jsx("span", { className: "text-slate-400 font-bold", children: "Classificações:" }),
                       h.jsx("span", { className: "px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-500/30", children: "🪨 Minerais" }),
                       h.jsx("span", { className: "px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-500/30", children: "🌿 Vegetais" }),
                       h.jsx("span", { className: "px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-500/30", children: "🥩 Caça" }),
                       h.jsx("span", { className: "px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-500/30", children: "💧 Aquáticos" }),
                     ],
                   }),
-
-                // Se não estiver concluído, mas tiver estudo parcial: barra de progresso
-                !isCompleted && prog.seconds > 0 &&
-                  h.jsxs("div", {
-                    className: "mt-1 flex flex-col gap-1",
-                    children: [
-                      h.jsxs("div", {
-                        className: "flex items-center justify-between text-[10px] font-mono text-amber-300",
-                        children: [
-                          h.jsx("span", { children: "Progresso de Estudo:" }),
-                          h.jsxs("span", { children: [prog.seconds, "s / ", prog.totalSeconds, "s (", pct, "%)"] }),
-                        ],
-                      }),
-                      h.jsx("div", {
-                        className: "w-full h-1.5 rounded-full bg-slate-900 border border-slate-700 overflow-hidden",
-                        children: h.jsx("div", {
-                          className: "h-full bg-gradient-to-r from-amber-600 via-amber-400 to-amber-300",
-                          style: { width: `${pct}%` },
-                        }),
-                      }),
-                    ],
-                  }),
-
-                // Se não estiver na mochila e não estudado: dica
-                !isCompleted && !inBackpack && prog.seconds === 0 &&
-                  h.jsx("p", {
-                    className: "text-[11px] text-slate-500 italic mt-0.5",
-                    children: "Encontre este livro pelo mundo e estude-o para registrar permanentemente seu conteúdo neste slot.",
-                  }),
               ],
             }),
 
-            // Rodapé com Botão de Ação
-            h.jsxs("div", {
-              className: "mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between gap-2 flex-wrap",
-              children: [
-                // Botão Principal
-                isCompleted
-                  ? h.jsxs("button", {
-                      onClick: () => handleAccessBook(slot),
-                      className:
-                        "flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-400 text-white font-serif font-bold text-xs shadow-md shadow-amber-950/50 flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer border border-amber-300/40",
-                      title: "Abrir e reler todo o conteúdo do manuscrito",
-                      children: [
-                        h.jsx("span", { children: "📖" }),
-                        h.jsx("span", { children: "Acessar / Reler Manuscrito" }),
-                      ],
-                    })
-                  : inBackpack
-                  ? h.jsxs("button", {
-                      onClick: () => handleAccessBook(slot),
-                      className:
-                        "flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white font-serif font-bold text-xs shadow-md shadow-emerald-950/50 flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer border border-emerald-300/40 animate-pulse",
-                      title: "Abrir o livro para ler e concluir o estudo",
-                      children: [
-                        h.jsx("span", { children: "📖" }),
-                        h.jsx("span", { children: "Ler & Estudar Agora" }),
-                      ],
-                    })
-                  : h.jsxs("div", {
-                      className: "flex items-center gap-1.5 text-[11px] text-slate-500 font-mono",
-                      children: [
-                        h.jsx("span", { children: "🔒" }),
-                        h.jsx("span", { children: "Slot Bloqueado (Item Ausente)" }),
-                      ],
-                    }),
-
-                // Botão Auxiliar Dev
-                isDev && !isCompleted &&
-                  h.jsx("button", {
-                    onClick: (e) => handleDevCompleteOne(e, slot),
-                    className:
-                      "px-2.5 py-1.5 rounded-lg bg-amber-950/80 hover:bg-amber-900 border border-amber-500/50 text-amber-200 text-[10px] font-bold font-mono transition cursor-pointer shrink-0",
-                    title: "Completar estudo instantaneamente (Modo Dev)",
-                    children: "⚡ Aprender (Dev)",
-                  }),
-              ],
+            // Rodapé com Botão de Acesso Imediato
+            h.jsx("div", {
+              className: "mt-3.5 pt-2.5 border-t border-white/10 flex items-center justify-between gap-2",
+              children: h.jsxs("button", {
+                onClick: () => handleAccessBook(slot),
+                className:
+                  "flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-400 text-white font-serif font-bold text-xs shadow-md shadow-amber-950/50 flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer border border-amber-300/40",
+                title: "Abrir e reler todo o conteúdo do manuscrito",
+                children: [
+                  h.jsx("span", { children: "📖" }),
+                  h.jsx("span", { children: "Acessar / Reler Manuscrito" }),
+                ],
+              }),
             }),
           ],
         });
       };
 
-      const showReceitas = selectedCategory === "all" || selectedCategory === "receitas";
-      const showCatalogo = selectedCategory === "all" || selectedCategory === "catalogo";
-      const showMapas = selectedCategory === "all" || selectedCategory === "mapas";
+      const hasReceitas = (categories.receitas || []).length > 0;
+      const hasCatalogo = (categories.catalogo || []).length > 0;
+      const hasMapas = (categories.mapas || []).length > 0;
+
+      const showReceitas = (selectedCategory === "all" || selectedCategory === "receitas") && hasReceitas;
+      const showCatalogo = (selectedCategory === "all" || selectedCategory === "catalogo") && hasCatalogo;
+      const showMapas = (selectedCategory === "all" || selectedCategory === "mapas") && hasMapas;
 
       return h.jsxs("div", {
         className: "flex flex-col gap-4 max-h-[580px] overflow-y-auto pr-1",
@@ -1720,117 +1608,167 @@
                           h.jsx("span", { className: "text-xl", children: "📜" }),
                           h.jsx("h3", {
                             className: "text-base sm:text-lg font-bold font-serif text-amber-200 tracking-wide",
-                            children: "Compêndio de Aprendizado & Sabedoria",
+                            children: "Aba de Conhecimento & Aprendizado",
                           }),
                         ],
                       }),
                       h.jsx("p", {
                         className: "text-xs text-slate-300 font-serif mt-1 leading-relaxed max-w-xl",
                         children:
-                          "Cada livro e pergaminho estudado pelo aventureiro é arquivado permanentemente em seus slots de aprendizado. Acesse, releia e consulte receitas, catálogos e mapas a qualquer momento da sua jornada.",
+                          "Cada livro e pergaminho estudado com atenção pelo aventureiro é catalogado permanentemente em seus slots de aprendizado. Acesse, releia e consulte receitas, catálogos e mapas a qualquer momento da sua jornada.",
                       }),
                     ],
                   }),
 
-                  // Contador de Progresso Total
-                  h.jsxs("div", {
+                  // Contador de Conhecimentos Dominados
+                  h.jsx("div", {
                     className: "shrink-0 flex flex-col items-end",
-                    children: [
-                      h.jsxs("div", {
-                        className: "px-3 py-1.5 rounded-xl bg-amber-950/80 border border-amber-500/40 text-amber-200 font-mono font-bold text-xs flex items-center gap-1.5 shadow",
-                        children: [
-                          h.jsx("span", { children: "🎓" }),
-                          h.jsxs("span", { children: [completedCount, " / ", totalCount, " Conhecimentos"] }),
-                        ],
-                      }),
-                      h.jsxs("span", {
-                        className: "text-[10px] text-amber-400/80 font-mono mt-1",
-                        children: [Math.round((completedCount / (totalCount || 1)) * 100), "% Aprendido"],
-                      }),
-                    ],
-                  }),
-                ],
-              }),
-
-              // Barra de Filtros e Modo Dev
-              h.jsxs("div", {
-                className: "mt-3 pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs",
-                children: [
-                  // Filtros de Categoria
-                  h.jsxs("div", {
-                    className: "flex items-center gap-1.5 bg-black/40 p-1 rounded-xl border border-white/5",
-                    children: [
-                      h.jsxs("button", {
-                        onClick: () => setSelectedCategory("all"),
-                        className: `py-1 px-2.5 rounded-lg font-semibold transition cursor-pointer ${
-                          selectedCategory === "all" ? "bg-amber-600 text-white shadow" : "text-slate-400 hover:text-slate-200"
-                        }`,
-                        children: ["Todos (", totalCount, ")"],
-                      }),
-                      h.jsxs("button", {
-                        onClick: () => setSelectedCategory("receitas"),
-                        className: `py-1 px-2.5 rounded-lg font-semibold transition cursor-pointer flex items-center gap-1 ${
-                          selectedCategory === "receitas" ? "bg-amber-600 text-white shadow" : "text-slate-400 hover:text-slate-200"
-                        }`,
-                        children: [
-                          h.jsx("span", { children: "⚒️" }),
-                          "Receitas (",
-                          categories.receitas?.length || 0,
-                          ")",
-                        ],
-                      }),
-                      h.jsxs("button", {
-                        onClick: () => setSelectedCategory("catalogo"),
-                        className: `py-1 px-2.5 rounded-lg font-semibold transition cursor-pointer flex items-center gap-1 ${
-                          selectedCategory === "catalogo" ? "bg-amber-600 text-white shadow" : "text-slate-400 hover:text-slate-200"
-                        }`,
-                        children: [
-                          h.jsx("span", { children: "📚" }),
-                          "Catálogos (",
-                          categories.catalogo?.length || 0,
-                          ")",
-                        ],
-                      }),
-                      h.jsxs("button", {
-                        onClick: () => setSelectedCategory("mapas"),
-                        className: `py-1 px-2.5 rounded-lg font-semibold transition cursor-pointer flex items-center gap-1 ${
-                          selectedCategory === "mapas" ? "bg-amber-600 text-white shadow" : "text-slate-400 hover:text-slate-200"
-                        }`,
-                        children: [
-                          h.jsx("span", { children: "🗺️" }),
-                          "Mapas (",
-                          categories.mapas?.length || 0,
-                          ")",
-                        ],
-                      }),
-                    ],
-                  }),
-
-                  // Controles Rápidos Dev (se ativo)
-                  isDev &&
-                    h.jsxs("div", {
-                      className: "flex items-center gap-1.5",
+                    children: h.jsxs("div", {
+                      className:
+                        "px-3 py-1.5 rounded-xl bg-amber-950/80 border border-amber-500/40 text-amber-200 font-mono font-bold text-xs flex items-center gap-1.5 shadow",
                       children: [
-                        h.jsx("button", {
-                          onClick: handleDevCompleteAll,
-                          className:
-                            "py-1 px-2.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 text-[10px] font-bold font-mono transition cursor-pointer",
-                          children: "🎓 Aprender Todos (Dev)",
-                        }),
-                        h.jsx("button", {
-                          onClick: handleDevResetAll,
-                          className:
-                            "py-1 px-2 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-500/50 text-rose-300 text-[10px] font-bold font-mono transition cursor-pointer",
-                          children: "🔄 Resetar (Dev)",
+                        h.jsx("span", { children: "🎓" }),
+                        h.jsxs("span", {
+                          children: [
+                            completedCount,
+                            completedCount === 1 ? " Conhecimento Registrado" : " Conhecimentos Registrados",
+                          ],
                         }),
                       ],
                     }),
+                  }),
                 ],
               }),
+
+              // Barra de Filtros e Controles Dev (apenas exibida se houver conhecimento ou modo dev)
+              (!isEmpty || isDev) &&
+                h.jsxs("div", {
+                  className: "mt-3 pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs",
+                  children: [
+                    // Filtros de Categoria (apenas exibe abas que tenham itens estudados)
+                    !isEmpty &&
+                      h.jsxs("div", {
+                        className: "flex items-center gap-1.5 bg-black/40 p-1 rounded-xl border border-white/5",
+                        children: [
+                          h.jsxs("button", {
+                            onClick: () => setSelectedCategory("all"),
+                            className: `py-1 px-2.5 rounded-lg font-semibold transition cursor-pointer ${
+                              selectedCategory === "all" ? "bg-amber-600 text-white shadow" : "text-slate-400 hover:text-slate-200"
+                            }`,
+                            children: ["Todos (", completedCount, ")"],
+                          }),
+                          hasReceitas &&
+                            h.jsxs("button", {
+                              onClick: () => setSelectedCategory("receitas"),
+                              className: `py-1 px-2.5 rounded-lg font-semibold transition cursor-pointer flex items-center gap-1 ${
+                                selectedCategory === "receitas" ? "bg-amber-600 text-white shadow" : "text-slate-400 hover:text-slate-200"
+                              }`,
+                              children: [
+                                h.jsx("span", { children: "⚒️" }),
+                                "Receitas (",
+                                categories.receitas.length,
+                                ")",
+                              ],
+                            }),
+                          hasCatalogo &&
+                            h.jsxs("button", {
+                              onClick: () => setSelectedCategory("catalogo"),
+                              className: `py-1 px-2.5 rounded-lg font-semibold transition cursor-pointer flex items-center gap-1 ${
+                                selectedCategory === "catalogo" ? "bg-amber-600 text-white shadow" : "text-slate-400 hover:text-slate-200"
+                              }`,
+                              children: [
+                                h.jsx("span", { children: "📚" }),
+                                "Catálogos (",
+                                categories.catalogo.length,
+                                ")",
+                              ],
+                            }),
+                          hasMapas &&
+                            h.jsxs("button", {
+                              onClick: () => setSelectedCategory("mapas"),
+                              className: `py-1 px-2.5 rounded-lg font-semibold transition cursor-pointer flex items-center gap-1 ${
+                                selectedCategory === "mapas" ? "bg-amber-600 text-white shadow" : "text-slate-400 hover:text-slate-200"
+                              }`,
+                              children: [
+                                h.jsx("span", { children: "🗺️" }),
+                                "Mapas (",
+                                categories.mapas.length,
+                                ")",
+                              ],
+                            }),
+                        ],
+                      }),
+
+                    // Controles Rápidos Dev (se ativo)
+                    isDev &&
+                      h.jsxs("div", {
+                        className: "flex items-center gap-1.5 ml-auto",
+                        children: [
+                          h.jsx("button", {
+                            onClick: handleDevCompleteAll,
+                            className:
+                              "py-1 px-2.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 text-[10px] font-bold font-mono transition cursor-pointer",
+                            children: "🎓 Aprender Todos (Dev)",
+                          }),
+                          h.jsx("button", {
+                            onClick: handleDevResetAll,
+                            className:
+                              "py-1 px-2 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-500/50 text-rose-300 text-[10px] font-bold font-mono transition cursor-pointer",
+                            children: "🔄 Resetar (Dev)",
+                          }),
+                        ],
+                      }),
+                  ],
+                }),
             ],
           }),
 
-          // SEÇÃO 1: RECEITAS DE CRIAÇÃO E FORJA
+          // ESTADO VAZIO INICIAL: Sem nomes, sem referências e sem contadores de livros existentes
+          isEmpty &&
+            h.jsxs("div", {
+              className:
+                "rounded-2xl border border-dashed border-amber-600/30 bg-slate-950/80 p-8 flex flex-col items-center justify-center text-center gap-3 shadow-inner my-2",
+              children: [
+                h.jsx("div", {
+                  className:
+                    "w-16 h-16 rounded-2xl bg-amber-950/40 border border-amber-500/30 text-amber-400 flex items-center justify-center text-3xl shadow-lg shadow-amber-950/50",
+                  children: "📖",
+                }),
+                h.jsx("h4", {
+                  className: "text-base font-bold font-serif text-amber-200 tracking-wide mt-1",
+                  children: "Seu Grimório de Aprendizado está em Branco",
+                }),
+                h.jsx("p", {
+                  className: "text-xs text-slate-300 max-w-lg leading-relaxed font-serif",
+                  children:
+                    "Você ainda não estudou nenhum livro ou pergaminho. Explore o mundo, encontre manuscritos antigos nas vilas, florestas e ruínas e estude-os com calma para registrar seu aprendizado aqui.",
+                }),
+                h.jsx("div", {
+                  className:
+                    "mt-2 px-4 py-2.5 rounded-xl bg-amber-950/30 border border-amber-500/20 text-[11px] text-amber-300/90 font-serif max-w-md",
+                  children:
+                    "💡 Dica: Todo manuscrito concluído será catalogado em seu respectivo slot por tipo de aprendizado (Receitas, Catálogos e Mapas), ficando sempre disponível para consulta.",
+                }),
+                isDev &&
+                  h.jsxs("div", {
+                    className: "mt-3 flex items-center gap-2 pt-2 border-t border-white/5",
+                    children: [
+                      h.jsx("span", {
+                        className: "text-[10px] text-amber-400 font-mono font-bold",
+                        children: "Atalhos Dev:",
+                      }),
+                      h.jsx("button", {
+                        onClick: handleDevCompleteAll,
+                        className:
+                          "py-1.5 px-3 rounded-lg bg-emerald-900/80 hover:bg-emerald-800 border border-emerald-500/40 text-emerald-200 text-xs font-mono font-bold transition cursor-pointer",
+                        children: "⚡ Aprender Todos os Manuscritos",
+                      }),
+                    ],
+                  }),
+              ],
+            }),
+
+          // SEÇÃO 1: RECEITAS DE CRIAÇÃO E FORJA (apenas renderizada se houver receitas estudadas)
           showReceitas &&
             h.jsxs("div", {
               className: "flex flex-col gap-2.5",
@@ -1851,22 +1789,20 @@
                     h.jsxs("span", {
                       className: "text-[11px] font-mono text-slate-400",
                       children: [
-                        categories.receitas?.filter((s) => s.isCompleted).length || 0,
-                        " / ",
-                        categories.receitas?.length || 0,
-                        " Desbloqueados",
+                        categories.receitas.length,
+                        categories.receitas.length === 1 ? " Dominado" : " Dominados",
                       ],
                     }),
                   ],
                 }),
                 h.jsx("div", {
                   className: "grid grid-cols-1 md:grid-cols-2 gap-3",
-                  children: (categories.receitas || []).map(renderSlotCard),
+                  children: categories.receitas.map(renderSlotCard),
                 }),
               ],
             }),
 
-          // SEÇÃO 2: CATÁLOGOS E RECURSOS DA TERRA
+          // SEÇÃO 2: CATÁLOGOS E RECURSOS DA TERRA (apenas renderizada se houver catálogo estudado)
           showCatalogo &&
             h.jsxs("div", {
               className: "flex flex-col gap-2.5",
@@ -1887,22 +1823,20 @@
                     h.jsxs("span", {
                       className: "text-[11px] font-mono text-slate-400",
                       children: [
-                        categories.catalogo?.filter((s) => s.isCompleted).length || 0,
-                        " / ",
-                        categories.catalogo?.length || 0,
-                        " Desbloqueados",
+                        categories.catalogo.length,
+                        categories.catalogo.length === 1 ? " Dominado" : " Dominados",
                       ],
                     }),
                   ],
                 }),
                 h.jsx("div", {
                   className: "grid grid-cols-1 md:grid-cols-2 gap-3",
-                  children: (categories.catalogo || []).map(renderSlotCard),
+                  children: categories.catalogo.map(renderSlotCard),
                 }),
               ],
             }),
 
-          // SEÇÃO 3: MAPAS, ATLAS E GEOGRAFIA
+          // SEÇÃO 3: MAPAS, ATLAS E GEOGRAFIA (apenas renderizada se houver mapas estudados)
           showMapas &&
             h.jsxs("div", {
               className: "flex flex-col gap-2.5",
@@ -1923,53 +1857,29 @@
                     h.jsxs("span", {
                       className: "text-[11px] font-mono text-slate-400",
                       children: [
-                        categories.mapas?.filter((s) => s.isCompleted).length || 0,
-                        " / ",
-                        categories.mapas?.length || 0,
-                        " Desbloqueados",
+                        categories.mapas.length,
+                        categories.mapas.length === 1 ? " Dominado" : " Dominados",
                       ],
                     }),
                   ],
                 }),
                 h.jsx("div", {
                   className: "grid grid-cols-1 md:grid-cols-2 gap-3",
-                  children: (categories.mapas || []).map(renderSlotCard),
+                  children: categories.mapas.map(renderSlotCard),
                 }),
               ],
             }),
 
-          // SEÇÃO ESPECIAL RÚNICA: PERGAMINHOS DE RUNAS (INDECIFRÁVEL NO MOMENTO)
+          // NOTA DISCRETA SOBRE RUNAS (sem revelar contagens nem títulos de pergaminhos rúnicos)
           h.jsxs("div", {
             className:
-              "rounded-2xl border border-purple-500/40 bg-gradient-to-b from-purple-950/60 via-slate-950/80 to-slate-950 p-4 shadow-lg flex flex-col sm:flex-row items-center gap-3.5 mt-1",
+              "rounded-xl border border-purple-500/30 bg-purple-950/20 px-3.5 py-2.5 flex items-center gap-2.5 text-xs text-purple-300/80 font-serif mt-1",
             children: [
-              h.jsx("div", {
-                className:
-                  "w-12 h-12 rounded-xl bg-purple-950 border border-purple-500/60 text-purple-300 flex items-center justify-center text-2xl shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)] animate-pulse",
-                children: "ᛟ",
-              }),
-              h.jsxs("div", {
-                className: "flex-1 text-center sm:text-left",
-                children: [
-                  h.jsxs("div", {
-                    className: "flex items-center justify-center sm:justify-start gap-2 flex-wrap",
-                    children: [
-                      h.jsx("h4", {
-                        className: "text-xs sm:text-sm font-bold font-serif text-purple-200 tracking-wider uppercase",
-                        children: "᚛ Setor Arcano: Pergaminhos de Runas Ancestrais ᚜",
-                      }),
-                      h.jsx("span", {
-                        className: "text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-950 border border-purple-400/50 text-purple-300",
-                        children: "🔒 Requer Decifração Futura",
-                      }),
-                    ],
-                  }),
-                  h.jsx("p", {
-                    className: "text-[11px] text-purple-200/80 font-serif italic mt-1 leading-relaxed",
-                    children:
-                      "Pergaminhos rúnicos contêm escrituras enigmáticas seladas e ainda não entram nos slots de aprendizado, pois para aprender o herói precisará decifrá-los através de um futuro sistema de decifração rúnica.",
-                  }),
-                ],
+              h.jsx("span", { className: "text-base text-purple-400", children: "ᛟ" }),
+              h.jsx("span", {
+                className: "leading-relaxed",
+                children:
+                  "Pergaminhos rúnicos contêm escrituras arcanas seladas e não entram nos slots de aprendizado no momento, pois para aprender o herói precisará decifrá-los através de um futuro sistema de decifração.",
               }),
             ],
           }),

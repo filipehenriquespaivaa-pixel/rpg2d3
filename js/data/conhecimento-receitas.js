@@ -266,9 +266,9 @@ window.Game = window.Game || {};
       return Boolean(studiedMap[norm]?.completed || studiedMap[bookId]?.completed);
     },
 
-    // Retorna todos os slots de conhecimento organizados por tipo de aprendizado:
-    // receitas, catalogo, mapas (exclui runas)
-    getKnowledgeSlots() {
+    // Retorna os slots de conhecimento que já foram estudados/dominados pelo jogador:
+    // Começa vazio, sem revelar nomes, quantidades ou referências de livros não descobertos.
+    getKnowledgeSlots(includeUncompleted = false) {
       const allBooks = G.BooksAndScrolls && typeof G.BooksAndScrolls.getAllStudyableBooks === "function"
         ? G.BooksAndScrolls.getAllStudyableBooks()
         : [];
@@ -280,29 +280,34 @@ window.Game = window.Game || {};
       };
 
       let completedCount = 0;
-      let totalCount = 0;
 
       allBooks.forEach((book) => {
         const norm = normalizeBookId(book.id || book.key);
         const state = this.getStudyState(norm, book.studyTime || 60);
-        const isCompleted = state.completed;
+        const isCompleted = Boolean(state.completed);
         if (isCompleted) completedCount++;
-        totalCount++;
 
-        const cat = book.learningType || book.category || "receitas";
-        const targetCategory = categorized[cat] ? cat : "receitas";
+        // Só inclui no compêndio do jogador se já foi estudado e aprendido
+        if (isCompleted || includeUncompleted) {
+          const rawCat = (book.learningType || book.category || "receitas").toLowerCase();
+          const targetCategory =
+            rawCat.includes("catalogo")
+              ? "catalogo"
+              : rawCat.includes("mapa") || rawCat.includes("geografia")
+              ? "mapas"
+              : "receitas";
 
-        categorized[targetCategory].push({
-          ...book,
-          normalizedId: norm,
-          isCompleted,
-          studyProgress: state,
-        });
+          categorized[targetCategory].push({
+            ...book,
+            normalizedId: norm,
+            isCompleted,
+            studyProgress: state,
+          });
+        }
       });
 
       return {
         categories: categorized,
-        totalCount,
         completedCount,
       };
     },
