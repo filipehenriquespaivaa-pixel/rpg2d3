@@ -220,7 +220,7 @@
         this.interactedProps.set(`${t},${l}`, { ...state, collected: false, bluePlantFlowered: false });
       }
       if (this.isNight() && !state.bluePlantFlowered && !state.collected) {
-        this.interactedProps.set(`${t},${l}`, { ...state, bluePlantFlowered: true });
+        this.interactedProps.set(`${t},${l}`, { ...state, bluePlantFlowered: true, bluePlantStage: "flower" });
       }
       if (!tile.prop || tile.prop.kind === "rock" || tile.prop.kind.startsWith("flower_")) {
         tile.prop = {
@@ -230,7 +230,10 @@
           scale: 0.95,
           interactive: true,
           namePt: "Planta Azul do Luar",
-          descriptionPt: "Ramo azul raro que floresce à noite no ponto mais alto das montanhas de pedra. Pressione [F] para colher.",
+          stage: this.isNight() ? "flower" : "branch",
+          descriptionPt: this.isNight()
+            ? "Flor azul rara, aberta somente à noite no ponto mais alto das montanhas de pedra. Pressione [F] para colher."
+            : "Ramo azul raro que pode aparecer durante o dia e só dá flor à noite. Pressione [F] para colher.",
         };
       }
       return tile;

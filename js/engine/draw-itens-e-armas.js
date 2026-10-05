@@ -60,11 +60,11 @@
       (Xu.render(e, c, f, g * 1.05, u), e.restore());
       return;
     }
-    if (w.includes("ramo_azul") || y.includes("ramo azul")) {
+    if (w.includes("ramo_azul") || v.includes("branch_blue") || y.includes("ramo azul")) {
       (drawBlueBranchIcon(e, c, f, g, u), e.restore());
       return;
     }
-    if (w.includes("flor_azul") || y.includes("flor azul")) {
+    if (w.includes("flor_azul") || v.includes("flower_blue") || y.includes("flor azul")) {
       (drawBlueFlowerIcon(e, c, f, g, u), e.restore());
       return;
     }
