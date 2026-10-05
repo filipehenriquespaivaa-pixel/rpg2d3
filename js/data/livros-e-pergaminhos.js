@@ -17,6 +17,8 @@ window.Game = window.Game || {};
     culinaria_vol1: {
       type: "book",
       id: "item_livro_culinaria_1",
+      learningType: "receitas",
+      category: "receitas",
       name: "Livro de Culinária — Volume I: Pratos Rústicos e Assados",
       shortTitle: "Culinária Rústica (Vol. I)",
       author: "Mestre Gastrônomo Teodoro de Delfos",
@@ -142,6 +144,8 @@ Mantenha seus potes de cerâmica sempre limpos e suas pederneiras sempre secas!`
     culinaria_vol2: {
       type: "book",
       id: "item_livro_culinaria_2",
+      learningType: "receitas",
+      category: "receitas",
       name: "Livro de Culinária — Volume II: Banquetes e Elixires Gastronômicos",
       shortTitle: "Banquetes & Elixires (Vol. II)",
       author: "Mestre Gastrônomo Teodoro de Delfos",
@@ -273,6 +277,8 @@ Que estas receitas guiem sua jornada pelas terras infinitas!`,
     ferramentas_primitivas: {
       type: "scroll",
       id: "item_pergaminho_ferramentas_primitivas",
+      learningType: "receitas",
+      category: "receitas",
       name: "Pergaminho de Ferramentas Primitivas",
       shortTitle: "Ferramentas Primitivas",
       author: "Papiro Antigo dos Primeiros Nômades",
@@ -338,6 +344,8 @@ Combine um galho seco com resina ou seiva vegetal inflamável. A tocha é o sol 
     itens_basicos: {
       type: "book",
       id: "item_livro_itens_basicos",
+      learningType: "receitas",
+      category: "receitas",
       name: "Manual de Construção: Itens Básicos & Sobrevivência",
       shortTitle: "Construção de Itens Básicos",
       author: "Arquiteto e Construtor Hélio de Corinto",
@@ -446,6 +454,8 @@ Expanda seus horizontes para a metalurgia e a alfaiataria militar com o Tratado 
     armas_e_equipamentos: {
       type: "book",
       id: "item_livro_armas_equipamentos",
+      learningType: "receitas",
+      category: "receitas",
       name: "Tratado de Armas & Equipamentos Comuns",
       shortTitle: "Armas & Equipamentos Comuns",
       author: "Mestre Armeiro Calícrates de Esparta",
@@ -560,6 +570,8 @@ Junte uma Barra de Ouro nobre com uma amarra fina de Corda de Fibra. O brilho da
     pergaminho_runico_misterio: {
       type: "scroll",
       id: "item_pergaminho_runico_misterio",
+      learningType: "runas",
+      category: "runas",
       name: "᚛ ᛈ ᛖ ᚱ ᚷ ᚨ ᛗ ᛁ ᚾ ᚺ ᛟ ᛫ ᚱ ᚢ ᚾ ᛁ ᚲ ᛟ ᛫ ᚨ ᚾ ᚲ ᛖ ᛋ ᛏ ᚱ ᚨ ᛚ ᚜",
       shortTitle: "᚛ ᚱ ᚢ ᚾ ᚨ ᛋ ᛫ ᚨ ᚾ ᚲ ᛖ ᛋ ᛏ ᚱ ᚨ ᛁ ᛋ ᚜",
       author: "᚛ ᚺ ᛁ ᛖ ᚱ ᛟ ᚠ ᚨ ᚾ ᛏ ᛖ ᛫ ᛞ ᛖ ᛫ ᛞ ᛖ ᛚ ᚠ ᛟ ᛋ ᚜",
@@ -612,6 +624,8 @@ Junte uma Barra de Ouro nobre com uma amarra fina de Corda de Fibra. O brilho da
     catalogo_itens: {
       type: "book",
       id: "item_livro_catalogo_itens",
+      learningType: "catalogo",
+      category: "catalogo",
       name: "Compêndio & Catálogo Ilustrado de Recursos da Terra",
       shortTitle: "Catálogo de Recursos da Terra",
       author: "Erudito Teofrasto de Lesbos",
@@ -621,6 +635,7 @@ Junte uma Barra de Ouro nobre com uma amarra fina de Corda de Fibra. O brilho da
       rarity: "comum",
       description: "Catálogo completo com ilustrações, raridades e usos de todos os recursos brutos, minerais, botânicos e restos orgânicos encontrados no mundo.",
       value: 140,
+      studyTime: 60, // 1 minuto de estudo
       pages: [
         {
           chapter: "Classificação Mineral",
@@ -685,6 +700,8 @@ Coletada em recipientes cerâmicos. Alivia o calor, restaura vigor e integra rec
     geografia_biomas: {
       type: "book",
       id: "item_livro_geografia_biomas",
+      learningType: "mapas",
+      category: "mapas",
       name: "Atlas Geográfico dos Biomas & Bestiário Silvestre",
       shortTitle: "Atlas dos Biomas & Bestiário",
       author: "Cartógrafo Estrabão de Amásia",
@@ -694,6 +711,7 @@ Coletada em recipientes cerâmicos. Alivia o calor, restaura vigor e integra rec
       rarity: "raro",
       description: "Atlas detalhado sobre florestas temperadas, desertos com oásis, pântanos brumosos, montanhas nevadas e hábitos dos lobos, cervos, slimes e monstros.",
       value: 190,
+      studyTime: 60, // 1 minuto de estudo
       pages: [
         {
           chapter: "Atlas — Bioma Floresta",
@@ -812,8 +830,25 @@ Massas pulsantes de gosma verde, azul ou vermelha. Dividem-se ao sofrerem certos
     return null;
   }
 
+  // Retorna todos os livros e pergaminhos que podem ser estudados e arquivados no inventário
+  // Exclui expressamente o pergaminho de runas ancestrais (que necessita de sistema futuro de decifração)
+  function getAllStudyableBooks() {
+    const list = [];
+    for (const key in BOOKS_AND_SCROLLS_DB) {
+      const entry = BOOKS_AND_SCROLLS_DB[key];
+      // Ignora indecifráveis (runas)
+      if (entry.isUndecipherable || entry.learningType === "runas") continue;
+      list.push({
+        key,
+        ...entry,
+      });
+    }
+    return list;
+  }
+
   G.BooksAndScrolls = {
     DB: BOOKS_AND_SCROLLS_DB,
     getData: getBookOrScrollData,
+    getAllStudyableBooks: getAllStudyableBooks,
   };
 })(window.Game);

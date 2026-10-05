@@ -299,6 +299,7 @@ window.Game = window.Game || {};
     // ==========================================
     // SISTEMA DE ESTUDO DE LIVROS / PERGAMINHOS
     // ==========================================
+    const canStudy = !data.isUndecipherable;
     const hasRecipes = Array.isArray(data.recipeIds) && data.recipeIds.length > 0;
     const requiredStudySeconds = Math.max(60, data.studyTime || 60);
 
@@ -324,7 +325,7 @@ window.Game = window.Game || {};
 
     // Timer de estudo: corre enquanto o livro/pergaminho estiver aberto e isStudying for verdadeiro
     J.useEffect(() => {
-      if (!isOpen || !hasRecipes || studyState.completed || !isStudying) return;
+      if (!isOpen || !canStudy || studyState.completed || !isStudying) return;
 
       const timer = setInterval(() => {
         if (!G.RecipeKnowledge) return;
@@ -344,13 +345,16 @@ window.Game = window.Game || {};
 
         if (res.newlyCompleted) {
           setIsStudying(false);
-          setStudyCelebration(`✨ Estudo Concluído! Você dominou o compêndio e aprendeu ${data.recipeIds.length} receitas para a Forja!`);
+          const msg = hasRecipes
+            ? `✨ Estudo Concluído! Você dominou o compêndio e aprendeu ${data.recipeIds.length} receitas para a Forja!`
+            : `✨ Estudo Concluído! Conhecimento de "${data.shortTitle || data.name}" arquivado em seu Grimório!`;
+          setStudyCelebration(msg);
           setTimeout(() => setStudyCelebration(null), 6000);
         }
       }, 1000);
 
       return () => clearInterval(timer);
-    }, [isOpen, hasRecipes, studyState.completed, isStudying, data.id, requiredStudySeconds, data.recipeIds, data.name]);
+    }, [isOpen, canStudy, hasRecipes, studyState.completed, isStudying, data.id, requiredStudySeconds, data.recipeIds, data.name, data.shortTitle]);
 
     const toggleTheme = () => {
       const next = theme === "dark" ? "sepia" : "dark";
@@ -397,9 +401,14 @@ window.Game = window.Game || {};
 
     // Barra de Progresso de Estudo
     const renderStudyBar = () => {
-      if (!hasRecipes) return null;
+      if (!canStudy) return null;
       const pct = Math.min(100, Math.round((studyState.seconds / requiredStudySeconds) * 100));
       const remaining = Math.max(0, requiredStudySeconds - studyState.seconds);
+
+      const titleCompleted = hasRecipes
+        ? `✓ Livro Estudado (${data.recipeIds.length} receitas aprendidas)`
+        : "✓ Manuscrito Estudado (Conhecimento permanente arquivado)";
+      const titleStudying = `Estudando Manuscrito (${studyState.seconds}s / ${requiredStudySeconds}s)`;
 
       return h.jsxs("div", {
         className:
@@ -417,9 +426,7 @@ window.Game = window.Game || {};
                     children: [
                       h.jsxs("span", {
                         className: studyState.completed ? "text-emerald-400 font-bold" : "text-amber-300 font-bold",
-                        children: studyState.completed
-                          ? `✓ Livro Estudado (${data.recipeIds.length} receitas aprendidas)`
-                          : `Estudando Manuscrito (${studyState.seconds}s / ${requiredStudySeconds}s)`,
+                        children: studyState.completed ? titleCompleted : titleStudying,
                       }),
                       !studyState.completed &&
                         h.jsxs("span", {
@@ -475,7 +482,7 @@ window.Game = window.Game || {};
       const canNext = pageIndex + 2 < totalPages;
 
       return h.jsx("div", {
-        className: "fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md select-none animate-fadeIn",
+        className: "fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md select-none animate-fadeIn",
         onClick: (e) => {
           if (e.target === e.currentTarget) onClose();
         },
@@ -827,7 +834,7 @@ window.Game = window.Game || {};
     const isRunic = data.scrollTheme === "runic_mystery" || Boolean(data.isUndecipherable);
 
     return h.jsx("div", {
-      className: "fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md select-none animate-fadeIn",
+      className: "fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md select-none animate-fadeIn",
       onClick: (e) => {
         if (e.target === e.currentTarget) onClose();
       },

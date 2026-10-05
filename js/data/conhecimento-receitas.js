@@ -57,6 +57,21 @@ window.Game = window.Game || {};
     } catch (e) {}
   }
 
+  // Normalizador para garantir compatibilidade entre IDs e chaves de banco dos livros
+  function normalizeBookId(idOrKey) {
+    if (!idOrKey) return "";
+    const s = String(idOrKey).toLowerCase().trim();
+    if (s.includes("culinaria_2") || s.includes("culinaria-2") || s.includes("volume ii") || s.includes("volume 2")) return "culinaria_vol2";
+    if (s.includes("culinaria") || s.includes("volume i") || s.includes("volume 1")) return "culinaria_vol1";
+    if (s.includes("ferramenta") || s.includes("primitiv")) return "ferramentas_primitivas";
+    if (s.includes("basico") || s.includes("básico") || s.includes("construcao") || s.includes("construção")) return "itens_basicos";
+    if (s.includes("arma") || s.includes("equipamento")) return "armas_e_equipamentos";
+    if (s.includes("catalogo") || s.includes("catálogo") || s.includes("recurso")) return "catalogo_itens";
+    if (s.includes("geografia") || s.includes("bioma") || s.includes("bestiario") || s.includes("bestiário") || s.includes("criatura")) return "geografia_biomas";
+    if (s.includes("runic") || s.includes("rúnic") || s.includes("misterio") || s.includes("mistério")) return "pergaminho_runico_misterio";
+    return s;
+  }
+
   // Listener para eventos de áudio e notificação
   function notifyDiscovery(name, source = "experiment") {
     try {
@@ -75,7 +90,17 @@ window.Game = window.Game || {};
     );
   }
 
+  function notifyKnowledgeUpdated(bookId, bookName, completed = false) {
+    window.dispatchEvent(
+      new CustomEvent("rpg_knowledge_updated", {
+        detail: { bookId, bookName, completed },
+      }),
+    );
+  }
+
   const RecipeKnowledge = {
+    normalizeBookId,
+
     // Verifica se a receita está desbloqueada no livro de fórmulas
     isRecipeUnlocked(recipeId) {
       if (!recipeId) return false;
@@ -127,46 +152,61 @@ window.Game = window.Game || {};
 
     // Progresso de estudo de um livro/pergaminho
     getStudyState(bookId, defaultTotalSeconds = 60) {
-      if (!bookId) return { seconds: 0, totalSeconds: defaultTotalSeconds, completed: false };
-      const entry = studiedMap[bookId];
+      if (!bookId) return { seconds: 0, totalSeconds: defaultTotalSeconds, completed: false, percentage: 0 };
+      const norm = normalizeBookId(bookId);
+      const entry = studiedMap[norm] || studiedMap[bookId];
       if (!entry) {
         return {
           seconds: 0,
           totalSeconds: defaultTotalSeconds,
           completed: false,
+          percentage: 0,
         };
       }
+      const total = entry.totalSeconds || defaultTotalSeconds;
+      const secs = entry.seconds || 0;
+      const completed = Boolean(entry.completed);
+      const percentage = Math.min(100, Math.round((secs / total) * 100));
       return {
-        seconds: entry.seconds || 0,
-        totalSeconds: entry.totalSeconds || defaultTotalSeconds,
-        completed: Boolean(entry.completed),
+        seconds: secs,
+        totalSeconds: total,
+        completed,
+        percentage,
       };
     },
 
     // Adiciona tempo de estudo ao livro
     addStudySeconds(bookId, deltaSeconds, totalSeconds, recipeIdList, bookTitle = "Livro") {
       if (!bookId) return { seconds: 0, completed: false, newlyCompleted: false };
+      const norm = normalizeBookId(bookId);
       totalSeconds = Math.max(60, totalSeconds || 60); // Mínimo absoluto de 60 segundos
-      const cur = studiedMap[bookId] || { seconds: 0, totalSeconds, completed: false };
+      const cur = studiedMap[norm] || studiedMap[bookId] || { seconds: 0, totalSeconds, completed: false };
       
       const prevCompleted = Boolean(cur.completed);
       const nextSeconds = Math.min(totalSeconds, (cur.seconds || 0) + deltaSeconds);
       const nextCompleted = nextSeconds >= totalSeconds;
 
-      studiedMap[bookId] = {
+      const record = {
         seconds: nextSeconds,
         totalSeconds,
         completed: nextCompleted,
       };
+
+      studiedMap[norm] = record;
+      studiedMap[bookId] = record;
       saveStudiedBooks();
 
       let newlyCompleted = false;
       if (!prevCompleted && nextCompleted) {
         newlyCompleted = true;
-        // Desbloqueia todas as receitas vinculadas a este livro
+        // Desbloqueia todas as receitas vinculadas a este livro (se houver)
         if (Array.isArray(recipeIdList) && recipeIdList.length > 0) {
           this.unlockRecipes(recipeIdList, bookTitle);
         }
+        notifyDiscovery(bookTitle, "study");
+        notifyKnowledgeUpdated(norm, bookTitle, true);
+      } else {
+        notifyKnowledgeUpdated(norm, bookTitle, false);
       }
 
       return {
@@ -177,9 +217,94 @@ window.Game = window.Game || {};
       };
     },
 
+    // Conclui instantaneamente o estudo de um livro (usado para modo dev ou conclusão direta)
+    completeBookStudy(bookId, recipeIdList = null, bookTitle = "Livro") {
+      if (!bookId) return false;
+      const norm = normalizeBookId(bookId);
+      let bookData = null;
+      if (G.BooksAndScrolls && typeof G.BooksAndScrolls.getData === "function") {
+        bookData = G.BooksAndScrolls.getData(bookId);
+      }
+      const totalSeconds = (bookData && bookData.studyTime) || 60;
+      const recipes = recipeIdList || (bookData && bookData.recipeIds) || [];
+      const title = bookTitle !== "Livro" ? bookTitle : (bookData && bookData.name) || "Livro";
+
+      const record = {
+        seconds: totalSeconds,
+        totalSeconds,
+        completed: true,
+      };
+
+      studiedMap[norm] = record;
+      studiedMap[bookId] = record;
+      saveStudiedBooks();
+
+      if (Array.isArray(recipes) && recipes.length > 0) {
+        this.unlockRecipes(recipes, title);
+      }
+      notifyKnowledgeUpdated(norm, title, true);
+      return true;
+    },
+
+    // Reseta o progresso de estudo de um livro (ou de todos, se bookId for nulo)
+    resetBookStudy(bookId = null) {
+      if (bookId) {
+        const norm = normalizeBookId(bookId);
+        delete studiedMap[norm];
+        delete studiedMap[bookId];
+      } else {
+        for (const k in studiedMap) delete studiedMap[k];
+      }
+      saveStudiedBooks();
+      notifyKnowledgeUpdated(bookId || "all", "Reset", false);
+    },
+
     // Verifica se o livro já foi completamente estudado
     isBookCompleted(bookId) {
-      return Boolean(studiedMap[bookId]?.completed);
+      if (!bookId) return false;
+      const norm = normalizeBookId(bookId);
+      return Boolean(studiedMap[norm]?.completed || studiedMap[bookId]?.completed);
+    },
+
+    // Retorna todos os slots de conhecimento organizados por tipo de aprendizado:
+    // receitas, catalogo, mapas (exclui runas)
+    getKnowledgeSlots() {
+      const allBooks = G.BooksAndScrolls && typeof G.BooksAndScrolls.getAllStudyableBooks === "function"
+        ? G.BooksAndScrolls.getAllStudyableBooks()
+        : [];
+
+      const categorized = {
+        receitas: [],
+        catalogo: [],
+        mapas: [],
+      };
+
+      let completedCount = 0;
+      let totalCount = 0;
+
+      allBooks.forEach((book) => {
+        const norm = normalizeBookId(book.id || book.key);
+        const state = this.getStudyState(norm, book.studyTime || 60);
+        const isCompleted = state.completed;
+        if (isCompleted) completedCount++;
+        totalCount++;
+
+        const cat = book.learningType || book.category || "receitas";
+        const targetCategory = categorized[cat] ? cat : "receitas";
+
+        categorized[targetCategory].push({
+          ...book,
+          normalizedId: norm,
+          isCompleted,
+          studyProgress: state,
+        });
+      });
+
+      return {
+        categories: categorized,
+        totalCount,
+        completedCount,
+      };
     },
   };
 

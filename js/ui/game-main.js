@@ -3279,6 +3279,28 @@
           ve("📚 Nenhum livro ou pergaminho na mochila no momento.");
         }
       }, [readerOpen, readerItem, Ve, ve]),
+      _readerEffect = J.useEffect(() => {
+        const onOpenReaderEvt = (evt) => {
+          if (evt.detail && evt.detail.item) {
+            setReaderItem(evt.detail.item);
+            setReaderOpen(!0);
+            if (evt.detail.item.name) {
+              ve(`📖 Consultando Grimório: ${evt.detail.item.name}`);
+            }
+          }
+        };
+        const onKnowledgeEvt = (evt) => {
+          if (evt.detail && evt.detail.completed) {
+            ve(`🎓 Conhecimento arquivado no slot de aprendizado do Inventário!`);
+          }
+        };
+        window.addEventListener("rpg_open_reader", onOpenReaderEvt);
+        window.addEventListener("rpg_knowledge_updated", onKnowledgeEvt);
+        return () => {
+          window.removeEventListener("rpg_open_reader", onOpenReaderEvt);
+          window.removeEventListener("rpg_knowledge_updated", onKnowledgeEvt);
+        };
+      }, [ve]),
       Ga = J.useRef({
         handleAttack: Sl,
         handleThrowPebble: Rl,

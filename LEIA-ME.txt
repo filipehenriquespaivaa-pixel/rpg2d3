@@ -47,6 +47,16 @@ SISTEMA DE LIVROS, PERGAMINHOS E BIBLIOTECA:
    - Pergaminhos abrem desenrolados com hastes cilíndricas de madeira e pomos dourados, selo de cera e diagramas SVG místicos.
    - Atalho rápido [J] para abrir o último livro/pergaminho ou através do botão "Ler" no Inventário [I].
 
+4. Aba de Conhecimento no Inventário Comum (Grimório Permanente):
+   - Integrada diretamente ao Inventário [I] (aba 'Conhecimento', ao lado de Itens e Forja).
+   - Organizada em slots de aprendizado categorizados por tipo:
+     * ⚒️ Receitas de Criação & Forja: Culinária (Vol. I & II), Ferramentas Primitivas, Construção Básica e Armas & Equipamentos Comuns.
+     * 📚 Catálogos: Catálogo Ilustrado de Recursos da Terra (minerais, vegetais, caça e aquáticos).
+     * 🗺️ Mapas & Atlas: Atlas Geográfico de Biomas & Bestiário Silvestre (florestas, desertos, oásis, pântanos, montanhas e hábitos da fauna).
+   - Acesso permanente: o jogador pode clicar em "Acessar / Reler Manuscrito" em qualquer slot aprendido para consultar e reler o conteúdo completo a qualquer momento.
+   - Indicador de progresso: mostra barra de estudo em tempo real e atalho direto para estudar caso o item esteja na mochila.
+   - Pergaminhos de Runas Ancestrais: permanecem com aviso místico de bloqueio; não entram nos slots de aprendizado no momento pois necessitam de sistema futuro de decifração.
+
 MELHORIAS NO SISTEMA DE CAVERNAS:
 1. Paredões e Túneis Realistas:
    - As cavernas agora possuem maciços rochosos intransponíveis (paredões de pedra escura) que delimitam os caminhos subterrâneos.
