@@ -30,10 +30,10 @@ COMO EDITAR OU ADICIONAR UM MÓDULO:
 3. Sem dependências externas: Use apenas JavaScript puro sem import/export e persistência via localStorage com try/catch.
 
 SISTEMA DE LIVROS, PERGAMINHOS E BIBLIOTECA:
-1. Coleta Individual nas Estantes:
-   - Ao interagir com estantes [F], o jogador retira exatamente UM livro por vez (não somem vários livros de uma vez só).
-   - O gráfico da estante atualiza retirando exatamente 1 livro visual por item recolhido, deixando o espaço vazio realista.
-   - O mesmo ocorre com suportes de pergaminhos [F]: recolhe 1 pergaminho por interação.
+1. Coleta Direta e Apenas Itens Coletáveis na Biblioteca:
+   - Na biblioteca e construções, existem apenas livros e pergaminhos reais e coletáveis (sem itens de decoração vazios ou falsos).
+   - Ao interagir com estantes e suportes de pergaminhos [F], o item vai diretamente para a mochila sem aviso intrusivo na tela (somente som de coleta e XP).
+   - Cada livro e pergaminho visível na estante ou suporte corresponde a 1 item coletável: ao retirar todos, a estante ou suporte fica limpo/vazio.
 2. Tipos de Livros e Pergaminhos com Conteúdo Completo:
    - Livro de Culinária (Vol. I & II): Receitas passo a passo de pães, peixes no espeto, carnes defumadas, banquetes e ambrosia.
    - Pergaminho de Ferramentas Primitivas: Lascamento de sílex, machadinha, picareta e tochas.

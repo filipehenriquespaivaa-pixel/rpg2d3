@@ -1306,7 +1306,7 @@
       e.arc(3.5 * t, -6.5 * t, 2.4 * t, 0, Math.PI * 2);
       e.fill();
     } else if (subType === 3) {
-      // Bema: Tribuna do Orador no Bouleuterion com pergaminho aberto
+      // Bema: Tribuna oratória de mármore esculpido no Bouleuterion
       e.fillStyle = "#cbd5e1";
       e.fillRect(-11 * t, -2 * t, 22 * t, 6 * t);
       e.fillStyle = "#f8fafc";
@@ -1314,9 +1314,6 @@
       e.strokeStyle = "#d97706";
       e.lineWidth = 1.1 * t;
       e.strokeRect(-7 * t, -12 * t, 14 * t, 9 * t);
-      // Pergaminho aberto sobre o púlpito
-      e.fillStyle = "#fef3c7";
-      e.fillRect(-5 * t, -15 * t, 10 * t, 3 * t);
     } else {
       // Bancada de Mármore do Bouleuterion / Assento Klismos
       e.fillStyle = "#94a3b8";
@@ -4873,6 +4870,8 @@
   function drawBookshelf(e, t = 1, subType = 0, isCollected = !1, booksTaken = 0) {
     t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     booksTaken = typeof booksTaken === "number" ? booksTaken : (isCollected ? 4 : 0);
+    const maxBooks = 4;
+    const remainingBooks = isCollected ? 0 : Math.max(0, maxBooks - booksTaken);
     e.save();
 
     // 1. Sombra projetada no piso de mosaico
@@ -4925,95 +4924,63 @@
       e.fillRect(x0 + 2 * t, sy + 0.5 * t, w - 4 * t, 0.8 * t);
     }
 
-    // 3. Livros, Tomos e Manuscritos nas prateleiras
-    const bookColors = ["#991b1b", "#1e3a8a", "#14532d", "#581c87", "#78350f", "#b45309"];
-    const accentColors = ["#fbbf24", "#fef08a", "#f8fafc", "#fde047"];
+    // 3. APENAS LIVROS COLETÁVEIS (Sem livros de decoração!)
+    // Cada livro desenhado corresponde exatamente a 1 livro que pode ser recolhido.
+    // Quando todos forem coletados (remainingBooks === 0), a estante fica limpa/vazia.
+    if (remainingBooks > 0) {
+      const bookColors = ["#991b1b", "#1e3a8a", "#14532d", "#78350f", "#581c87"];
+      const accentColors = ["#fbbf24", "#fef08a", "#fde047", "#f8fafc"];
 
-    // Nível Superior: Tomos de Filosofia e Culinária
-    let curX = x0 + 4 * t;
-    const numTopBooks = 8;
-    for (let i = 0; i < numTopBooks; i++) {
-      const bw = (2.2 + (i % 2) * 0.4) * t;
-      const bh = (7 + ((i * 3) % 4)) * t;
-      const bColor = bookColors[(i + subType) % bookColors.length];
-      const by = shelvesY[0] - bh;
-
-      // Ao pegar 1 livro, retira exatamente 1 livro (deixa o vão vazio no topo)
-      const isMissing = (i === 7 && booksTaken >= 1) || (i === 6 && booksTaken >= 4);
-      if (!isMissing) {
-        e.fillStyle = bColor;
-        e.fillRect(curX, by, bw, bh);
-        if (i % 2 === 0) {
-          e.fillStyle = accentColors[i % accentColors.length];
-          e.fillRect(curX + 0.3 * t, by + 1.5 * t, bw - 0.6 * t, 0.8 * t);
-          e.fillRect(curX + 0.3 * t, by + bh - 2 * t, bw - 0.6 * t, 0.8 * t);
-        }
+      // 1º Livro Coletável (se restante >= 1): Tomo na prateleira superior
+      if (remainingBooks >= 1) {
+        const b1X = x0 + 5 * t;
+        const b1W = 4.2 * t;
+        const b1H = 8.5 * t;
+        const b1Y = shelvesY[0] - b1H;
+        e.fillStyle = bookColors[subType % bookColors.length];
+        e.fillRect(b1X, b1Y, b1W, b1H);
+        e.fillStyle = accentColors[subType % accentColors.length];
+        e.fillRect(b1X + 0.5 * t, b1Y + 1.5 * t, b1W - 1 * t, 0.9 * t);
+        e.fillRect(b1X + 0.5 * t, b1Y + b1H - 2.2 * t, b1W - 1 * t, 0.9 * t);
       }
-      curX += bw + 0.6 * t;
-    }
-    // Livro horizontal deitado no topo
-    if (booksTaken < 3) {
-      e.fillStyle = "#fef9c3";
-      e.fillRect(x0 + w - 8 * t, shelvesY[0] - 2.5 * t, 5 * t, 2.2 * t);
-      e.fillStyle = "#dc2626";
-      e.fillRect(x0 + w - 6 * t, shelvesY[0] - 2.5 * t, 1 * t, 2.2 * t);
-    }
 
-    // Nível Médio: Compêndios, Manuscritos e Ferramentas
-    curX = x0 + 4 * t;
-    const numMidBooks = 7;
-    for (let i = 0; i < numMidBooks; i++) {
-      const bw = (2.4 + ((i * 2) % 3) * 0.3) * t;
-      const bh = (6.5 + (i % 3)) * t;
-      const bColor = bookColors[(i * 2 + 1 + subType) % bookColors.length];
-      const by = shelvesY[1] - bh;
-
-      // Ao pegar 2º livro, retira exatamente 1 livro da prateleira do meio
-      const isMissing = (i === 6 && booksTaken >= 2) || (i === 5 && booksTaken >= 5);
-      if (!isMissing) {
-        if (i === 3) {
-          e.save();
-          e.translate(curX + bw / 2, shelvesY[1]);
-          e.rotate(0.18);
-          e.fillStyle = bColor;
-          e.fillRect(-bw / 2, -bh, bw, bh);
-          e.restore();
-        } else {
-          e.fillStyle = bColor;
-          e.fillRect(curX, by, bw, bh);
-          e.fillStyle = accentColors[(i + 1) % accentColors.length];
-          e.fillRect(curX + 0.4 * t, by + 2 * t, bw - 0.8 * t, 0.7 * t);
-        }
+      // 2º Livro Coletável (se restante >= 2): Segundo tomo na prateleira superior
+      if (remainingBooks >= 2) {
+        const b2X = x0 + 10.5 * t;
+        const b2W = 4 * t;
+        const b2H = 7.8 * t;
+        const b2Y = shelvesY[0] - b2H;
+        e.fillStyle = bookColors[(subType + 1) % bookColors.length];
+        e.fillRect(b2X, b2Y, b2W, b2H);
+        e.fillStyle = accentColors[(subType + 1) % accentColors.length];
+        e.fillRect(b2X + 0.5 * t, b2Y + 2 * t, b2W - 1 * t, 0.8 * t);
       }
-      curX += bw + 0.7 * t;
-    }
-    if (booksTaken < 4) {
-      e.fillStyle = "#fef3c7";
-      e.fillRect(x0 + w - 9 * t, shelvesY[1] - 4.5 * t, 6 * t, 2 * t);
-      e.fillRect(x0 + w - 8.5 * t, shelvesY[1] - 2.2 * t, 5.5 * t, 2 * t);
-      e.fillStyle = "#7c3aed";
-      e.fillRect(x0 + w - 6.5 * t, shelvesY[1] - 4.5 * t, 0.9 * t, 2 * t);
-    }
 
-    // Nível Inferior: Grandes Volumes de História, Geografia e Leis
-    curX = x0 + 4 * t;
-    const numBotBooks = 8;
-    for (let i = 0; i < numBotBooks; i++) {
-      const bw = (2.3 + (i % 3) * 0.4) * t;
-      const bh = (7.5 + (i % 2) * 1.5) * t;
-      const bColor = bookColors[(i + 3) % bookColors.length];
-      const by = shelvesY[2] - bh;
-
-      // Ao pegar 3º livro, retira exatamente 1 livro da prateleira inferior
-      const isMissing = (i === 7 && booksTaken >= 3) || (i === 6 && booksTaken >= 6);
-      if (!isMissing) {
-        e.fillStyle = bColor;
-        e.fillRect(curX, by, bw, bh);
-        e.fillStyle = "#fbbf24";
-        e.fillRect(curX + 0.4 * t, by + 1.2 * t, bw - 0.8 * t, 0.8 * t);
-        e.fillRect(curX + 0.4 * t, by + 3.2 * t, bw - 0.8 * t, 0.8 * t);
+      // 3º Livro Coletável (se restante >= 3): Tomo na prateleira do meio
+      if (remainingBooks >= 3) {
+        const b3X = x0 + 7 * t;
+        const b3W = 4.5 * t;
+        const b3H = 8 * t;
+        const b3Y = shelvesY[1] - b3H;
+        e.fillStyle = bookColors[(subType + 2) % bookColors.length];
+        e.fillRect(b3X, b3Y, b3W, b3H);
+        e.fillStyle = accentColors[(subType + 2) % accentColors.length];
+        e.fillRect(b3X + 0.5 * t, b3Y + 1.8 * t, b3W - 1 * t, 1 * t);
+        e.fillRect(b3X + 0.5 * t, b3Y + b3H - 2.5 * t, b3W - 1 * t, 1 * t);
       }
-      curX += bw + 0.6 * t;
+
+      // 4º Livro Coletável (se restante >= 4): Grande Compêndio na prateleira inferior
+      if (remainingBooks >= 4) {
+        const b4X = x0 + 8 * t;
+        const b4W = 5.2 * t;
+        const b4H = 9 * t;
+        const b4Y = shelvesY[2] - b4H;
+        e.fillStyle = bookColors[(subType + 3) % bookColors.length];
+        e.fillRect(b4X, b4Y, b4W, b4H);
+        e.fillStyle = accentColors[(subType + 3) % accentColors.length];
+        e.fillRect(b4X + 0.6 * t, b4Y + 2 * t, b4W - 1.2 * t, 1.2 * t);
+        e.fillRect(b4X + 0.6 * t, b4Y + 4.5 * t, b4W - 1.2 * t, 1 * t);
+      }
     }
 
     e.strokeStyle = "#451a03";
@@ -5026,6 +4993,8 @@
   function drawScrollStand(e, t = 1, subType = 0, isCollected = !1, scrollsTaken = 0) {
     t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
     scrollsTaken = typeof scrollsTaken === "number" ? scrollsTaken : (isCollected ? 2 : 0);
+    const maxScrolls = 2;
+    const remainingScrolls = isCollected ? 0 : Math.max(0, maxScrolls - scrollsTaken);
     e.save();
 
     // 1. Sombra da mesa/escrivaninha
@@ -5058,8 +5027,9 @@
     e.fillRect(-12.5 * t, -1 * t, 25 * t, 2 * t);
     e.fillRect(-11.5 * t, -10.5 * t, 23 * t, 1.5 * t);
 
-    // 3. Pergaminho aberto sobre o tampo (o 1º pergaminho a ser recolhido)
-    if (scrollsTaken === 0) {
+    // 3. APENAS PERGAMINHOS COLETÁVEIS (Sem pergaminhos de decoração!)
+    // 1º Pergaminho Coletável: desenrolado sobre a escrivaninha (se restam 2)
+    if (remainingScrolls >= 2) {
       e.fillStyle = "#fef3c7";
       e.fillRect(-8 * t, -8.5 * t, 14 * t, 7 * t);
       e.strokeStyle = "#d97706";
@@ -5090,13 +5060,9 @@
         e.arc(1.5 * t, -4 * t, 1.8 * t, 0, Math.PI * 2);
         e.stroke();
       }
-    } else {
-      // Quando recolhido, fica apenas a marca sutil do papiro na madeira
-      e.fillStyle = "rgba(254, 243, 199, 0.25)";
-      e.fillRect(-6 * t, -7 * t, 10 * t, 5 * t);
     }
 
-    // 4. Capsa (cesta cilíndrica de bronze) com rolos de papiro em pé
+    // 4. Capsa (cesta cilíndrica de bronze) ao lado da mesa
     const capsaX = 8 * t;
     const capsaY = 1 * t;
 
@@ -5105,21 +5071,19 @@
     e.ellipse(capsaX, capsaY + 3 * t, 4 * t, 2 * t, 0, 0, Math.PI * 2);
     e.fill();
 
-    // Rolos de pergaminho na capsa: remove 1 a cada pergaminho adicional recolhido
-    const scrollTints = ["#fef08a", "#fef9c3", "#e2e8f0"];
-    const capsaScrollsCount = scrollsTaken >= 2 ? 1 : 2;
-    for (let s = -1; s < capsaScrollsCount - 1; s++) {
-      const sx = capsaX + s * 1.6 * t;
-      e.fillStyle = scrollTints[(s + 2) % 3];
-      e.fillRect(sx - 0.9 * t, capsaY - 8 * t + Math.abs(s) * 1.5 * t, 1.8 * t, 7 * t);
+    // 2º Pergaminho Coletável: rolo com fita vermelha na capsa (se resta pelo menos 1)
+    if (remainingScrolls >= 1) {
+      e.fillStyle = "#fef08a";
+      e.fillRect(capsaX - 1 * t, capsaY - 8 * t, 2 * t, 7 * t);
       e.fillStyle = "#b91c1c";
-      e.fillRect(sx - 0.9 * t, capsaY - 5 * t, 1.8 * t, 0.8 * t);
+      e.fillRect(capsaX - 1 * t, capsaY - 5 * t, 2 * t, 1 * t);
     }
 
+    // Estrutura da cesta de bronze
     e.fillStyle = "#b45309";
     e.fillRect(capsaX - 3.5 * t, capsaY - 3 * t, 7 * t, 6.5 * t);
     e.fillStyle = "#d97706";
-    e.fillRect(capsaX - 3.5 * t, capsaY - 3 * t, 7 * t, 1.5 * t);
+    e.fillRect(capsaX - 3.5 * t, capsaY - 3 * t, 7 * t, 1.2 * t);
     e.strokeStyle = "#78350f";
     e.lineWidth = 0.8 * t;
     e.strokeRect(capsaX - 3.5 * t, capsaY - 3 * t, 7 * t, 6.5 * t);

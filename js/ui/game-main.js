@@ -2570,7 +2570,7 @@
                 ra((prev) => [...prev, item]);
               }
               _t((xp) => xp + 80);
-              ve(Ke.message || `📖 Você recolheu: ${item ? item.name : "Livro / Pergaminho"}!`);
+              // Sem aviso de toast ao coletar livros e pergaminhos
               return;
             } else if (Ke.action === "locked_cell") {
               const hasKey = Ve.some(

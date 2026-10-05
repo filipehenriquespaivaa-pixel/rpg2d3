@@ -1675,8 +1675,8 @@
                   role = "scroll_stand";
                   subType = 2; // Escrivaninha de cartografia e mapas
                 } else if (ry === 6 && rx === -3) {
-                  role = "vase";
-                  subType = 0; // Ânfora antiga
+                  role = "scroll_stand";
+                  subType = 0; // Suporte de estudos da biblioteca
                 }
               } else {
                 // Casa de 4 cômodos (rx in [-6, -3], ry in [3, 5]):
@@ -4592,16 +4592,16 @@
         const bType = o.prop.subType || 0;
         let bookKey;
         if (bType === 0) {
-          const keys = ["culinaria_vol1", "culinaria_vol2", "filosofia", "itens_basicos"];
+          const keys = ["culinaria_vol1", "culinaria_vol2", "itens_basicos", "armas_e_equipamentos"];
           bookKey = keys[booksTaken % keys.length];
         } else if (bType === 1) {
-          const keys = ["itens_basicos", "armas_e_equipamentos", "astronomia", "catalogo_itens"];
+          const keys = ["itens_basicos", "armas_e_equipamentos", "catalogo_itens", "geografia_biomas"];
           bookKey = keys[booksTaken % keys.length];
         } else if (bType === 2) {
-          const keys = ["geografia_e_criaturas", "botanica", "catalogo_itens", "culinaria_vol1"];
+          const keys = ["geografia_biomas", "catalogo_itens", "culinaria_vol1", "culinaria_vol2"];
           bookKey = keys[booksTaken % keys.length];
         } else {
-          const keys = ["pergaminho_runico_misterio", "estrategia", "armas_e_equipamentos", "culinaria_vol2"];
+          const keys = ["armas_e_equipamentos", "itens_basicos", "catalogo_itens", "geografia_biomas"];
           bookKey = keys[booksTaken % keys.length];
         }
 
@@ -4631,12 +4631,10 @@
         this.interactedProps.set(pKey, { ...prev, booksTaken: newTaken, collected: isAllDone });
         this.invalidateTile(t, l);
 
-        const remaining = maxBooks - newTaken;
         return {
           success: !0,
           action: "collect_bookshelf",
           item: bookItem,
-          message: `📖 Você retirou 1 livro da estante: ${bookItem.name}! (Restam ${remaining} na estante). Abra o Inventário [I] para ler.`,
           reward: `${bookItem.name} (+80 XP)`,
         };
       }
@@ -4654,13 +4652,13 @@
         const sType = o.prop.subType || 0;
         let scrollKey;
         if (sType === 0) {
-          const keys = ["ferramentas_primitivas", "cartografia"];
+          const keys = ["ferramentas_primitivas", "pergaminho_runico_misterio"];
           scrollKey = keys[scrollsTaken % keys.length];
         } else if (sType === 1) {
-          const keys = ["pergaminho_runico_misterio", "forja"];
+          const keys = ["pergaminho_runico_misterio", "ferramentas_primitivas"];
           scrollKey = keys[scrollsTaken % keys.length];
         } else {
-          const keys = ["alquimia", "ferramentas_primitivas"];
+          const keys = ["ferramentas_primitivas", "pergaminho_runico_misterio"];
           scrollKey = keys[scrollsTaken % keys.length];
         }
 
@@ -4690,12 +4688,10 @@
         this.interactedProps.set(pKey, { ...prev, scrollsTaken: newScrollsTaken, collected: isAllDone });
         this.invalidateTile(t, l);
 
-        const remaining = maxScrolls - newScrollsTaken;
         return {
           success: !0,
           action: "collect_scroll_stand",
           item: scrollItem,
-          message: `📜 Você recolheu 1 pergaminho: ${scrollItem.name}! (Restam ${remaining} no suporte). Abra o Inventário [I] para ler.`,
           reward: `${scrollItem.name} (+80 XP)`,
         };
       }
