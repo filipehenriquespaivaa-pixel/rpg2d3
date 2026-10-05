@@ -4605,7 +4605,7 @@
           bookKey = keys[booksTaken % keys.length];
         }
 
-        let bookItem = (window.Game && window.Game.BooksAndScrolls)
+        let bookItem = (window.Game && window.Game.BooksAndScrolls && typeof window.Game.BooksAndScrolls.createItem === "function")
           ? window.Game.BooksAndScrolls.createItem(bookKey)
           : null;
 
@@ -4664,7 +4664,7 @@
           scrollKey = keys[scrollsTaken % keys.length];
         }
 
-        let scrollItem = (window.Game && window.Game.BooksAndScrolls)
+        let scrollItem = (window.Game && window.Game.BooksAndScrolls && typeof window.Game.BooksAndScrolls.createItem === "function")
           ? window.Game.BooksAndScrolls.createItem(scrollKey)
           : null;
 

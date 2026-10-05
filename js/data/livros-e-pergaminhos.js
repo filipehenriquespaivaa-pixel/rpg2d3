@@ -846,9 +846,94 @@ Massas pulsantes de gosma verde, azul ou vermelha. Dividem-se ao sofrerem certos
     return list;
   }
 
+  // Cria um objeto de item completo para inventário/mochila a partir de chave, id ou item
+  function createItem(keyOrId) {
+    if (!keyOrId) return null;
+    const data = getBookOrScrollData(keyOrId);
+    const uniqueSuffix = Date.now().toString(36) + "_" + Math.random().toString(36).substring(2, 6);
+
+    if (data) {
+      const isScroll = data.type === "scroll";
+      return {
+        id: `${data.id || "item_livro_" + keyOrId}_${uniqueSuffix}`,
+        typeId: data.id || keyOrId,
+        bookKey: keyOrId,
+        name: data.name,
+        shortTitle: data.shortTitle || data.name,
+        categoryType: "consumable",
+        isEquippable: false,
+        rarity: data.rarity || (isScroll ? "comum" : "incomum"),
+        value: data.value || (isScroll ? 100 : 130),
+        stackCount: 1,
+        maxStack: 1,
+        isStackable: false,
+        icon: data.icon || (isScroll ? "📜" : "📖"),
+        color: data.coverColor || data.accentColor || (isScroll ? "#facc15" : "#f59e0b"),
+        description: data.description || (isScroll ? "Pergaminho antigo com ensinamentos. [Ler] para desenrolar." : "Tomo antigo encadernado. [Ler] para folhear."),
+        studyTime: data.studyTime || 60,
+        recipeIds: Array.isArray(data.recipeIds) ? [...data.recipeIds] : [],
+        learningType: data.learningType || data.category || "receitas",
+        isUndecipherable: Boolean(data.isUndecipherable),
+      };
+    }
+
+    // Fallbacks para nomes genéricos das estantes e suportes de pergaminhos
+    const str = String(keyOrId).toLowerCase();
+    const isScroll = str.includes("scroll") || str.includes("pergaminho") || str.includes("cartografia") || str.includes("forja") || str.includes("alquimia");
+
+    let fallbackName = isScroll ? "Pergaminho de Papiro Antigo" : "Tomo Antigo Preservado";
+    let fallbackDesc = isScroll ? "Pergaminho preservado com antigas escrituras. [Ler] para desenrolar." : "Tomo clássico preservado nas ruínas. [Ler] para folhear.";
+    let fallbackColor = isScroll ? "#facc15" : "#818cf8";
+    let fallbackIcon = isScroll ? "📜" : "📖";
+
+    if (str.includes("botanica") || str.includes("botânica")) {
+      fallbackName = "Tratado de Botânica & Ervas Raras";
+      fallbackDesc = "Manuscrito ilustrado sobre ervas medicinais, raízes comestíveis e seivas da floresta. [Ler] para folhear.";
+      fallbackColor = "#10b981";
+      fallbackIcon = "🌿";
+    } else if (str.includes("estrategia") || str.includes("estratégia")) {
+      fallbackName = "Manual de Estratégia & Táticas de Caça";
+      fallbackDesc = "Pergaminho tático sobre o comportamento das feras e posicionamento em combate. [Ler] para folhear.";
+      fallbackColor = "#f43f5e";
+      fallbackIcon = "⚔️";
+    } else if (str.includes("cartografia")) {
+      fallbackName = "Carta Náutica & Traçado Cartográfico Antigo";
+      fallbackDesc = "Pergaminho cartográfico com rotas e notas sobre os relevos do mundo. [Ler] para desenrolar.";
+      fallbackColor = "#38bdf8";
+      fallbackIcon = "🗺️";
+    } else if (str.includes("alquimia")) {
+      fallbackName = "Pergaminho de Princípios Alquímicos";
+      fallbackDesc = "Papiro antigo descrevendo reações de essências, óleos e extratos naturais. [Ler] para desenrolar.";
+      fallbackColor = "#a855f7";
+      fallbackIcon = "⚗️";
+    }
+
+    return {
+      id: `item_${isScroll ? "pergaminho" : "livro"}_${keyOrId}_${uniqueSuffix}`,
+      typeId: `item_${isScroll ? "pergaminho" : "livro"}_${keyOrId}`,
+      bookKey: keyOrId,
+      name: fallbackName,
+      shortTitle: fallbackName,
+      categoryType: "consumable",
+      isEquippable: false,
+      rarity: "raro",
+      value: 120,
+      stackCount: 1,
+      maxStack: 1,
+      isStackable: false,
+      icon: fallbackIcon,
+      color: fallbackColor,
+      description: fallbackDesc,
+      studyTime: 60,
+      recipeIds: [],
+      learningType: isScroll ? (str.includes("cartografia") ? "mapas" : "receitas") : (str.includes("botanica") ? "catalogo" : "receitas"),
+    };
+  }
+
   G.BooksAndScrolls = {
     DB: BOOKS_AND_SCROLLS_DB,
     getData: getBookOrScrollData,
+    createItem: createItem,
     getAllStudyableBooks: getAllStudyableBooks,
   };
 })(window.Game);
