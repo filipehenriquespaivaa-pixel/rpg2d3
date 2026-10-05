@@ -108,6 +108,8 @@
         (this.canyonNoise = new SimplexNoise(t + 909)),
         (this.lakeNoise = new SimplexNoise(t + 1010)),
         (this.undergroundLevel = 0),
+        (this.timeOfDay = 0.5),
+        (this.nightCount = 0),
         (this._dungeonStairCache = new Map()));
     }
     setSeed(t) {
@@ -126,6 +128,8 @@
         this.interactedProps.clear(),
         this.collectedGroundItems.clear(),
         this.customPlacedProps.clear(),
+        (this.timeOfDay = 0.5),
+        (this.nightCount = 0),
         this._dungeonStairCache && this._dungeonStairCache.clear(),
         this.clearTileCache(),
         (this.isUnderground = !1),
@@ -174,6 +178,8 @@
         interactedProps: Array.from(this.interactedProps.entries()),
         customPlacedProps: Array.from(this.customPlacedProps.entries()),
         collectedGroundItems: Array.from(this.collectedGroundItems.values()),
+        timeOfDay: this.timeOfDay,
+        nightCount: this.nightCount,
       };
     }
     importSaveData(t) {
@@ -182,7 +188,52 @@
           (this.customPlacedProps = new Map(t.customPlacedProps)),
         t.collectedGroundItems &&
           (this.collectedGroundItems = new Set(t.collectedGroundItems)),
+        typeof t.timeOfDay === "number" && (this.timeOfDay = t.timeOfDay),
+        Number.isFinite(t.nightCount) && (this.nightCount = Math.max(0, Math.floor(t.nightCount))),
         this.clearTileCache());
+    }
+    setTimeState(timeOfDay, nightCount) {
+      const rawTime = Number(timeOfDay);
+      const nextTime = (((Number.isFinite(rawTime) ? rawTime : 0.5) % 1) + 1) % 1;
+      const nextNight = Math.max(0, Math.floor(Number(nightCount) || 0));
+      const spawnWindowChanged = Math.floor(nextNight / 4) !== Math.floor(this.nightCount / 4);
+      this.timeOfDay = nextTime;
+      this.nightCount = nextNight;
+      if (spawnWindowChanged) this.clearTileCache();
+    }
+    isNight() {
+      return this.isUnderground || this.timeOfDay < 0.2 || this.timeOfDay > 0.8;
+    }
+    _isBluePlantPeak(t, l, tile) {
+      if (!tile || tile.biome.id !== BiomeId.MOUNTAIN_25D || tile.isCliffWall) return false;
+      const info = this._getMountain25DInfo(t, l);
+      const bounds = this._getMountain25DBounds(t, l);
+      const topTier = bounds.floors && bounds.floors.length ? bounds.floors[bounds.floors.length - 1].tier : 1;
+      return info.tier === topTier && Math.abs(t - Math.round(bounds.centerX)) <= 1 && Math.abs(l - Math.round(bounds.centerY)) <= 1;
+    }
+    _syncBluePlantProp(t, l, tile) {
+      if (this.isUnderground || !this._isBluePlantPeak(t, l, tile)) return tile;
+      const state = this.interactedProps.get(`${t},${l}`) || {};
+      const canRespawn = !state.collected || this.nightCount >= (state.collectedNight ?? 0) + 4;
+      if (!canRespawn) return tile;
+      if (state.collected) {
+        this.interactedProps.set(`${t},${l}`, { ...state, collected: false, bluePlantFlowered: false });
+      }
+      if (this.isNight() && !state.bluePlantFlowered && !state.collected) {
+        this.interactedProps.set(`${t},${l}`, { ...state, bluePlantFlowered: true });
+      }
+      if (!tile.prop || tile.prop.kind === "rock" || tile.prop.kind.startsWith("flower_")) {
+        tile.prop = {
+          kind: "blue_plant",
+          offsetX: 0,
+          offsetY: 0,
+          scale: 0.95,
+          interactive: true,
+          namePt: "Planta Azul do Luar",
+          descriptionPt: "Ramo azul raro que floresce à noite no ponto mais alto das montanhas de pedra. Pressione [F] para colher.",
+        };
+      }
+      return tile;
     }
     placeProp(t, l, o) {
       const u = `${this.isUnderground ? "cave_" : "surf_"}${t},${l}`;
@@ -1108,7 +1159,7 @@
     getTile(t, l) {
       const o = this._tk(t, l, this.undergroundLevel || (this.isUnderground ? 1 : 0)),
         u = this.tileCache.get(o);
-      if (u) return u;
+      if (u) return this.isUnderground ? u : this._syncBluePlantProp(t, l, u);
       if (this.isUnderground) {
         if (this.undergroundLevel === 2) {
           const ue = this.getDungeonTile(t, l);
@@ -2046,6 +2097,9 @@
             };
           }
         }
+        // A planta azul ocupa o centro do último platô, o ponto mais alto da montanha.
+        // Ela permanece como ramo durante o dia e abre visualmente somente à noite.
+        this._syncBluePlantProp(t, l, se);
       }
       const greekRuin = this._getGreekRuinCellAt(t, l);
       if (greekRuin) {
@@ -4314,6 +4368,25 @@
             "O cogumelo bioluminescente expeliu uma nuvem de esporos restauradores!",
           reward: "Esporos Místicos (+50 Stamina)",
         };
+      if (o.prop.kind === "blue_plant") {
+        const hasFlowered = this.isNight() || !!m.bluePlantFlowered;
+        this.interactedProps.set(u, {
+          ...m,
+          collected: true,
+          collectedNight: this.nightCount,
+          bluePlantFlowered: hasFlowered,
+        });
+        this.invalidateTile(t, l);
+        return {
+          success: !0,
+          action: "harvest_blue_plant",
+          flowered: hasFlowered,
+          message: hasFlowered
+            ? "Você colheu a Flor Azul do Luar, aberta sob a luz da noite!"
+            : "Você colheu o Ramo Azul antes que a planta florescesse.",
+          reward: hasFlowered ? "Flor Azul do Luar (+80 XP)" : "Ramo Azul (+35 XP)",
+        };
+      }
       if (o.prop.kind === "clay_deposit") {
         const f = m.harvestCount ?? 0;
         if (f >= 3)

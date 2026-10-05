@@ -60,6 +60,14 @@
       (Xu.render(e, c, f, g * 1.05, u), e.restore());
       return;
     }
+    if (w.includes("ramo_azul") || y.includes("ramo azul")) {
+      (drawBlueBranchIcon(e, c, f, g, u), e.restore());
+      return;
+    }
+    if (w.includes("flor_azul") || y.includes("flor azul")) {
+      (drawBlueFlowerIcon(e, c, f, g, u), e.restore());
+      return;
+    }
     if (y.includes("carne") || v === "meat" || w.includes("meat")) {
       (_b(e, c, f, g, S, t, u), e.restore());
       return;
@@ -1588,3 +1596,54 @@
 
     e.restore();
   }
+
+function drawBlueBranchIcon(e, x, y, s, anim) {
+  e.save();
+  e.translate(x, y);
+  e.rotate(-0.28 + Math.sin(anim * 2) * 0.02);
+  e.strokeStyle = "#164e63";
+  e.lineWidth = 3.2 * s;
+  e.lineCap = "round";
+  e.beginPath();
+  e.moveTo(-8 * s, 4 * s);
+  e.quadraticCurveTo(0, 0, 9 * s, -7 * s);
+  e.stroke();
+  e.strokeStyle = "#2563eb";
+  e.lineWidth = 1.8 * s;
+  e.beginPath();
+  e.moveTo(-1 * s, 1 * s);
+  e.lineTo(-5 * s, -5 * s);
+  e.moveTo(4 * s, -3 * s);
+  e.lineTo(8 * s, -9 * s);
+  e.stroke();
+  e.fillStyle = "#60a5fa";
+  e.beginPath();
+  e.ellipse(-6 * s, -6 * s, 3 * s, 1.4 * s, -0.5, 0, Math.PI * 2);
+  e.ellipse(8 * s, -10 * s, 3 * s, 1.4 * s, 0.5, 0, Math.PI * 2);
+  e.fill();
+  e.restore();
+}
+function drawBlueFlowerIcon(e, x, y, s, anim) {
+  e.save();
+  e.translate(x, y);
+  e.strokeStyle = "#166534";
+  e.lineWidth = 2 * s;
+  e.beginPath();
+  e.moveTo(0, 9 * s);
+  e.quadraticCurveTo(-1 * s, 1 * s, 0, -3 * s);
+  e.stroke();
+  e.shadowColor = "#60a5fa";
+  e.shadowBlur = 7 * s;
+  e.fillStyle = "#2563eb";
+  for (let a = 0; a < Math.PI * 2; a += Math.PI / 2.5) {
+    e.beginPath();
+    e.arc(Math.cos(a) * 5 * s, -8 * s + Math.sin(a) * 5 * s, 3.5 * s, 0, Math.PI * 2);
+    e.fill();
+  }
+  e.shadowBlur = 0;
+  e.fillStyle = "#dbeafe";
+  e.beginPath();
+  e.arc(0, -8 * s, 2.5 * s, 0, Math.PI * 2);
+  e.fill();
+  e.restore();
+}

@@ -1576,6 +1576,9 @@
           case "flower_yellow":
             ug(c, t.kind, f, this.animTimer);
             break;
+          case "blue_plant":
+            drawBluePlant(c, t.kind, f, this.animTimer, y.isDay === !1);
+            break;
           case "mushroom":
             fg(c, f);
             break;

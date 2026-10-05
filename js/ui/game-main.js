@@ -39,6 +39,7 @@
       [p, j] = J.useState(4289),
       [P, A] = J.useState(0.5),
       timeOfDayRef = J.useRef(0.5),
+      nightCountRef = J.useRef(0),
       [cycleDurationSec, setCycleDurationSecState] = J.useState(() => {
         try {
           const v = Number(localStorage.getItem("rpg2d_cycle_duration_sec"));
@@ -62,6 +63,7 @@
           const num = Number(raw);
           const next = (((isFinite(num) ? num : 0.5) % 1) + 1) % 1;
           timeOfDayRef.current = next;
+          o.current.setTimeState(next, nightCountRef.current);
           if (rr.current) rr.current.timeOfDay = next;
           return next;
         });
@@ -1197,6 +1199,7 @@
               world: {
                 seed: q.seed,
                 timeOfDay: timeOfDayRef.current,
+                nightCount: nightCountRef.current,
                 interactedProps: ge.interactedProps,
                 customPlacedProps: ge.customPlacedProps,
                 collectedGroundItems: ge.collectedGroundItems,
@@ -1221,6 +1224,7 @@
             (typeof E.world.seed == "number" &&
               (o.current.setSeed(E.world.seed), j(E.world.seed)),
             typeof E.world.timeOfDay == "number" && setTimeOfDaySync(E.world.timeOfDay),
+            Number.isFinite(E.world.nightCount) && (nightCountRef.current = Math.max(0, Math.floor(E.world.nightCount))),
             o.current.importSaveData(E.world)),
             E.checkpoint &&
               (Ie(E.checkpoint),
@@ -2514,6 +2518,45 @@
                   ? (ve(`Inventário cheio (máximo ${Ze} itens)!`), qe)
                   : [...qe, De];
               });
+            } else if (Ke.action === "harvest_blue_plant") {
+              m.current.playChestChime();
+              const De = Ke.flowered
+                ? {
+                    id: `flor_azul_${Date.now()}`,
+                    name: "Flor Azul do Luar",
+                    icon: "flower_blue",
+                    color: "#2563eb",
+                    isEquippable: !1,
+                    categoryType: "material",
+                    rarity: "raro",
+                    value: 80,
+                    stackCount: 1,
+                    description: "Flor azul luminosa que só abre à noite no ponto mais alto das montanhas de pedra.",
+                  }
+                : {
+                    id: `ramo_azul_${Date.now()}`,
+                    name: "Ramo Azul",
+                    icon: "branch_blue",
+                    color: "#2563eb",
+                    isEquippable: !1,
+                    categoryType: "material",
+                    rarity: "incomum",
+                    value: 35,
+                    stackCount: 1,
+                    description: "Ramo azul colhido antes da floração da Planta Azul do Luar.",
+                  };
+              ra((qe) => {
+                const Ze = ot(Da.current.mochila);
+                const existing = qe.findIndex((Pa) => Pa.name === De.name);
+                if (existing >= 0) {
+                  const next = [...qe];
+                  next[existing] = { ...next[existing], stackCount: (next[existing].stackCount || 1) + 1 };
+                  return next;
+                }
+                return qe.length >= Ze ? (ve(`Inventário cheio (máximo de ${Ze} itens)!`), qe) : [...qe, De];
+              });
+              _t((qe) => qe + (Ke.flowered ? 80 : 35));
+              ve(Ke.message);
             } else if (Ke.action === "harvest_clay") {
               m.current.playClayHarvest();
               const De = {
@@ -3667,8 +3710,11 @@
             Ye = Math.min(0.1, (Je - la) / 1e3);
           if (!cyclePausedRef.current && Ye > 0) {
             const activeCycleSec = Math.max(5, Number(cycleDurationRef.current) || 1200);
+            const previousTime = timeOfDayRef.current;
             const nextTime = (timeOfDayRef.current + Ye / activeCycleSec) % 1;
+            if (nextTime < previousTime) nightCountRef.current += 1;
             timeOfDayRef.current = nextTime;
+            Q.setTimeState(nextTime, nightCountRef.current);
             if (rr.current) rr.current.timeOfDay = nextTime;
           }
           const isHoldingPebble = pebbleKeyRef.current.pressedAt > 0;

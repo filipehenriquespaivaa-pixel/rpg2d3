@@ -368,6 +368,45 @@
       e.arc(f, g, 1.8 * l, 0, Math.PI * 2),
       e.fill());
   }
+  function drawBluePlant(e, t, l, o, isNight) {
+    e.save();
+    e.translate(0, 1 * l);
+    e.strokeStyle = "#164e63";
+    e.lineWidth = 2.2 * l;
+    e.lineCap = "round";
+    e.beginPath();
+    e.moveTo(0, 3 * l);
+    e.quadraticCurveTo(-1 * l, -3 * l, 0.5 * l, -11 * l);
+    e.stroke();
+    e.strokeStyle = "#2563eb";
+    e.lineWidth = 1.5 * l;
+    e.beginPath();
+    e.moveTo(0, 1 * l);
+    e.quadraticCurveTo(-5 * l, -2 * l, -7 * l, -6 * l);
+    e.moveTo(0, -1 * l);
+    e.quadraticCurveTo(5 * l, -4 * l, 7 * l, -8 * l);
+    e.stroke();
+    e.fillStyle = "#60a5fa";
+    e.beginPath();
+    e.ellipse(-5 * l, -5 * l, 3.2 * l, 1.4 * l, -0.55, 0, Math.PI * 2);
+    e.ellipse(5 * l, -7 * l, 3.2 * l, 1.4 * l, 0.55, 0, Math.PI * 2);
+    e.fill();
+    if (isNight) {
+      e.shadowColor = "#60a5fa";
+      e.shadowBlur = 9 * l;
+      e.fillStyle = "#2563eb";
+      for (let a = 0; a < Math.PI * 2; a += Math.PI / 2.5) {
+        e.beginPath();
+        e.arc(Math.cos(a) * 3.4 * l, -12 * l + Math.sin(a) * 3.4 * l, 2.5 * l, 0, Math.PI * 2);
+        e.fill();
+      }
+      e.fillStyle = "#dbeafe";
+      e.beginPath();
+      e.arc(0, -12 * l, 1.8 * l, 0, Math.PI * 2);
+      e.fill();
+    }
+    e.restore();
+  }
   function fg(e, t) {
     ((e.fillStyle = "#e7e5e4"),
       e.beginPath(),
