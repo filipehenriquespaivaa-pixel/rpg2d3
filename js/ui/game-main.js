@@ -56,6 +56,8 @@
       [_e, xe] = J.useState(null),
       // Modal de cozinha: [R] com panela no fogo abre selecao de itens (6 slots)
       [cookingModalOpen, setCookingModalOpen] = J.useState(!1),
+      [readerItem, setReaderItem] = J.useState(null),
+      [readerOpen, setReaderOpen] = J.useState(!1),
       cookingPotRef = J.useRef(null),
       Ue = J.useRef(null),
       [$a, Ie] = J.useState(null),
@@ -708,33 +710,21 @@
             return;
           }
           if (
+            D.includes("livro") ||
             D.includes("tomo") ||
             D.includes("tratado") ||
             D.includes("compêndio") ||
             D.includes("compendio") ||
             D.includes("manuscrito") ||
-            D.includes("pergaminho")
+            D.includes("pergaminho") ||
+            (E.id && (E.id.includes("livro") || E.id.includes("pergaminho")))
           ) {
             m.current.playChestChime && m.current.playChestChime();
-            const xpGained = D.includes("tratado") || D.includes("segredos") ? 100 : 75;
+            const xpGained = D.includes("tratado") || D.includes("segredos") || D.includes("runic") || D.includes("misterio") ? 100 : 75;
             _t((xp) => xp + xpGained);
-            let quote = "";
-            if (D.includes("filosofia")) {
-              quote = '📖 Leitura do Tomo: "Conhece-te a ti mesmo. A sabedoria floresce na reflexão e na moderação."';
-            } else if (D.includes("astronomia")) {
-              quote = '📘 Leitura do Tratado: "Os astros e constelações traçam círculos perfeitos na esfera celeste."';
-            } else if (D.includes("botânica") || D.includes("botanica")) {
-              quote = '📗 Leitura do Compêndio: "A essência das ervas silvestres e cogumelos cura o corpo e renova o vigor."';
-            } else if (D.includes("estratégia") || D.includes("estrategia")) {
-              quote = '📕 Leitura do Manuscrito: "A muralha mais forte é a coragem e a disciplina dos defensores."';
-            } else if (D.includes("cartografia")) {
-              quote = '📜 Leitura do Pergaminho: "O mapa revela terras férteis, serras escarpadas e santuários arcanos."';
-            } else if (D.includes("forja")) {
-              quote = '📜 Leitura do Pergaminho: "O fogo brando purifica o ferro; a têmpera rápida confere a rigidez da lâmina."';
-            } else {
-              quote = '📜 Leitura do Pergaminho: "Os antigos sábios registraram fórmulas e mistérios neste papiro sagrado."';
-            }
-            ve(`${quote} (+${xpGained} XP)!`);
+            setReaderItem(E);
+            setReaderOpen(!0);
+            ve(`📖 Abrindo: ${E.name} (+${xpGained} XP)!`);
             return;
           }
           if (D.includes("com água") || D.includes("com agua")) {
@@ -3257,6 +3247,38 @@
           (F > 40 && F < 360 && (Ae.current[E] = !0), (Se.current[E] = Q));
         } else Ae.current[E] = !1;
       }, []),
+      handleReadBook = J.useCallback(() => {
+        if (readerOpen) {
+          setReaderOpen(!1);
+          return;
+        }
+        if (readerItem) {
+          setReaderOpen(!0);
+          return;
+        }
+        const b = Ve.find((i) => {
+          const n = (i.name || "").toLowerCase();
+          const d = (i.id || "").toLowerCase();
+          return (
+            n.includes("livro") ||
+            n.includes("tomo") ||
+            n.includes("tratado") ||
+            n.includes("compêndio") ||
+            n.includes("compendio") ||
+            n.includes("manuscrito") ||
+            n.includes("pergaminho") ||
+            d.includes("livro") ||
+            d.includes("pergaminho")
+          );
+        });
+        if (b) {
+          setReaderItem(b);
+          setReaderOpen(!0);
+          ve(`📖 Abrindo: ${b.name}`);
+        } else {
+          ve("📚 Nenhum livro ou pergaminho na mochila no momento.");
+        }
+      }, [readerOpen, readerItem, Ve, ve]),
       Ga = J.useRef({
         handleAttack: Sl,
         handleThrowPebble: Rl,
@@ -3269,6 +3291,7 @@
         handleCookingPot: kG,
         handleAddIngredient: wK,
         handleToggleInventory: Qt,
+        handleReadBook: handleReadBook,
         handleToggleTorch: dr,
         handleRecenterCamera: Oo,
         handleRespawn: Tl,
@@ -3291,6 +3314,7 @@
         handleCookingPot: kG,
         handleAddIngredient: wK,
         handleToggleInventory: Qt,
+        handleReadBook: handleReadBook,
         handleToggleTorch: dr,
         handleRecenterCamera: Oo,
         handleRespawn: Tl,
@@ -3382,7 +3406,11 @@
                             ? Ga.current.handleUseBeltSlot("cinto_slot1")
                             : q.code === "Digit2" || q.key === "2"
                               ? Ga.current.handleUseBeltSlot("cinto_slot2")
-                              : q.code === "KeyL" ||
+                              : q.code === "KeyJ" ||
+                                  q.key === "j" ||
+                                  q.key === "J"
+                                ? Ga.current.handleReadBook()
+                                : q.code === "KeyL" ||
                                   q.key === "l" ||
                                   q.key === "L"
                                 ? Ga.current.handleToggleTorch()
@@ -4444,6 +4472,13 @@
               maxBackpackSlots: ot(Oe.mochila),
               onStoreItem: bi,
               onClose: () => pn(null),
+            }),
+          readerOpen &&
+            readerItem &&
+            h.jsx(window.Game.BookScrollReaderModal, {
+              item: readerItem,
+              isOpen: readerOpen,
+              onClose: () => setReaderOpen(!1),
             }),
           We &&
             !Lo &&

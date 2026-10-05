@@ -2148,14 +2148,17 @@
               };
             }
           } else if (greekRuin.role === "bookshelf") {
-            const isCol = !!intState.collected;
+            const booksTaken = typeof intState.booksTaken === "number" ? intState.booksTaken : (intState.collected ? 4 : 0);
+            const maxBooks = 4;
+            const isCol = booksTaken >= maxBooks || !!intState.collected;
             const bNames = [
-              "Estante de Tomos de Filosofia",
-              "Estante de Astronomia e Mecânica",
-              "Estante de Botânica e Ciências",
-              "Estante de Manuscritos e Poesia Helênica",
+              "Estante de Culinária e Filosofia",
+              "Estante de Construção e Metalurgia",
+              "Estante de Geografia, Biomas e Criaturas",
+              "Estante de Manuscritos e Mistérios Arcanos",
             ];
             const bType = greekRuin.subType ?? (Math.abs(t * 3 + l) % 4);
+            const remaining = Math.max(0, maxBooks - booksTaken);
             se.prop = {
               kind: "greek_bookshelf",
               subType: bType,
@@ -2164,19 +2167,24 @@
               scale: 1.15,
               interactive: !0,
               collected: isCol,
-              namePt: isCol ? `${bNames[bType % bNames.length]} (Vasculhada)` : bNames[bType % bNames.length],
+              booksTaken: booksTaken,
+              maxBooks: maxBooks,
+              namePt: isCol ? `${bNames[bType % bNames.length]} (Vasculhada)` : `${bNames[bType % bNames.length]} (${remaining} livro${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""})`,
               descriptionPt: isCol
-                ? "Os tomos e manuscritos mais raros desta estante já foram recolhidos para o seu inventário."
-                : `Estante nobre de madeira entalhada repleta de tomos antigos encadernados em: ${greekRuin.roomName}. Pressione [F] para coletar os livros!`,
+                ? "Todos os livros desta estante já foram recolhidos para o seu inventário."
+                : `Estante nobre de madeira entalhada repleta de tomos antigos (${remaining} disponível${remaining > 1 ? "is" : ""}). Pressione [F] para retirar 1 livro!`,
             };
           } else if (greekRuin.role === "scroll_stand") {
-            const isCol = !!intState.collected;
+            const scrollsTaken = typeof intState.scrollsTaken === "number" ? intState.scrollsTaken : (intState.collected ? 2 : 0);
+            const maxScrolls = 2;
+            const isCol = scrollsTaken >= maxScrolls || !!intState.collected;
             const sNames = [
-              "Mesa de Estudos com Pergaminhos Abertos",
-              "Suporte de Papiro e Rolos de Pergaminho",
-              "Escrivaninha de Cartografia e Mapas Helênicos",
+              "Mesa de Estudos e Ferramentas Primitivas",
+              "Suporte de Papiro Sagrado e Geometria Rúnica",
+              "Escrivaninha de Cartografia e Forja Ancestral",
             ];
             const sType = greekRuin.subType ?? (Math.abs(t * 5 + l) % 3);
+            const remaining = Math.max(0, maxScrolls - scrollsTaken);
             se.prop = {
               kind: "greek_scroll_stand",
               subType: sType,
@@ -2185,10 +2193,12 @@
               scale: 1.12,
               interactive: !0,
               collected: isCol,
-              namePt: isCol ? `${sNames[sType % sNames.length]} (Vasculhado)` : sNames[sType % sNames.length],
+              scrollsTaken: scrollsTaken,
+              maxScrolls: maxScrolls,
+              namePt: isCol ? `${sNames[sType % sNames.length]} (Vasculhado)` : `${sNames[sType % sNames.length]} (${remaining} pergaminho${remaining > 1 ? "s" : ""})`,
               descriptionPt: isCol
-                ? "Os pergaminhos deste suporte já foram recolhidos para o seu inventário."
-                : `Rolos autênticos de papiro e pergaminhos antigos com inscrições clássicas. Pressione [F] para coletar os pergaminhos!`,
+                ? "Os pergaminhos deste suporte de estudos já foram recolhidos para o seu inventário."
+                : `Rolos autênticos de papiro e pergaminhos antigos com inscrições (${remaining} disponível${remaining > 1 ? "is" : ""}). Pressione [F] para recolher 1 pergaminho!`,
             };
           } else if (greekRuin.role === "furniture") {
             const fType = greekRuin.subType ?? (Math.abs(t + l * 7) % 4);
@@ -4569,18 +4579,40 @@
         };
       }
       if (o.prop.kind === "greek_bookshelf") {
-        if (m.collected) {
+        const pKey = this.isUnderground ? `underground_${t},${l}` : `${t},${l}`;
+        const prev = this.interactedProps.get(pKey) || {};
+        const booksTaken = typeof prev.booksTaken === "number" ? prev.booksTaken : (prev.collected ? 4 : 0);
+        const maxBooks = 4;
+        if (booksTaken >= maxBooks || prev.collected) {
           return {
             success: !1,
-            message: "Você já recolheu os tomos e manuscritos desta estante antiga.",
+            message: "Todos os livros e tomos desta estante antiga já foram recolhidos.",
           };
         }
         const bType = o.prop.subType || 0;
-        let bookItem;
+        let bookKey;
         if (bType === 0) {
+          const keys = ["culinaria_vol1", "culinaria_vol2", "filosofia", "itens_basicos"];
+          bookKey = keys[booksTaken % keys.length];
+        } else if (bType === 1) {
+          const keys = ["itens_basicos", "armas_e_equipamentos", "astronomia", "catalogo_itens"];
+          bookKey = keys[booksTaken % keys.length];
+        } else if (bType === 2) {
+          const keys = ["geografia_e_criaturas", "botanica", "catalogo_itens", "culinaria_vol1"];
+          bookKey = keys[booksTaken % keys.length];
+        } else {
+          const keys = ["pergaminho_runico_misterio", "estrategia", "armas_e_equipamentos", "culinaria_vol2"];
+          bookKey = keys[booksTaken % keys.length];
+        }
+
+        let bookItem = (window.Game && window.Game.BooksAndScrolls)
+          ? window.Game.BooksAndScrolls.createItem(bookKey)
+          : null;
+
+        if (!bookItem) {
           bookItem = {
-            id: `item_livro_filosofia_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-            name: "Tomo de Filosofia de Atenas",
+            id: `item_livro_${bookKey}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            name: "Tomo Antigo Preservado",
             categoryType: "consumable",
             isEquippable: !1,
             rarity: "raro",
@@ -4590,134 +4622,80 @@
             isStackable: !1,
             icon: "📖",
             color: "#818cf8",
-            description: "Tomo clássico encadernado em couro preservado na biblioteca das ruínas. Contém diálogos sobre ética, sabedoria e a virtude da pólis. Não empilhável. [Usar] para ler.",
-          };
-        } else if (bType === 1) {
-          bookItem = {
-            id: `item_livro_astronomia_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-            name: "Tratado de Astronomia e Mecânica",
-            categoryType: "consumable",
-            isEquippable: !1,
-            rarity: "raro",
-            value: 130,
-            stackCount: 1,
-            maxStack: 1,
-            isStackable: !1,
-            icon: "📘",
-            color: "#38bdf8",
-            description: "Volume helênico preservado com diagramas celestes, esferas de cálculo e geometria dos astros. Não empilhável. [Usar] para ler.",
-          };
-        } else if (bType === 2) {
-          bookItem = {
-            id: `item_livro_botanica_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-            name: "Compêndio de Botânica e Ervas",
-            categoryType: "consumable",
-            isEquippable: !1,
-            rarity: "incomum",
-            value: 95,
-            stackCount: 1,
-            maxStack: 1,
-            isStackable: !1,
-            icon: "📗",
-            color: "#4ade80",
-            description: "Livro antigo preservado com ilustrações detalhadas de raízes, plantas medicinais e fungos da natureza. Não empilhável. [Usar] para ler.",
-          };
-        } else {
-          bookItem = {
-            id: `item_livro_estrategia_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-            name: "Manuscrito de Estratégia e Táticas",
-            categoryType: "consumable",
-            isEquippable: !1,
-            rarity: "incomum",
-            value: 110,
-            stackCount: 1,
-            maxStack: 1,
-            isStackable: !1,
-            icon: "📕",
-            color: "#f87171",
-            description: "Manuscrito clássico preservado descrevendo fortificações, navegação marítima e táticas de falange. Não empilhável. [Usar] para ler.",
+            description: "Tomo clássico preservado nas ruínas. Não empilhável. [Ler] para folhear.",
           };
         }
 
-        const pKey = this.isUnderground ? `underground_${t},${l}` : `${t},${l}`;
-        const prev = this.interactedProps.get(pKey) || {};
-        this.interactedProps.set(pKey, { ...prev, collected: !0 });
+        const newTaken = booksTaken + 1;
+        const isAllDone = newTaken >= maxBooks;
+        this.interactedProps.set(pKey, { ...prev, booksTaken: newTaken, collected: isAllDone });
         this.invalidateTile(t, l);
 
+        const remaining = maxBooks - newTaken;
         return {
           success: !0,
           action: "collect_bookshelf",
           item: bookItem,
-          message: `📖 Você coletou: ${bookItem.name}! O livro foi guardado em sua mochila (item não empilhável).`,
+          message: `📖 Você retirou 1 livro da estante: ${bookItem.name}! (Restam ${remaining} na estante). Abra o Inventário [I] para ler.`,
           reward: `${bookItem.name} (+80 XP)`,
         };
       }
       if (o.prop.kind === "greek_scroll_stand") {
-        if (m.collected) {
+        const pKey = this.isUnderground ? `underground_${t},${l}` : `${t},${l}`;
+        const prev = this.interactedProps.get(pKey) || {};
+        const scrollsTaken = typeof prev.scrollsTaken === "number" ? prev.scrollsTaken : (prev.collected ? 2 : 0);
+        const maxScrolls = 2;
+        if (scrollsTaken >= maxScrolls || prev.collected) {
           return {
             success: !1,
-            message: "Você já recolheu os pergaminhos deste suporte de estudos.",
+            message: "Todos os pergaminhos deste suporte de estudos já foram recolhidos.",
           };
         }
         const sType = o.prop.subType || 0;
-        let scrollItem;
+        let scrollKey;
         if (sType === 0) {
+          const keys = ["ferramentas_primitivas", "cartografia"];
+          scrollKey = keys[scrollsTaken % keys.length];
+        } else if (sType === 1) {
+          const keys = ["pergaminho_runico_misterio", "forja"];
+          scrollKey = keys[scrollsTaken % keys.length];
+        } else {
+          const keys = ["alquimia", "ferramentas_primitivas"];
+          scrollKey = keys[scrollsTaken % keys.length];
+        }
+
+        let scrollItem = (window.Game && window.Game.BooksAndScrolls)
+          ? window.Game.BooksAndScrolls.createItem(scrollKey)
+          : null;
+
+        if (!scrollItem) {
           scrollItem = {
-            id: `item_pergaminho_cartografia_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-            name: "Pergaminho de Cartografia do Mundo",
+            id: `item_pergaminho_${scrollKey}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            name: "Pergaminho de Papiro Antigo",
             categoryType: "consumable",
             isEquippable: !1,
             rarity: "raro",
-            value: 115,
+            value: 120,
             stackCount: 1,
             maxStack: 1,
             isStackable: !1,
             icon: "📜",
             color: "#facc15",
-            description: "Rolo de pergaminho de papiro desenhado à mão com a topografia de ilhas, montanhas e florestas do mundo. Não empilhável. [Usar] para ler.",
-          };
-        } else if (sType === 1) {
-          scrollItem = {
-            id: `item_pergaminho_forja_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-            name: "Pergaminho de Segredos da Forja",
-            categoryType: "consumable",
-            isEquippable: !1,
-            rarity: "raro",
-            value: 140,
-            stackCount: 1,
-            maxStack: 1,
-            isStackable: !1,
-            icon: "📜",
-            color: "#fb923c",
-            description: "Pergaminho antigo revelando segredos de têmpera de metais, minérios puros e fusão de ligas resistentes. Não empilhável. [Usar] para ler.",
-          };
-        } else {
-          scrollItem = {
-            id: `item_pergaminho_alquimia_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-            name: "Pergaminho Arcano de Alquimia",
-            categoryType: "consumable",
-            isEquippable: !1,
-            rarity: "raro",
-            value: 125,
-            stackCount: 1,
-            maxStack: 1,
-            isStackable: !1,
-            icon: "📜",
-            color: "#c084fc",
-            description: "Pergaminho preservado com fórmulas ancestrais para extração de essências puras e poções de vigor. Não empilhável. [Usar] para ler.",
+            description: "Pergaminho preservado com antigas escrituras. Não empilhável. [Ler] para desenrolar.",
           };
         }
 
-        const pKey = this.isUnderground ? `underground_${t},${l}` : `${t},${l}`;
-        const prev = this.interactedProps.get(pKey) || {};
-        this.interactedProps.set(pKey, { ...prev, collected: !0 });
+        const newScrollsTaken = scrollsTaken + 1;
+        const isAllDone = newScrollsTaken >= maxScrolls;
+        this.interactedProps.set(pKey, { ...prev, scrollsTaken: newScrollsTaken, collected: isAllDone });
         this.invalidateTile(t, l);
 
+        const remaining = maxScrolls - newScrollsTaken;
         return {
           success: !0,
           action: "collect_scroll_stand",
           item: scrollItem,
-          message: `📜 Você coletou: ${scrollItem.name}! O pergaminho foi guardado em sua mochila (item não empilhável).`,
+          message: `📜 Você recolheu 1 pergaminho: ${scrollItem.name}! (Restam ${remaining} no suporte). Abra o Inventário [I] para ler.`,
           reward: `${scrollItem.name} (+80 XP)`,
         };
       }

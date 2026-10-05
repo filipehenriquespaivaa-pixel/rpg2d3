@@ -29,6 +29,24 @@ COMO EDITAR OU ADICIONAR UM MÓDULO:
    no index.html exatamente no ponto correto da ordem de dependência (antes de main.js).
 3. Sem dependências externas: Use apenas JavaScript puro sem import/export e persistência via localStorage com try/catch.
 
+SISTEMA DE LIVROS, PERGAMINHOS E BIBLIOTECA:
+1. Coleta Individual nas Estantes:
+   - Ao interagir com estantes [F], o jogador retira exatamente UM livro por vez (não somem vários livros de uma vez só).
+   - O gráfico da estante atualiza retirando exatamente 1 livro visual por item recolhido, deixando o espaço vazio realista.
+   - O mesmo ocorre com suportes de pergaminhos [F]: recolhe 1 pergaminho por interação.
+2. Tipos de Livros e Pergaminhos com Conteúdo Completo:
+   - Livro de Culinária (Vol. I & II): Receitas passo a passo de pães, peixes no espeto, carnes defumadas, banquetes e ambrosia.
+   - Pergaminho de Ferramentas Primitivas: Lascamento de sílex, machadinha, picareta e tochas.
+   - Manual de Construção de Itens Básicos: Fogueiras, fornos de barro, cordas e baús.
+   - Tratado de Armas & Equipamentos Comuns: Espadas de bronze e ferro, chicote de couro, escudos e armaduras.
+   - Pergaminho Ancestral dos Rituais Rúnicos: Geometria sagrada em SVG com círculos concêntricos entrelaçados, triângulos alquímicos e o mistério das ruínas.
+   - Catálogo Ilustrado de Recursos da Terra: Enciclopédia de minérios, madeiras, fibras e ervas.
+   - Atlas Geográfico de Biomas & Guia de Criaturas: Mapas de biomas e bestiário completo (coelhos, lobos, cervos, slimes).
+3. Visualizador Imersivo:
+   - Livros abrem com aparência autêntica de livro encadernado em couro com páginas duplas folheáveis, botões de anterior/próxima e suporte a setas [←]/[→].
+   - Pergaminhos abrem desenrolados com hastes cilíndricas de madeira e pomos dourados, selo de cera e diagramas SVG místicos.
+   - Atalho rápido [J] para abrir o último livro/pergaminho ou através do botão "Ler" no Inventário [I].
+
 MELHORIAS NO SISTEMA DE CAVERNAS:
 1. Paredões e Túneis Realistas:
    - As cavernas agora possuem maciços rochosos intransponíveis (paredões de pedra escura) que delimitam os caminhos subterrâneos.

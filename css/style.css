@@ -820,3 +820,13 @@ html, body {
     .scrollbar-thin::-webkit-scrollbar-thumb:hover {
       background: rgba(245, 158, 11, 0.7);
     }
+
+    /* Animações e Estilos para Livros e Pergaminhos */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.22s ease-out forwards;
+    }
+

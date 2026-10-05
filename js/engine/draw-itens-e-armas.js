@@ -19,6 +19,34 @@
       return;
     }
     if (
+      y.includes("livro") ||
+      y.includes("tomo") ||
+      y.includes("tratado") ||
+      y.includes("compêndio") ||
+      y.includes("compendio") ||
+      y.includes("manuscrito") ||
+      w.includes("livro") ||
+      v === "📖" ||
+      v === "📕" ||
+      v === "📗" ||
+      v === "📘" ||
+      v === "book"
+    ) {
+      drawBookItemIcon(e, c, f, g, S, t, u);
+      e.restore();
+      return;
+    }
+    if (
+      y.includes("pergaminho") ||
+      w.includes("pergaminho") ||
+      v === "📜" ||
+      v === "scroll"
+    ) {
+      drawScrollItemIcon(e, c, f, g, S, t, u);
+      e.restore();
+      return;
+    }
+    if (
       y.includes("estilingue") ||
       w.includes("estilingue") ||
       w.includes("slingshot") ||
@@ -1437,4 +1465,126 @@
       e.fill(),
       e.stroke(),
       e.restore());
+  }
+
+  function drawBookItemIcon(e, t, l, o, color = "#991b1b", item = {}, animTime = 0) {
+    e.save();
+    e.translate(t, l);
+    e.rotate(-0.08);
+
+    // Sombra suave
+    e.fillStyle = "rgba(0, 0, 0, 0.35)";
+    e.beginPath();
+    e.ellipse(1 * o, 3 * o, 7.5 * o, 9 * o, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Páginas de papel envelhecido
+    e.fillStyle = "#fef3c7";
+    e.fillRect(-5.5 * o, -8 * o, 12 * o, 15.5 * o);
+    e.strokeStyle = "#d97706";
+    e.lineWidth = 0.6 * o;
+    e.strokeRect(-5.5 * o, -8 * o, 12 * o, 15.5 * o);
+
+    // Listras finas de folhas
+    e.fillStyle = "#ca8a04";
+    for (let p = 0; p < 3; p++) {
+      e.fillRect(5.2 * o, (-7 + p * 4.5) * o, 1.2 * o, 3.5 * o);
+    }
+
+    // Capa de couro encadernado
+    e.fillStyle = color || "#831843";
+    e.fillRect(-7.5 * o, -8.5 * o, 12.5 * o, 16.5 * o);
+    e.strokeStyle = "#451a03";
+    e.lineWidth = 0.8 * o;
+    e.strokeRect(-7.5 * o, -8.5 * o, 12.5 * o, 16.5 * o);
+
+    // Lombada do livro
+    e.fillStyle = "rgba(0, 0, 0, 0.25)";
+    e.fillRect(-7.5 * o, -8.5 * o, 2.5 * o, 16.5 * o);
+
+    // Cantos dourados entalhados / filigrana
+    e.fillStyle = "#fbbf24";
+    e.fillRect(-4.5 * o, -8.5 * o, 1.5 * o, 1.5 * o);
+    e.fillRect(3.5 * o, -8.5 * o, 1.5 * o, 1.5 * o);
+    e.fillRect(-4.5 * o, 6.5 * o, 1.5 * o, 1.5 * o);
+    e.fillRect(3.5 * o, 6.5 * o, 1.5 * o, 1.5 * o);
+
+    // Placa central dourada do título
+    e.fillStyle = "rgba(251, 191, 36, 0.85)";
+    e.fillRect(-3.5 * o, -2 * o, 7 * o, 4 * o);
+    e.fillStyle = "#451a03";
+    e.fillRect(-2.5 * o, -1 * o, 5 * o, 0.7 * o);
+    e.fillRect(-2.5 * o, 0.5 * o, 4 * o, 0.7 * o);
+
+    // Fita marcadora de página suspensa
+    e.fillStyle = "#dc2626";
+    e.fillRect(-1 * o, 6.5 * o, 1.8 * o, 4 * o);
+
+    e.restore();
+  }
+
+  function drawScrollItemIcon(e, t, l, o, color = "#facc15", item = {}, animTime = 0) {
+    e.save();
+    e.translate(t, l);
+    e.rotate(0.22);
+
+    const isRunic = (item.id || "").includes("runico") || (item.name || "").includes("Rúnic") || (item.name || "").includes("Mistério");
+
+    // Sombra do pergaminho enrolado
+    e.fillStyle = "rgba(0, 0, 0, 0.32)";
+    e.beginPath();
+    e.ellipse(0.5 * o, 2 * o, 8 * o, 6 * o, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // Rolo principal de pergaminho
+    e.fillStyle = isRunic ? "#f3e8ff" : "#fef3c7";
+    e.fillRect(-6.5 * o, -5.5 * o, 13 * o, 11 * o);
+    e.strokeStyle = isRunic ? "#c084fc" : "#d97706";
+    e.lineWidth = 0.8 * o;
+    e.strokeRect(-6.5 * o, -5.5 * o, 13 * o, 11 * o);
+
+    // Hastes de madeira nas extremidades
+    e.fillStyle = "#78350f";
+    e.fillRect(-8 * o, -7 * o, 1.8 * o, 14 * o);
+    e.fillRect(6.2 * o, -7 * o, 1.8 * o, 14 * o);
+
+    // Pomos dourados das hastes
+    e.fillStyle = "#f59e0b";
+    e.beginPath();
+    e.arc(-7.1 * o, -7.5 * o, 1.3 * o, 0, Math.PI * 2);
+    e.arc(-7.1 * o, 7.5 * o, 1.3 * o, 0, Math.PI * 2);
+    e.arc(7.1 * o, -7.5 * o, 1.3 * o, 0, Math.PI * 2);
+    e.arc(7.1 * o, 7.5 * o, 1.3 * o, 0, Math.PI * 2);
+    e.fill();
+
+    if (isRunic) {
+      // Símbolo do triângulo sagrado e círculo no centro
+      e.strokeStyle = "#9333ea";
+      e.lineWidth = 1 * o;
+      e.beginPath();
+      e.arc(0, 0, 3 * o, 0, Math.PI * 2);
+      e.stroke();
+      e.strokeStyle = "#eab308";
+      e.beginPath();
+      e.moveTo(0, -2.8 * o);
+      e.lineTo(2.4 * o, 1.8 * o);
+      e.lineTo(-2.4 * o, 1.8 * o);
+      e.closePath();
+      e.stroke();
+    } else {
+      // Linhas manuscritas e fita vermelha
+      e.strokeStyle = "#78350f";
+      e.lineWidth = 0.6 * o;
+      for (let i = -1; i <= 1; i++) {
+        e.beginPath();
+        e.moveTo(-4 * o, i * 2.2 * o);
+        e.lineTo(4 * o, i * 2.2 * o);
+        e.stroke();
+      }
+      // Fita vermelha de amarra
+      e.fillStyle = "#b91c1c";
+      e.fillRect(-0.8 * o, -5.5 * o, 1.6 * o, 11 * o);
+    }
+
+    e.restore();
   }

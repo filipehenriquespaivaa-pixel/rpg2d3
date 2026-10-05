@@ -1701,10 +1701,10 @@
             drawGreekVaseCluster(c, f, t.subType || 0);
             break;
           case "greek_bookshelf":
-            drawBookshelf(c, f, t.subType || 0, !!t.collected);
+            drawBookshelf(c, f, t.subType || 0, !!t.collected, typeof t.booksTaken === "number" ? t.booksTaken : (t.collected ? 4 : 0));
             break;
           case "greek_scroll_stand":
-            drawScrollStand(c, f, t.subType || 0, !!t.collected);
+            drawScrollStand(c, f, t.subType || 0, !!t.collected, typeof t.scrollsTaken === "number" ? t.scrollsTaken : (t.collected ? 2 : 0));
             break;
           case "greek_furniture":
             drawGreekFurniture(c, f, t.subType || 0);

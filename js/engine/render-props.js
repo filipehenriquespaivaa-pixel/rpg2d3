@@ -4870,8 +4870,9 @@
     e.restore();
   }
 
-  function drawBookshelf(e, t = 1, subType = 0, isCollected = !1) {
+  function drawBookshelf(e, t = 1, subType = 0, isCollected = !1, booksTaken = 0) {
     t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
+    booksTaken = typeof booksTaken === "number" ? booksTaken : (isCollected ? 4 : 0);
     e.save();
 
     // 1. Sombra projetada no piso de mosaico
@@ -4928,56 +4929,65 @@
     const bookColors = ["#991b1b", "#1e3a8a", "#14532d", "#581c87", "#78350f", "#b45309"];
     const accentColors = ["#fbbf24", "#fef08a", "#f8fafc", "#fde047"];
 
-    // Nível Superior: Tomos de Filosofia e Astronomia
+    // Nível Superior: Tomos de Filosofia e Culinária
     let curX = x0 + 4 * t;
-    const numTopBooks = isCollected ? 4 : 8;
+    const numTopBooks = 8;
     for (let i = 0; i < numTopBooks; i++) {
       const bw = (2.2 + (i % 2) * 0.4) * t;
       const bh = (7 + ((i * 3) % 4)) * t;
       const bColor = bookColors[(i + subType) % bookColors.length];
       const by = shelvesY[0] - bh;
 
-      e.fillStyle = bColor;
-      e.fillRect(curX, by, bw, bh);
-      if (i % 2 === 0) {
-        e.fillStyle = accentColors[i % accentColors.length];
-        e.fillRect(curX + 0.3 * t, by + 1.5 * t, bw - 0.6 * t, 0.8 * t);
-        e.fillRect(curX + 0.3 * t, by + bh - 2 * t, bw - 0.6 * t, 0.8 * t);
+      // Ao pegar 1 livro, retira exatamente 1 livro (deixa o vão vazio no topo)
+      const isMissing = (i === 7 && booksTaken >= 1) || (i === 6 && booksTaken >= 4);
+      if (!isMissing) {
+        e.fillStyle = bColor;
+        e.fillRect(curX, by, bw, bh);
+        if (i % 2 === 0) {
+          e.fillStyle = accentColors[i % accentColors.length];
+          e.fillRect(curX + 0.3 * t, by + 1.5 * t, bw - 0.6 * t, 0.8 * t);
+          e.fillRect(curX + 0.3 * t, by + bh - 2 * t, bw - 0.6 * t, 0.8 * t);
+        }
       }
       curX += bw + 0.6 * t;
     }
-    if (!isCollected) {
+    // Livro horizontal deitado no topo
+    if (booksTaken < 3) {
       e.fillStyle = "#fef9c3";
       e.fillRect(x0 + w - 8 * t, shelvesY[0] - 2.5 * t, 5 * t, 2.2 * t);
       e.fillStyle = "#dc2626";
       e.fillRect(x0 + w - 6 * t, shelvesY[0] - 2.5 * t, 1 * t, 2.2 * t);
     }
 
-    // Nível Médio: Compêndios e Manuscritos
+    // Nível Médio: Compêndios, Manuscritos e Ferramentas
     curX = x0 + 4 * t;
-    const numMidBooks = isCollected ? 3 : 7;
+    const numMidBooks = 7;
     for (let i = 0; i < numMidBooks; i++) {
       const bw = (2.4 + ((i * 2) % 3) * 0.3) * t;
       const bh = (6.5 + (i % 3)) * t;
       const bColor = bookColors[(i * 2 + 1 + subType) % bookColors.length];
       const by = shelvesY[1] - bh;
 
-      if (i === 3) {
-        e.save();
-        e.translate(curX + bw / 2, shelvesY[1]);
-        e.rotate(0.18);
-        e.fillStyle = bColor;
-        e.fillRect(-bw / 2, -bh, bw, bh);
-        e.restore();
-      } else {
-        e.fillStyle = bColor;
-        e.fillRect(curX, by, bw, bh);
-        e.fillStyle = accentColors[(i + 1) % accentColors.length];
-        e.fillRect(curX + 0.4 * t, by + 2 * t, bw - 0.8 * t, 0.7 * t);
+      // Ao pegar 2º livro, retira exatamente 1 livro da prateleira do meio
+      const isMissing = (i === 6 && booksTaken >= 2) || (i === 5 && booksTaken >= 5);
+      if (!isMissing) {
+        if (i === 3) {
+          e.save();
+          e.translate(curX + bw / 2, shelvesY[1]);
+          e.rotate(0.18);
+          e.fillStyle = bColor;
+          e.fillRect(-bw / 2, -bh, bw, bh);
+          e.restore();
+        } else {
+          e.fillStyle = bColor;
+          e.fillRect(curX, by, bw, bh);
+          e.fillStyle = accentColors[(i + 1) % accentColors.length];
+          e.fillRect(curX + 0.4 * t, by + 2 * t, bw - 0.8 * t, 0.7 * t);
+        }
       }
       curX += bw + 0.7 * t;
     }
-    if (!isCollected) {
+    if (booksTaken < 4) {
       e.fillStyle = "#fef3c7";
       e.fillRect(x0 + w - 9 * t, shelvesY[1] - 4.5 * t, 6 * t, 2 * t);
       e.fillRect(x0 + w - 8.5 * t, shelvesY[1] - 2.2 * t, 5.5 * t, 2 * t);
@@ -4985,20 +4995,24 @@
       e.fillRect(x0 + w - 6.5 * t, shelvesY[1] - 4.5 * t, 0.9 * t, 2 * t);
     }
 
-    // Nível Inferior: Grandes Volumes de História e Leis
+    // Nível Inferior: Grandes Volumes de História, Geografia e Leis
     curX = x0 + 4 * t;
-    const numBotBooks = isCollected ? 4 : 8;
+    const numBotBooks = 8;
     for (let i = 0; i < numBotBooks; i++) {
       const bw = (2.3 + (i % 3) * 0.4) * t;
       const bh = (7.5 + (i % 2) * 1.5) * t;
       const bColor = bookColors[(i + 3) % bookColors.length];
       const by = shelvesY[2] - bh;
 
-      e.fillStyle = bColor;
-      e.fillRect(curX, by, bw, bh);
-      e.fillStyle = "#fbbf24";
-      e.fillRect(curX + 0.4 * t, by + 1.2 * t, bw - 0.8 * t, 0.8 * t);
-      e.fillRect(curX + 0.4 * t, by + 3.2 * t, bw - 0.8 * t, 0.8 * t);
+      // Ao pegar 3º livro, retira exatamente 1 livro da prateleira inferior
+      const isMissing = (i === 7 && booksTaken >= 3) || (i === 6 && booksTaken >= 6);
+      if (!isMissing) {
+        e.fillStyle = bColor;
+        e.fillRect(curX, by, bw, bh);
+        e.fillStyle = "#fbbf24";
+        e.fillRect(curX + 0.4 * t, by + 1.2 * t, bw - 0.8 * t, 0.8 * t);
+        e.fillRect(curX + 0.4 * t, by + 3.2 * t, bw - 0.8 * t, 0.8 * t);
+      }
       curX += bw + 0.6 * t;
     }
 
@@ -5009,8 +5023,9 @@
     e.restore();
   }
 
-  function drawScrollStand(e, t = 1, subType = 0, isCollected = !1) {
+  function drawScrollStand(e, t = 1, subType = 0, isCollected = !1, scrollsTaken = 0) {
     t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
+    scrollsTaken = typeof scrollsTaken === "number" ? scrollsTaken : (isCollected ? 2 : 0);
     e.save();
 
     // 1. Sombra da mesa/escrivaninha
@@ -5043,8 +5058,8 @@
     e.fillRect(-12.5 * t, -1 * t, 25 * t, 2 * t);
     e.fillRect(-11.5 * t, -10.5 * t, 23 * t, 1.5 * t);
 
-    // 3. Pergaminho aberto sobre o tampo
-    if (!isCollected) {
+    // 3. Pergaminho aberto sobre o tampo (o 1º pergaminho a ser recolhido)
+    if (scrollsTaken === 0) {
       e.fillStyle = "#fef3c7";
       e.fillRect(-8 * t, -8.5 * t, 14 * t, 7 * t);
       e.strokeStyle = "#d97706";
@@ -5076,7 +5091,8 @@
         e.stroke();
       }
     } else {
-      e.fillStyle = "rgba(254, 243, 199, 0.4)";
+      // Quando recolhido, fica apenas a marca sutil do papiro na madeira
+      e.fillStyle = "rgba(254, 243, 199, 0.25)";
       e.fillRect(-6 * t, -7 * t, 10 * t, 5 * t);
     }
 
@@ -5089,15 +5105,15 @@
     e.ellipse(capsaX, capsaY + 3 * t, 4 * t, 2 * t, 0, 0, Math.PI * 2);
     e.fill();
 
-    if (!isCollected || subType === 1) {
-      const scrollTints = ["#fef08a", "#fef9c3", "#e2e8f0"];
-      for (let s = -1; s <= 1; s++) {
-        const sx = capsaX + s * 1.6 * t;
-        e.fillStyle = scrollTints[(s + 2) % 3];
-        e.fillRect(sx - 0.9 * t, capsaY - 8 * t + Math.abs(s) * 1.5 * t, 1.8 * t, 7 * t);
-        e.fillStyle = "#b91c1c";
-        e.fillRect(sx - 0.9 * t, capsaY - 5 * t, 1.8 * t, 0.8 * t);
-      }
+    // Rolos de pergaminho na capsa: remove 1 a cada pergaminho adicional recolhido
+    const scrollTints = ["#fef08a", "#fef9c3", "#e2e8f0"];
+    const capsaScrollsCount = scrollsTaken >= 2 ? 1 : 2;
+    for (let s = -1; s < capsaScrollsCount - 1; s++) {
+      const sx = capsaX + s * 1.6 * t;
+      e.fillStyle = scrollTints[(s + 2) % 3];
+      e.fillRect(sx - 0.9 * t, capsaY - 8 * t + Math.abs(s) * 1.5 * t, 1.8 * t, 7 * t);
+      e.fillStyle = "#b91c1c";
+      e.fillRect(sx - 0.9 * t, capsaY - 5 * t, 1.8 * t, 0.8 * t);
     }
 
     e.fillStyle = "#b45309";
