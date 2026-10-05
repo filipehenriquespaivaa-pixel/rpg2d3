@@ -143,8 +143,22 @@
                       "flex items-center gap-1.5 text-amber-300 font-serif font-bold text-xs",
                     children: [
                       h.jsx(ju, { className: "h-4 w-4 text-amber-400" }),
-                      h.jsx("span", {
-                        children: "Livro de Fórmulas de Fusão & Forja",
+                      h.jsxs("span", {
+                        children: [
+                          "Livro de Fórmulas (",
+                          bl.filter((y) =>
+                            window.Game && window.Game.RecipeKnowledge
+                              ? window.Game.RecipeKnowledge.isRecipeUnlocked(y.id)
+                              : true,
+                          ).length,
+                          "/",
+                          bl.length,
+                          " Descobertas",
+                          typeof window !== "undefined" && window.__devMode
+                            ? " • Dev"
+                            : "",
+                          ")",
+                        ],
                       }),
                     ],
                   }),
@@ -181,6 +195,54 @@
                 children: bl
                   .filter((y) => f === "all" || y.category === f)
                   .map((y) => {
+                    const isUnlocked =
+                      window.Game && window.Game.RecipeKnowledge
+                        ? window.Game.RecipeKnowledge.isRecipeUnlocked(y.id)
+                        : true;
+
+                    if (!isUnlocked) {
+                      return h.jsxs(
+                        "div",
+                        {
+                          className:
+                            "p-2.5 rounded-xl border border-dashed border-amber-900/40 bg-black/60 flex flex-col justify-between gap-1.5 opacity-70 transition text-xs",
+                          children: [
+                            h.jsxs("div", {
+                              className:
+                                "flex items-start justify-between gap-1",
+                              children: [
+                                h.jsxs("span", {
+                                  className:
+                                    "font-bold text-stone-400 font-serif flex items-center gap-1 text-xs",
+                                  children: [
+                                    h.jsx("span", { children: "🔒" }),
+                                    "Fórmula Não Descoberta",
+                                  ],
+                                }),
+                                h.jsx("span", {
+                                  className:
+                                    "text-[9px] px-1.5 py-0.2 rounded bg-stone-900 text-stone-500 shrink-0 font-mono",
+                                  children: y.categoryLabel || y.category,
+                                }),
+                              ],
+                            }),
+                            h.jsx("div", {
+                              className:
+                                "text-[11px] text-stone-500 italic font-mono",
+                              children: "??? + ??? ➔ ???",
+                            }),
+                            h.jsx("div", {
+                              className:
+                                "text-[10px] text-amber-500/70 border-t border-white/5 pt-1",
+                              children:
+                                "💡 Experimente na Forja ou estude livros de receitas!",
+                            }),
+                          ],
+                        },
+                        y.id,
+                      );
+                    }
+
                     const w = o(y);
                     return h.jsxs(
                       "div",

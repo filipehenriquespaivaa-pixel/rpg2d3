@@ -1617,7 +1617,11 @@
           )
             return;
           const we = f(O, se || O, N, Fe);
-          we &&
+          if (we) {
+            let isNewDiscovery = false;
+            if (window.Game && window.Game.RecipeKnowledge && Te) {
+              isNewDiscovery = window.Game.RecipeKnowledge.unlockRecipe(Te.id, Te.name);
+            }
             (_(null),
             ue(null),
             Ee(null),
@@ -1625,9 +1629,13 @@
             we.isMapConstruction
               ? (oe("🏕️ Fogueira montada com 10 galhos no terreno do mapa!"),
                 A(null))
-              : (oe(`⚡ Fusão Concluída: ${we.name}!`),
-                A({ item: we, source: "backpack" })),
+              : isNewDiscovery
+                ? (oe(`🎉 Nova Fórmula Descoberta por Tentativa: ${Te.name}! Gravada no Livro de Fórmulas.`),
+                  A({ item: we, source: "backpack" }))
+                : (oe(`⚡ Fusão Concluída: ${we.name}!`),
+                  A({ item: we, source: "backpack" })),
             setTimeout(() => oe(null), 4e3));
+          }
         },
         $a = (we) => {
           if (we.id === "fuse_campfire_unlit")
@@ -2292,7 +2300,9 @@
                                           h.jsxs("span", {
                                             children: [
                                               "Fórmulas (",
-                                              bl.length,
+                                              window.Game && window.Game.RecipeKnowledge && !(typeof window !== "undefined" && window.__devMode)
+                                                ? `${window.Game.RecipeKnowledge.getUnlockedCount()}/${bl.length}`
+                                                : bl.length,
                                               ")",
                                             ],
                                           }),
@@ -2663,8 +2673,12 @@
                                           h.jsxs("span", {
                                             className: "truncate",
                                             children: [
-                                              "Fórmula identificada: ",
-                                              Te.name,
+                                              window.Game && window.Game.RecipeKnowledge && !window.Game.RecipeKnowledge.isRecipeUnlocked(Te.id)
+                                                ? `✨ Combinação Inédita: ${Te.name}! Funda para gravar no Livro.`
+                                                : "Fórmula identificada: ",
+                                              window.Game && window.Game.RecipeKnowledge && !window.Game.RecipeKnowledge.isRecipeUnlocked(Te.id)
+                                                ? ""
+                                                : Te.name,
                                             ],
                                           }),
                                         ],

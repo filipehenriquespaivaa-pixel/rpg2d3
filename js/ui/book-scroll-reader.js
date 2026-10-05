@@ -1,7 +1,10 @@
 /* js/ui/book-scroll-reader.js
  * Visualizador Imersivo de Livros (com páginas folheáveis) e Pergaminhos (abertos com tema de papiro).
  * Padrão global: window.Game.BookScrollReaderModal
- * Cores aprimoradas com alto contraste, fundo escurecido/sépia antigo para eliminar ofuscamento e fadiga visual.
+ * - Exibe caixas visuais da receita como ela aparece na Mesa de Fusão & Forja.
+ * - Sistema de Estudo de Livros: mínimo de 60s (variando conforme a quantidade de conteúdo/receitas).
+ * - Ao concluir o estudo, todas as receitas do livro são desbloqueadas na Forja.
+ * - Pergaminho de Runas 100% em runas indecifráveis no momento (mistério e objetivo do jogador).
  */
 "use strict";
 
@@ -128,6 +131,140 @@ window.Game = window.Game || {};
     });
   }
 
+  // Caixa Visual da Receita como ela aparece na Forja (Mesa de Fusão)
+  function ForgeRecipeBox({ forgeRecipe, isDark }) {
+    if (!forgeRecipe) return null;
+    const { slot1, slot2, slot3, result, recipeId } = forgeRecipe;
+    const isUnlocked = G.RecipeKnowledge
+      ? G.RecipeKnowledge.isRecipeUnlocked(recipeId)
+      : true;
+
+    return h.jsxs("div", {
+      className: `mt-3 p-2.5 sm:p-3 rounded-xl border shadow-inner transition-all flex flex-col gap-2 ${
+        isDark
+          ? "border-amber-500/40 bg-black/60 shadow-black"
+          : "border-[#452808]/50 bg-[#8c6c39]/40 shadow-stone-900/40"
+      }`,
+      children: [
+        h.jsxs("div", {
+          className: "flex items-center justify-between text-[11px] font-mono",
+          children: [
+            h.jsxs("span", {
+              className: `flex items-center gap-1.5 font-bold uppercase tracking-wider ${
+                isDark ? "text-amber-400" : "text-[#2e1402]"
+              }`,
+              children: [
+                h.jsx("span", { children: "⚒️" }),
+                "Na Mesa de Fusão & Forja:",
+              ],
+            }),
+            h.jsx("span", {
+              className: `px-2 py-0.5 rounded text-[10px] font-bold ${
+                isUnlocked
+                  ? "bg-emerald-950/80 border border-emerald-500/50 text-emerald-300"
+                  : isDark
+                  ? "bg-amber-950/70 border border-amber-600/40 text-amber-300/80"
+                  : "bg-[#542d0a]/70 border border-[#3b1c04] text-amber-200"
+              }`,
+              children: isUnlocked ? "✓ Conhecida na Forja" : "🔒 Estude para Aprender",
+            }),
+          ],
+        }),
+
+        // Visualização dos Sockets da Forja
+        h.jsxs("div", {
+          className: "flex items-center justify-center gap-1 sm:gap-2 flex-wrap text-xs select-none",
+          children: [
+            // Slot 1
+            slot1 &&
+              h.jsxs("div", {
+                className: `flex items-center gap-1.5 px-2 py-1 rounded-lg border shadow-sm ${
+                  isDark
+                    ? "border-amber-600/40 bg-[#1e150d] text-amber-200"
+                    : "border-[#4a2e10] bg-[#a88752] text-[#0d0601] font-semibold"
+                }`,
+                title: `Slot 1: ${slot1.name}`,
+                children: [
+                  h.jsx("span", { className: "text-base", children: slot1.icon || "📦" }),
+                  h.jsx("span", { className: "text-[11px] font-medium truncate max-w-[85px]", children: slot1.name }),
+                ],
+              }),
+
+            // +
+            h.jsx("span", {
+              className: `font-bold text-sm ${isDark ? "text-amber-400" : "text-[#2e1402]"}`,
+              children: "+",
+            }),
+
+            // Slot 2
+            slot2 &&
+              h.jsxs("div", {
+                className: `flex items-center gap-1.5 px-2 py-1 rounded-lg border shadow-sm ${
+                  isDark
+                    ? "border-amber-600/40 bg-[#1e150d] text-amber-200"
+                    : "border-[#4a2e10] bg-[#a88752] text-[#0d0601] font-semibold"
+                }`,
+                title: `Slot 2: ${slot2.name}`,
+                children: [
+                  h.jsx("span", { className: "text-base", children: slot2.icon || "📦" }),
+                  h.jsx("span", { className: "text-[11px] font-medium truncate max-w-[85px]", children: slot2.name }),
+                ],
+              }),
+
+            // Slot 3 (opcional)
+            slot3 &&
+              h.jsxs(h.Fragment, {
+                children: [
+                  h.jsx("span", {
+                    className: `font-bold text-sm ${isDark ? "text-amber-400" : "text-[#2e1402]"}`,
+                    children: "+",
+                  }),
+                  h.jsxs("div", {
+                    className: `flex items-center gap-1.5 px-2 py-1 rounded-lg border shadow-sm ${
+                      isDark
+                        ? "border-amber-600/40 bg-[#1e150d] text-amber-200"
+                        : "border-[#4a2e10] bg-[#a88752] text-[#0d0601] font-semibold"
+                    }`,
+                    title: `Slot 3: ${slot3.name}`,
+                    children: [
+                      h.jsx("span", { className: "text-base", children: slot3.icon || "📦" }),
+                      h.jsx("span", { className: "text-[11px] font-medium truncate max-w-[85px]", children: slot3.name }),
+                    ],
+                  }),
+                ],
+              }),
+
+            // Seta para Resultado
+            h.jsx("span", {
+              className: `font-bold text-base px-0.5 ${isDark ? "text-amber-300" : "text-[#1f0b01]"}`,
+              children: "➔",
+            }),
+
+            // Slot Resultado
+            result &&
+              h.jsxs("div", {
+                className: `flex items-center gap-1.5 px-2.5 py-1 rounded-lg border-2 shadow-md ${
+                  isDark
+                    ? "border-amber-400 bg-amber-950/50 text-amber-100 ring-1 ring-amber-400/40"
+                    : "border-[#381a04] bg-[#bfa068] text-[#0a0401] font-bold"
+                }`,
+                title: `Resultado: ${result.name}`,
+                children: [
+                  h.jsx("span", { className: "text-base", children: result.icon || "✨" }),
+                  h.jsx("span", {
+                    className: `text-[11px] font-bold truncate max-w-[110px] ${
+                      isDark ? "text-amber-200" : "text-[#0c0501]"
+                    }`,
+                    children: result.name,
+                  }),
+                ],
+              }),
+          ],
+        }),
+      ],
+    });
+  }
+
   // Componente Principal de Leitura: Livro ou Pergaminho
   function BookScrollReaderModal({ item, isOpen, onClose }) {
     if (!isOpen || !item) return null;
@@ -158,6 +295,62 @@ window.Game = window.Game || {};
         return "normal";
       }
     });
+
+    // ==========================================
+    // SISTEMA DE ESTUDO DE LIVROS / PERGAMINHOS
+    // ==========================================
+    const hasRecipes = Array.isArray(data.recipeIds) && data.recipeIds.length > 0;
+    const requiredStudySeconds = Math.max(60, data.studyTime || 60);
+
+    const [studyState, setStudyState] = J.useState(() => {
+      if (!G.RecipeKnowledge) {
+        return { seconds: 0, totalSeconds: requiredStudySeconds, completed: false };
+      }
+      return G.RecipeKnowledge.getStudyState(data.id, requiredStudySeconds);
+    });
+
+    // Estado do estudo ativo enquanto a janela estiver aberta
+    const [isStudying, setIsStudying] = J.useState(!studyState.completed);
+    const [studyCelebration, setStudyCelebration] = J.useState(null);
+
+    // Atualiza estado de estudo se trocar de item
+    J.useEffect(() => {
+      if (G.RecipeKnowledge && data.id) {
+        const state = G.RecipeKnowledge.getStudyState(data.id, requiredStudySeconds);
+        setStudyState(state);
+        setIsStudying(!state.completed);
+      }
+    }, [data.id, requiredStudySeconds]);
+
+    // Timer de estudo: corre enquanto o livro/pergaminho estiver aberto e isStudying for verdadeiro
+    J.useEffect(() => {
+      if (!isOpen || !hasRecipes || studyState.completed || !isStudying) return;
+
+      const timer = setInterval(() => {
+        if (!G.RecipeKnowledge) return;
+        const res = G.RecipeKnowledge.addStudySeconds(
+          data.id,
+          1,
+          requiredStudySeconds,
+          data.recipeIds,
+          data.name,
+        );
+
+        setStudyState({
+          seconds: res.seconds,
+          totalSeconds: res.totalSeconds,
+          completed: res.completed,
+        });
+
+        if (res.newlyCompleted) {
+          setIsStudying(false);
+          setStudyCelebration(`✨ Estudo Concluído! Você dominou o compêndio e aprendeu ${data.recipeIds.length} receitas para a Forja!`);
+          setTimeout(() => setStudyCelebration(null), 6000);
+        }
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }, [isOpen, hasRecipes, studyState.completed, isStudying, data.id, requiredStudySeconds, data.recipeIds, data.name]);
 
     const toggleTheme = () => {
       const next = theme === "dark" ? "sepia" : "dark";
@@ -201,6 +394,72 @@ window.Game = window.Game || {};
 
     const isDark = theme === "dark";
     const isLarge = fontSize === "large";
+
+    // Barra de Progresso de Estudo
+    const renderStudyBar = () => {
+      if (!hasRecipes) return null;
+      const pct = Math.min(100, Math.round((studyState.seconds / requiredStudySeconds) * 100));
+      const remaining = Math.max(0, requiredStudySeconds - studyState.seconds);
+
+      return h.jsxs("div", {
+        className:
+          "px-4 py-2 border-b border-amber-500/25 bg-black/75 backdrop-blur flex flex-col sm:flex-row items-center justify-between gap-2 text-xs z-30 select-none",
+        children: [
+          h.jsxs("div", {
+            className: "flex items-center gap-2 flex-1 w-full sm:w-auto",
+            children: [
+              h.jsx("span", { className: "text-base", children: studyState.completed ? "🎓" : "📖" }),
+              h.jsxs("div", {
+                className: "flex flex-col flex-1",
+                children: [
+                  h.jsxs("div", {
+                    className: "flex items-center justify-between text-[11px] font-mono",
+                    children: [
+                      h.jsxs("span", {
+                        className: studyState.completed ? "text-emerald-400 font-bold" : "text-amber-300 font-bold",
+                        children: studyState.completed
+                          ? `✓ Livro Estudado (${data.recipeIds.length} receitas aprendidas)`
+                          : `Estudando Manuscrito (${studyState.seconds}s / ${requiredStudySeconds}s)`,
+                      }),
+                      !studyState.completed &&
+                        h.jsxs("span", {
+                          className: "text-amber-400/80 font-mono",
+                          children: [remaining, "s restantes (", pct, "%)"],
+                        }),
+                    ],
+                  }),
+                  // Barra visual
+                  h.jsx("div", {
+                    className: "w-full h-1.5 rounded-full bg-stone-900 border border-amber-500/30 overflow-hidden mt-0.5",
+                    children: h.jsx("div", {
+                      className: `h-full transition-all duration-300 ${
+                        studyState.completed ? "bg-emerald-500" : "bg-gradient-to-r from-amber-600 via-amber-400 to-amber-300 animate-pulse"
+                      }`,
+                      style: { width: `${pct}%` },
+                    }),
+                  }),
+                ],
+              }),
+            ],
+          }),
+
+          // Botão de pausa / retoma do estudo se ainda não estiver concluído
+          !studyState.completed &&
+            h.jsxs("button", {
+              onClick: () => setIsStudying((s) => !s),
+              className: `px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 border shrink-0 ${
+                isStudying
+                  ? "bg-amber-600/80 hover:bg-amber-500 border-amber-400 text-white"
+                  : "bg-stone-800 hover:bg-stone-700 border-stone-600 text-stone-300"
+              }`,
+              title: isStudying ? "Pausar estudo" : "Continuar estudando",
+              children: [
+                h.jsx("span", { children: isStudying ? "⏸️ Pausar" : "▶️ Continuar Estudo" }),
+              ],
+            }),
+        ],
+      });
+    };
 
     // ==========================================
     // RENDERIZAÇÃO DE LIVRO (Visual de Livro Encadernado com Páginas)
@@ -286,6 +545,16 @@ window.Game = window.Game || {};
               ],
             }),
 
+            // Barra de Progresso de Estudo do Livro
+            renderStudyBar(),
+
+            // Toast de celebração de estudo concluído
+            studyCelebration &&
+              h.jsxs("div", {
+                className: "px-4 py-2 bg-emerald-950/95 border-b border-emerald-400 text-emerald-200 text-xs font-bold text-center animate-bounce z-20 shadow-md",
+                children: [studyCelebration],
+              }),
+
             // Corpo do Livro (Páginas Abertas com Fundo Escurecido Confortável para Leitura)
             h.jsxs("div", {
               className: "p-3 sm:p-5 flex-1 overflow-y-auto flex flex-col md:flex-row gap-4 items-stretch justify-center relative",
@@ -357,6 +626,13 @@ window.Game = window.Game || {};
                               }`,
                               children: leftPage.content,
                             }),
+
+                            // Caixa visual da receita como aparece na Forja
+                            leftPage.forgeRecipe &&
+                              h.jsx(ForgeRecipeBox, {
+                                forgeRecipe: leftPage.forgeRecipe,
+                                isDark,
+                              }),
 
                             // Citação / Dica do autor
                             leftPage.flavor &&
@@ -444,6 +720,14 @@ window.Game = window.Game || {};
                               }`,
                               children: rightPage.content,
                             }),
+
+                            // Caixa visual da receita como aparece na Forja
+                            rightPage.forgeRecipe &&
+                              h.jsx(ForgeRecipeBox, {
+                                forgeRecipe: rightPage.forgeRecipe,
+                                isDark,
+                              }),
+
                             rightPage.flavor &&
                               h.jsx("div", {
                                 className: `mt-2 p-3 rounded-lg border-l-4 italic font-serif text-xs leading-relaxed ${
@@ -540,7 +824,7 @@ window.Game = window.Game || {};
     // RENDERIZAÇÃO DE PERGAMINHO (Visual de Rolo de Pergaminho Aberto com Tubos de Madeira)
     // ==========================================
     const sections = data.sections || [];
-    const isRunic = data.scrollTheme === "runic_mystery";
+    const isRunic = data.scrollTheme === "runic_mystery" || Boolean(data.isUndecipherable);
 
     return h.jsx("div", {
       className: "fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md select-none animate-fadeIn",
@@ -636,6 +920,16 @@ window.Game = window.Game || {};
                 ],
               }),
 
+              // Barra de Estudo para Pergaminhos que contêm receitas (ex: Ferramentas Primitivas)
+              renderStudyBar(),
+
+              // Toast de celebração de estudo concluído
+              studyCelebration &&
+                h.jsxs("div", {
+                  className: "px-4 py-2 mb-3 bg-emerald-950/95 border border-emerald-400 text-emerald-200 text-xs font-bold text-center rounded-xl animate-bounce shadow-md",
+                  children: [studyCelebration],
+                }),
+
               // Cabeçalho do Pergaminho
               h.jsxs("div", {
                 className: `text-center pb-4 mb-4 border-b-2 border-dashed ${
@@ -646,7 +940,7 @@ window.Game = window.Game || {};
                     className: `text-xs font-mono font-bold uppercase tracking-widest ${
                       isRunic ? "text-purple-300" : isDark ? "text-amber-400" : "text-[#2d1403] font-black"
                     }`,
-                    children: isRunic ? "᚛ ESCRITURA DOS ANTIGOS DEUSES ᚜" : "MANUSCRITO PRESERVADO",
+                    children: isRunic ? "᚛ ᚱ ᚢ ᚾ ᚨ ᛋ ᛫ ᚨ ᚾ ᚲ ᛖ ᛋ ᛏ ᚱ ᚨ ᛁ ᛋ ᚜" : "MANUSCRITO PRESERVADO",
                   }),
                   h.jsx("h2", {
                     className: `text-xl sm:text-2xl font-bold font-serif leading-tight mt-1 ${
@@ -669,6 +963,19 @@ window.Game = window.Game || {};
 
               // Se for o Pergaminho Rúnico Especial: Exibir Geometria Sagrada (Círculos, Triângulos e Runas)!
               isRunic && h.jsx(SacredGeometrySVG, { size: 210 }),
+
+              // Alerta Misterioso do Pergaminho Rúnico (Objetivo do Jogador - Indecifrável no Momento)
+              isRunic &&
+                h.jsxs("div", {
+                  className: "mb-4 p-3.5 rounded-xl border border-purple-500/40 bg-purple-950/70 text-purple-200 text-xs font-serif text-center shadow-lg flex flex-col gap-1",
+                  children: [
+                    h.jsx("div", { className: "text-amber-300 font-bold uppercase tracking-wider text-[11px]", children: "✧ [ENIGMA ANCESTRAL NÃO DECIFRADO] ✧" }),
+                    h.jsx("p", {
+                      className: "italic text-purple-200/90 text-justify",
+                      children: "Este pergaminho sagrado está completamente selado em runas nórdicas e hieróglifos arcanos. A sua tradução permanece um mistério insondável aos mortais no momento — um objetivo cósmico primordial que aguarda ser desvendado conforme o herói explorar as ruínas e templos profundos do mundo.",
+                    }),
+                  ],
+                }),
 
               // Seções de Texto do Pergaminho
               h.jsx("div", {
@@ -714,13 +1021,20 @@ window.Game = window.Game || {};
                             isLarge ? "text-sm sm:text-base" : "text-xs sm:text-sm"
                           } ${
                             isRunic
-                              ? "text-purple-100 font-normal"
+                              ? "text-purple-100 font-mono tracking-widest text-xs"
                               : isDark
                               ? "text-stone-200 font-normal"
                               : "text-[#080301] font-medium"
                           }`,
                           children: sec.text,
                         }),
+
+                        // Caixa visual da receita como aparece na Forja (se houver na seção)
+                        sec.forgeRecipe &&
+                          h.jsx(ForgeRecipeBox, {
+                            forgeRecipe: sec.forgeRecipe,
+                            isDark,
+                          }),
                       ],
                     },
                     idx,
