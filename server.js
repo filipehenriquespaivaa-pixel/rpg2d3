@@ -31,9 +31,77 @@ const MIME_TYPES = {
   '.ttf': 'font/ttf',
 };
 
+const ASSET_EXTENSIONS = new Set(Object.keys(MIME_TYPES).filter((ext) => ext !== '.html'));
+
+function buildCombinedBundle(indexHtml) {
+  const scriptRegex = /<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>\s*<\/script>/gi;
+  const parts = ['"use strict";'];
+  let match;
+  while ((match = scriptRegex.exec(indexHtml)) !== null) {
+    const rawSrc = match[1].split('?')[0].replace(/^\.\//, '').replace(/^\//, '');
+    const fullPath = path.normalize(path.join(__dirname, rawSrc));
+    if (fullPath.startsWith(__dirname) && fs.existsSync(fullPath)) {
+      const code = fs.readFileSync(fullPath, 'utf-8');
+      parts.push(`/* === ${rawSrc} === */\n${code}`);
+    }
+  }
+  return parts.join('\n;\n');
+}
+
+function renderServerIndexHtml(indexHtml) {
+  let html = indexHtml;
+  // Inline local stylesheet to avoid extra sub-request
+  html = html.replace(
+    /<link\b[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*\/?>/gi,
+    (fullMatch, href) => {
+      const cleanHref = href.split('?')[0].replace(/^\.\//, '').replace(/^\//, '');
+      const cssPath = path.normalize(path.join(__dirname, cleanHref));
+      if (cssPath.startsWith(__dirname) && fs.existsSync(cssPath)) {
+        const cssContent = fs.readFileSync(cssPath, 'utf-8');
+        return `<style>\n${cssContent}\n</style>`;
+      }
+      return fullMatch;
+    }
+  );
+
+  // Replace all deferred local scripts with a single deferred bundle request
+  let replacedFirst = false;
+  const version = Date.now();
+  html = html.replace(
+    /<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>\s*<\/script>/gi,
+    () => {
+      if (!replacedFirst) {
+        replacedFirst = true;
+        return `<script defer src="./__app_bundle.js?v=${version}"></script>`;
+      }
+      return '';
+    }
+  );
+  return html;
+}
+
 const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   let pathname = decodeURIComponent(parsedUrl.pathname);
+
+  if (pathname === '/__app_bundle.js') {
+    try {
+      const indexPath = path.join(__dirname, 'index.html');
+      const indexHtml = fs.readFileSync(indexPath, 'utf-8');
+      const bundle = buildCombinedBundle(indexHtml);
+      const buf = Buffer.from(bundle, 'utf-8');
+      res.writeHead(200, {
+        'Content-Type': 'application/javascript; charset=UTF-8',
+        'Content-Length': buf.length,
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      });
+      res.end(buf);
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=UTF-8' });
+      res.end('Bundle Error');
+    }
+    return;
+  }
 
   // Security: prevent directory traversal
   const safePath = path.normalize(path.join(__dirname, pathname));
@@ -51,20 +119,48 @@ const server = http.createServer((req, res) => {
     }
 
     fs.stat(filePathToServe, (statErr, finalStats) => {
-      // If file doesn't exist, SPA fallback to index.html
+      const reqExt = path.extname(filePathToServe).toLowerCase();
+
+      // If file doesn't exist, only fallback to index.html for navigation routes (never for .js/.css/assets)
       if (statErr || !finalStats.isFile()) {
+        if (ASSET_EXTENSIONS.has(reqExt)) {
+          res.writeHead(404, {
+            'Content-Type': 'text/plain; charset=UTF-8',
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+          });
+          res.end('Not Found');
+          return;
+        }
         const indexPath = path.join(__dirname, 'index.html');
-        fs.readFile(indexPath, (readErr, content) => {
+        fs.readFile(indexPath, 'utf-8', (readErr, content) => {
           if (readErr) {
             res.writeHead(404, { 'Content-Type': 'text/plain' });
             res.end('Not Found');
             return;
           }
+          const rendered = renderServerIndexHtml(content);
           res.writeHead(200, {
             'Content-Type': 'text/html; charset=UTF-8',
-            'Cache-Control': 'no-cache',
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
           });
-          res.end(content);
+          res.end(rendered);
+        });
+        return;
+      }
+
+      if (path.basename(filePathToServe) === 'index.html') {
+        fs.readFile(filePathToServe, 'utf-8', (readErr, content) => {
+          if (readErr) {
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.end('Server Error');
+            return;
+          }
+          const rendered = renderServerIndexHtml(content);
+          res.writeHead(200, {
+            'Content-Type': 'text/html; charset=UTF-8',
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+          });
+          res.end(rendered);
         });
         return;
       }
@@ -75,6 +171,7 @@ const server = http.createServer((req, res) => {
       res.writeHead(200, {
         'Content-Type': contentType,
         'Content-Length': finalStats.size,
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
       });
 
       const stream = fs.createReadStream(filePathToServe);

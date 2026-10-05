@@ -843,3 +843,8 @@
     }
   }
   const hi = new AudioManager();
+  window.AudioManager = AudioManager;
+  window.hi = hi;
+  window.Game = window.Game || {};
+  window.Game.AudioManager = AudioManager;
+  window.Game.audio = hi;

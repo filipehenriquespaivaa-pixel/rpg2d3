@@ -38,6 +38,50 @@
       [T, S] = J.useState({ tx: 0, ty: 0 }),
       [p, j] = J.useState(4289),
       [P, A] = J.useState(0.5),
+      timeOfDayRef = J.useRef(0.5),
+      [cycleDurationSec, setCycleDurationSecState] = J.useState(() => {
+        try {
+          const v = Number(localStorage.getItem("rpg2d_cycle_duration_sec"));
+          return v >= 5 ? v : 1200;
+        } catch (e) {
+          return 1200;
+        }
+      }),
+      cycleDurationRef = J.useRef(cycleDurationSec),
+      [cyclePaused, setCyclePausedState] = J.useState(() => {
+        try {
+          return localStorage.getItem("rpg2d_cycle_paused") === "1";
+        } catch (e) {
+          return !1;
+        }
+      }),
+      cyclePausedRef = J.useRef(cyclePaused),
+      setTimeOfDaySync = J.useCallback((valOrFn) => {
+        A((prev) => {
+          const raw = typeof valOrFn === "function" ? valOrFn(prev) : valOrFn;
+          const num = Number(raw);
+          const next = (((isFinite(num) ? num : 0.5) % 1) + 1) % 1;
+          timeOfDayRef.current = next;
+          if (rr.current) rr.current.timeOfDay = next;
+          return next;
+        });
+      }, []),
+      setCycleDurationSec = J.useCallback((sec) => {
+        const clean = Math.max(5, Math.min(86400, Number(sec) || 1200));
+        cycleDurationRef.current = clean;
+        setCycleDurationSecState(clean);
+        try {
+          localStorage.setItem("rpg2d_cycle_duration_sec", String(clean));
+        } catch (e) {}
+      }, []),
+      setCyclePaused = J.useCallback((paused) => {
+        const b = !!paused;
+        cyclePausedRef.current = b;
+        setCyclePausedState(b);
+        try {
+          localStorage.setItem("rpg2d_cycle_paused", b ? "1" : "0");
+        } catch (e) {}
+      }, []),
       [x, M] = J.useState(!1),
       [$, z] = J.useState(!1),
       [K, V] = J.useState(1),
@@ -148,7 +192,7 @@
       wl = oc && $,
       rr = J.useRef({
         showGrid: O,
-        timeOfDay: P,
+        timeOfDay: timeOfDayRef.current,
         zoom: K,
         enableWeather: !0,
         lanternActive: wl,
@@ -159,7 +203,7 @@
       });
     rr.current = {
       showGrid: O,
-      timeOfDay: P,
+      timeOfDay: timeOfDayRef.current,
       zoom: K,
       enableWeather: !0,
       lanternActive: wl,
@@ -1152,7 +1196,7 @@
               inventory: { backpack: Ve, equipment: Da.current, gold: ct },
               world: {
                 seed: q.seed,
-                timeOfDay: P,
+                timeOfDay: timeOfDayRef.current,
                 interactedProps: ge.interactedProps,
                 customPlacedProps: ge.customPlacedProps,
                 collectedGroundItems: ge.collectedGroundItems,
@@ -1176,7 +1220,7 @@
           (E.world &&
             (typeof E.world.seed == "number" &&
               (o.current.setSeed(E.world.seed), j(E.world.seed)),
-            typeof E.world.timeOfDay == "number" && A(E.world.timeOfDay),
+            typeof E.world.timeOfDay == "number" && setTimeOfDaySync(E.world.timeOfDay),
             o.current.importSaveData(E.world)),
             E.checkpoint &&
               (Ie(E.checkpoint),
@@ -3621,6 +3665,12 @@
             $e = g.current,
             da = y.current,
             Ye = Math.min(0.1, (Je - la) / 1e3);
+          if (!cyclePausedRef.current && Ye > 0) {
+            const activeCycleSec = Math.max(5, Number(cycleDurationRef.current) || 1200);
+            const nextTime = (timeOfDayRef.current + Ye / activeCycleSec) % 1;
+            timeOfDayRef.current = nextTime;
+            if (rr.current) rr.current.timeOfDay = nextTime;
+          }
           const isHoldingPebble = pebbleKeyRef.current.pressedAt > 0;
           const isPebbleItem = (item) => {
             const name = (item?.name || "").toLowerCase();
@@ -3945,7 +3995,8 @@
             ht = window.innerWidth,
             ho = window.innerHeight;
           if ((q.render(he, ht, ho, ka, Nt), ze++, ze % 10 === 0)) {
-            (Ce(he),
+            (A(timeOfDayRef.current),
+              Ce(he),
               (Ge !== je.current.tx || Pe !== je.current.ty) &&
                 ((je.current = { tx: Ge, ty: Pe }), S({ tx: Ge, ty: Pe })),
               aa.biome.id !== Be.current &&
@@ -4201,7 +4252,11 @@
             coords: T,
             seed: p,
             timeOfDay: P,
-            setTimeOfDay: A,
+            setTimeOfDay: setTimeOfDaySync,
+            cycleDurationSec: cycleDurationSec,
+            setCycleDurationSec: setCycleDurationSec,
+            cyclePaused: cyclePaused,
+            setCyclePaused: setCyclePaused,
             soundEnabled: x,
             setSoundEnabled: M,
             lanternActive: wl,

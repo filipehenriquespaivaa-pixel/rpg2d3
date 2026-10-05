@@ -342,6 +342,10 @@ window.Game = window.Game || {};
     // Ação do Botão Start (Modo Comum - Imersivo por natureza)
     const handleStartCommonMode = () => {
       setStoredBool("rpg2d_dev_mode", false);
+      try {
+        localStorage.setItem("rpg2d_cycle_duration_sec", "1200");
+        localStorage.setItem("rpg2d_cycle_paused", "0");
+      } catch (e) {}
       window.__devMode = false;
       window.__showColliders = false;
       window.__godMode = false;

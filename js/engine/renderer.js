@@ -3510,19 +3510,55 @@
       }
       renderLightingOverlay(t, l, o, u, m, c, f, g) {
         const y = this.ctx,
-          w = m.timeOfDay;
+          w =
+            (((typeof m.timeOfDay === "number" && isFinite(m.timeOfDay)
+              ? m.timeOfDay
+              : 0.5) %
+              1) +
+              1) %
+            1;
         let v = 0,
           T = "";
         if (this.engine.isUnderground) v = 0.94;
-        else if (w >= 0.2 && w <= 0.3) {
-          const P = (w - 0.2) / 0.1;
-          ((v = (1 - P) * 0.45), (T = `rgba(251, 146, 60, ${(1 - P) * 0.22})`));
-        } else if (w > 0.3 && w < 0.7) v = 0;
-        else if (w >= 0.7 && w <= 0.8) {
-          const P = (w - 0.7) / 0.1;
-          ((v = P * 0.65), (T = `rgba(225, 29, 72, ${P * 0.18})`));
-        } else ((v = 0.88), (T = "rgba(15, 23, 42, 0.25)"));
-        if (v > 0.04) {
+        else {
+          // Elevação solar contínua: +1 ao meio-dia (0.50), 0 às 06h (0.25) e 18h (0.75), -1 à meia-noite (0.00/1.00)
+          const sunElev = -Math.cos(w * Math.PI * 2);
+          // Escurecimento 100% gradual conforme o tempo passa (0.0 ao meio-dia -> 0.40 no pôr do sol/amanhecer -> 0.88 à meia-noite)
+          const rawNight = (1 - sunElev) * 0.5;
+          v = Math.pow(rawNight, 1.15) * 0.88;
+
+          const dawnDist = Math.abs(w - 0.25);
+          const duskDist = Math.abs(w - 0.75);
+          const dawnF =
+            dawnDist < 0.15
+              ? Math.pow(Math.cos((dawnDist / 0.15) * (Math.PI * 0.5)), 1.6)
+              : 0;
+          const duskF =
+            duskDist < 0.15
+              ? Math.pow(Math.cos((duskDist / 0.15) * (Math.PI * 0.5)), 1.6)
+              : 0;
+          const nightF =
+            sunElev < 0
+              ? Math.pow(-sunElev, 1.1) * (1 - Math.max(dawnF, duskF))
+              : 0;
+          const wDawn = dawnF * 0.22;
+          const wDusk = duskF * 0.19;
+          const wNight = nightF * 0.25;
+          const tAlpha = wDawn + wDusk + wNight;
+          if (tAlpha > 0.002) {
+            const tr = Math.round(
+              (251 * wDawn + 225 * wDusk + 15 * wNight) / tAlpha,
+            );
+            const tg = Math.round(
+              (146 * wDawn + 29 * wDusk + 23 * wNight) / tAlpha,
+            );
+            const tb = Math.round(
+              (60 * wDawn + 72 * wDusk + 42 * wNight) / tAlpha,
+            );
+            T = `rgba(${tr}, ${tg}, ${tb}, ${tAlpha.toFixed(4)})`;
+          }
+        }
+        if (v > 0.002) {
           (this.lightCanvas ||
             ((this.lightCanvas = document.createElement("canvas")),
             (this.lightCtx = this.lightCanvas.getContext("2d"))),

@@ -10,6 +10,10 @@
     seed: l,
     timeOfDay: o,
     setTimeOfDay: u,
+    cycleDurationSec: cycleDurationSec = 1200,
+    setCycleDurationSec: setCycleDurationSec = () => {},
+    cyclePaused: cyclePaused = !1,
+    setCyclePaused: setCyclePaused = () => {},
     soundEnabled: m,
     setSoundEnabled: c,
     lanternActive: f,
@@ -417,7 +421,27 @@
             ? "Meio-dia"
             : o >= 0.65 && o < 0.8
               ? "Pôr do Sol"
-              : "Noite";
+              : "Noite",
+      isDayPhase = o >= 0.25 && o < 0.75,
+      darknessPct = Math.round(
+        Math.pow((1 + Math.cos(o * Math.PI * 2)) * 0.5, 1.15) * 100,
+      ),
+      formatClock = () => {
+        const totalMin = Math.floor((((o % 1) + 1) % 1) * 1440);
+        const hh = String(Math.floor(totalMin / 60) % 24).padStart(2, "0");
+        const mm = String(totalMin % 60).padStart(2, "0");
+        return `${hh}:${mm}`;
+      },
+      formatCycleLabel = (sec) => {
+        const s = Math.max(5, Number(sec) || 1200);
+        const half = s / 2;
+        if (s < 120) {
+          return `${Math.round(s)}s (${Math.round(half)}s Dia / ${Math.round(half)}s Noite)`;
+        }
+        const totalMin = +(s / 60).toFixed(1);
+        const halfMin = +(half / 60).toFixed(1);
+        return `${totalMin} min (${halfMin}m Dia / ${halfMin}m Noite)`;
+      };
     return h.jsxs("div", {
       className:
         "pointer-events-none absolute inset-0 z-20 overflow-hidden select-none",
@@ -1218,30 +1242,85 @@
                         }),
                         h.jsxs("div", {
                           className:
-                            "flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-lg border border-white/10",
+                            "flex flex-col gap-1 bg-black/40 px-2 py-1.5 rounded-lg border border-white/10 w-full",
                           children: [
-                            h.jsx(Fp, {
-                              className: "h-3 w-3 text-amber-400 shrink-0",
+                            h.jsxs("div", {
+                              className: "flex items-center gap-1.5 w-full justify-between",
+                              children: [
+                                h.jsx(Fp, {
+                                  className: "h-3 w-3 text-amber-400 shrink-0",
+                                }),
+                                h.jsx("input", {
+                                  id: "hud-time-slider",
+                                  type: "range",
+                                  min: "0",
+                                  max: "1",
+                                  step: "0.005",
+                                  value: o,
+                                  onChange: (We) => u(parseFloat(We.target.value)),
+                                  className:
+                                    "w-20 accent-amber-400 cursor-pointer h-1 bg-slate-700 rounded",
+                                  title: "Horário do Ciclo Dia/Noite",
+                                }),
+                                h.jsx(Bp, {
+                                  className: "h-3 w-3 text-indigo-400 shrink-0",
+                                }),
+                                h.jsxs("span", {
+                                  className:
+                                    "text-[9px] font-mono text-slate-300 text-right truncate",
+                                  title: `Horário: ${formatClock()} | Escurecimento: ${darknessPct}%`,
+                                  children: [tr(), " (", darknessPct, "%)"],
+                                }),
+                              ],
                             }),
-                            h.jsx("input", {
-                              id: "hud-time-slider",
-                              type: "range",
-                              min: "0",
-                              max: "1",
-                              step: "0.01",
-                              value: o,
-                              onChange: (We) => u(parseFloat(We.target.value)),
-                              className:
-                                "w-20 accent-amber-400 cursor-pointer h-1 bg-slate-700 rounded",
-                              title: "Ciclo Dia/Noite",
-                            }),
-                            h.jsx(Bp, {
-                              className: "h-3 w-3 text-indigo-400 shrink-0",
-                            }),
-                            h.jsx("span", {
-                              className:
-                                "text-[9px] font-mono text-slate-300 w-12 text-right truncate",
-                              children: tr(),
+                            h.jsxs("div", {
+                              className: "flex items-center justify-between gap-1 pt-0.5 border-t border-white/5",
+                              children: [
+                                h.jsx("span", {
+                                  className: "text-[9px] text-amber-300/90 font-semibold shrink-0",
+                                  children: "⏱️ Ciclo:",
+                                }),
+                                h.jsx("select", {
+                                  id: "hud-cycle-duration-select",
+                                  value: [30, 60, 120, 300, 600, 1200, 1800, 2400, 3600].includes(Number(cycleDurationSec))
+                                    ? String(cycleDurationSec)
+                                    : "custom",
+                                  onChange: (We) => {
+                                    const v = Number(We.target.value);
+                                    if (v > 0) setCycleDurationSec(v);
+                                  },
+                                  className:
+                                    "bg-slate-800 text-amber-200 text-[9px] font-mono rounded px-1 py-0.5 border border-amber-500/40 cursor-pointer focus:outline-none",
+                                  title: "Escolher duração do ciclo Dia/Noite (Modo Desenvolvedor)",
+                                  children: [
+                                    h.jsx("option", { value: "30", children: "30s (15s D / 15s N)" }),
+                                    h.jsx("option", { value: "60", children: "1m (30s D / 30s N)" }),
+                                    h.jsx("option", { value: "120", children: "2m (1m D / 1m N)" }),
+                                    h.jsx("option", { value: "300", children: "5m (2.5m D / 2.5m N)" }),
+                                    h.jsx("option", { value: "600", children: "10m (5m D / 5m N)" }),
+                                    h.jsx("option", { value: "1200", children: "20m (10m D / 10m N)" }),
+                                    h.jsx("option", { value: "1800", children: "30m (15m D / 15m N)" }),
+                                    h.jsx("option", { value: "2400", children: "40m (20m D / 20m N)" }),
+                                    h.jsx("option", { value: "3600", children: "60m (30m D / 30m N)" }),
+                                    ![30, 60, 120, 300, 600, 1200, 1800, 2400, 3600].includes(Number(cycleDurationSec)) &&
+                                      h.jsx("option", {
+                                        value: "custom",
+                                        children: `${+(cycleDurationSec / 60).toFixed(1)}m (${+(cycleDurationSec / 120).toFixed(1)}m D/N)`,
+                                      }),
+                                  ],
+                                }),
+                                h.jsx("button", {
+                                  type: "button",
+                                  onClick: () => setCyclePaused(!cyclePaused),
+                                  className: `px-1.5 py-0.5 rounded text-[9px] font-bold transition cursor-pointer ${
+                                    cyclePaused
+                                      ? "bg-rose-600/80 text-white"
+                                      : "bg-emerald-700/80 text-emerald-100 hover:bg-emerald-600"
+                                  }`,
+                                  title: cyclePaused ? "Retomar avanço automático do tempo" : "Pausar ciclo Dia/Noite",
+                                  children: cyclePaused ? "⏸️" : "▶️",
+                                }),
+                              ],
                             }),
                           ],
                         }),
@@ -2268,7 +2347,7 @@
                   }),
                   h.jsxs("div", {
                     className:
-                      "p-3 rounded-xl bg-slate-900/80 border border-white/10 flex flex-col gap-2 shadow-sm",
+                      "p-3 rounded-xl bg-slate-900/80 border border-white/10 flex flex-col gap-2.5 shadow-sm",
                     children: [
                       h.jsxs("div", {
                         className: "flex items-center justify-between",
@@ -2278,7 +2357,7 @@
                             children: [
                               h.jsx("span", {
                                 className: "text-sm",
-                                children: "☀️",
+                                children: isDayPhase ? "☀️" : "🌙",
                               }),
                               h.jsx("span", {
                                 className: "font-bold text-slate-200",
@@ -2286,10 +2365,36 @@
                               }),
                             ],
                           }),
-                          h.jsx("span", {
+                          h.jsxs("span", {
                             className:
                               "text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/80 border border-amber-500/40 text-amber-300 font-bold",
-                            children: tr(),
+                            children: [
+                              isDayPhase ? "Dia" : "Noite",
+                              " • ",
+                              tr(),
+                              " (",
+                              formatClock(),
+                              ")",
+                            ],
+                          }),
+                        ],
+                      }),
+                      h.jsxs("div", {
+                        className:
+                          "flex items-center justify-between text-[11px] font-mono text-slate-300 bg-slate-950/70 px-2.5 py-1.5 rounded-lg border border-white/5",
+                        children: [
+                          h.jsxs("span", {
+                            children: ["Escurecimento gradual: ", h.jsxs("strong", { className: "text-amber-300", children: [darknessPct, "%"] })],
+                          }),
+                          h.jsx("button", {
+                            type: "button",
+                            onClick: () => setCyclePaused(!cyclePaused),
+                            className: `px-2 py-0.5 rounded font-bold text-[10px] transition cursor-pointer ${
+                              cyclePaused
+                                ? "bg-rose-600 hover:bg-rose-500 text-white"
+                                : "bg-emerald-600 hover:bg-emerald-500 text-white"
+                            }`,
+                            children: cyclePaused ? "⏸️ Pausado" : "▶️ Automático",
                           }),
                         ],
                       }),
@@ -2297,42 +2402,193 @@
                         type: "range",
                         min: "0",
                         max: "1",
-                        step: "0.01",
+                        step: "0.002",
                         value: o,
                         onChange: (We) => u(parseFloat(We.target.value)),
                         className:
                           "w-full accent-amber-400 cursor-pointer h-1.5 bg-slate-700 rounded my-1",
                       }),
                       h.jsxs("div", {
-                        className: "grid grid-cols-4 gap-1 pt-1",
+                        className: "grid grid-cols-4 gap-1 pt-0.5",
                         children: [
                           h.jsx("button", {
                             type: "button",
                             onClick: () => u(0.25),
                             className:
-                              "py-1 px-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-amber-300 text-center transition",
+                              "py-1 px-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-amber-300 text-center transition cursor-pointer",
                             children: "Amanhecer",
                           }),
                           h.jsx("button", {
                             type: "button",
                             onClick: () => u(0.5),
                             className:
-                              "py-1 px-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-yellow-300 text-center transition",
+                              "py-1 px-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-yellow-300 text-center transition cursor-pointer",
                             children: "Meio-dia",
                           }),
                           h.jsx("button", {
                             type: "button",
-                            onClick: () => u(0.72),
+                            onClick: () => u(0.75),
                             className:
-                              "py-1 px-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-orange-400 text-center transition",
+                              "py-1 px-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-orange-400 text-center transition cursor-pointer",
                             children: "Pôr do Sol",
                           }),
                           h.jsx("button", {
                             type: "button",
-                            onClick: () => u(0.9),
+                            onClick: () => u(0.0),
                             className:
-                              "py-1 px-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-indigo-300 text-center transition",
-                            children: "Noite",
+                              "py-1 px-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-indigo-300 text-center transition cursor-pointer",
+                            children: "Meia-noite",
+                          }),
+                        ],
+                      }),
+                      h.jsxs("div", {
+                        className:
+                          "mt-1 pt-2.5 border-t border-white/10 flex flex-col gap-2",
+                        children: [
+                          h.jsxs("div", {
+                            className: "flex items-center justify-between",
+                            children: [
+                              h.jsx("span", {
+                                className: "text-[11px] font-bold text-amber-300",
+                                children: "⏱️ Duração do Ciclo (Modo Dev)",
+                              }),
+                              h.jsx("span", {
+                                className:
+                                  "text-[10px] font-mono text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.5 rounded",
+                                children: formatCycleLabel(cycleDurationSec),
+                              }),
+                            ],
+                          }),
+                          h.jsxs("div", {
+                            className: "grid grid-cols-2 gap-2",
+                            children: [
+                              h.jsxs("label", {
+                                className:
+                                  "flex flex-col gap-1 bg-slate-950/70 p-2 rounded-lg border border-white/5 text-[10px] text-slate-300",
+                                children: [
+                                  h.jsx("span", {
+                                    className: "font-semibold text-amber-200",
+                                    children: "Cada Fase (Dia / Noite) [min]:",
+                                  }),
+                                  h.jsx("input", {
+                                    type: "number",
+                                    min: "0.1",
+                                    max: "720",
+                                    step: "0.5",
+                                    value: +(cycleDurationSec / 120).toFixed(2),
+                                    onChange: (We) => {
+                                      const val = parseFloat(We.target.value);
+                                      if (isFinite(val) && val > 0) {
+                                        setCycleDurationSec(Math.max(5, Math.round(val * 120)));
+                                      }
+                                    },
+                                    className:
+                                      "w-full bg-slate-800 border border-amber-500/40 rounded px-2 py-1 text-xs font-mono text-white focus:outline-none",
+                                  }),
+                                ],
+                              }),
+                              h.jsxs("label", {
+                                className:
+                                  "flex flex-col gap-1 bg-slate-950/70 p-2 rounded-lg border border-white/5 text-[10px] text-slate-300",
+                                children: [
+                                  h.jsx("span", {
+                                    className: "font-semibold text-sky-200",
+                                    children: "Ciclo Completo (Total) [min]:",
+                                  }),
+                                  h.jsx("input", {
+                                    type: "number",
+                                    min: "0.1",
+                                    max: "1440",
+                                    step: "1",
+                                    value: +(cycleDurationSec / 60).toFixed(2),
+                                    onChange: (We) => {
+                                      const val = parseFloat(We.target.value);
+                                      if (isFinite(val) && val > 0) {
+                                        setCycleDurationSec(Math.max(5, Math.round(val * 60)));
+                                      }
+                                    },
+                                    className:
+                                      "w-full bg-slate-800 border border-sky-500/40 rounded px-2 py-1 text-xs font-mono text-white focus:outline-none",
+                                  }),
+                                ],
+                              }),
+                            ],
+                          }),
+                          h.jsx("input", {
+                            type: "range",
+                            min: "10",
+                            max: "3600",
+                            step: "10",
+                            value: Math.min(3600, Math.max(10, cycleDurationSec)),
+                            onChange: (We) =>
+                              setCycleDurationSec(parseInt(We.target.value, 10)),
+                            className:
+                              "w-full accent-emerald-400 cursor-pointer h-1.5 bg-slate-700 rounded",
+                          }),
+                          h.jsxs("div", {
+                            className: "grid grid-cols-3 gap-1",
+                            children: [
+                              h.jsx("button", {
+                                type: "button",
+                                onClick: () => setCycleDurationSec(30),
+                                className: `py-1 px-1.5 rounded text-[10px] font-mono font-bold transition cursor-pointer ${
+                                  cycleDurationSec === 30
+                                    ? "bg-emerald-600 text-white"
+                                    : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                                }`,
+                                children: "30s (15s/15s)",
+                              }),
+                              h.jsx("button", {
+                                type: "button",
+                                onClick: () => setCycleDurationSec(120),
+                                className: `py-1 px-1.5 rounded text-[10px] font-mono font-bold transition cursor-pointer ${
+                                  cycleDurationSec === 120
+                                    ? "bg-emerald-600 text-white"
+                                    : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                                }`,
+                                children: "2m (1m/1m)",
+                              }),
+                              h.jsx("button", {
+                                type: "button",
+                                onClick: () => setCycleDurationSec(300),
+                                className: `py-1 px-1.5 rounded text-[10px] font-mono font-bold transition cursor-pointer ${
+                                  cycleDurationSec === 300
+                                    ? "bg-emerald-600 text-white"
+                                    : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                                }`,
+                                children: "5m (2.5m/2.5m)",
+                              }),
+                              h.jsx("button", {
+                                type: "button",
+                                onClick: () => setCycleDurationSec(600),
+                                className: `py-1 px-1.5 rounded text-[10px] font-mono font-bold transition cursor-pointer ${
+                                  cycleDurationSec === 600
+                                    ? "bg-emerald-600 text-white"
+                                    : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                                }`,
+                                children: "10m (5m/5m)",
+                              }),
+                              h.jsx("button", {
+                                type: "button",
+                                onClick: () => setCycleDurationSec(1200),
+                                className: `py-1 px-1.5 rounded text-[10px] font-mono font-bold transition cursor-pointer ${
+                                  cycleDurationSec === 1200
+                                    ? "bg-amber-600 text-white"
+                                    : "bg-slate-800 hover:bg-slate-700 text-amber-300"
+                                }`,
+                                children: "20m (10m/10m Padrão)",
+                              }),
+                              h.jsx("button", {
+                                type: "button",
+                                onClick: () => setCycleDurationSec(2400),
+                                className: `py-1 px-1.5 rounded text-[10px] font-mono font-bold transition cursor-pointer ${
+                                  cycleDurationSec === 2400
+                                    ? "bg-emerald-600 text-white"
+                                    : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                                }`,
+                                children: "40m (20m/20m)",
+                              }),
+                            ],
                           }),
                         ],
                       }),
