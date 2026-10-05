@@ -1700,6 +1700,12 @@
           case "greek_vase":
             drawGreekVaseCluster(c, f, t.subType || 0);
             break;
+          case "greek_bookshelf":
+            drawBookshelf(c, f, t.subType || 0, !!t.collected);
+            break;
+          case "greek_scroll_stand":
+            drawScrollStand(c, f, t.subType || 0, !!t.collected);
+            break;
           case "greek_furniture":
             drawGreekFurniture(c, f, t.subType || 0);
             break;

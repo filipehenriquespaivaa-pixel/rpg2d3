@@ -1511,6 +1511,7 @@
           : `Casa Grega de 4 Cômodos #${activeBld.index}`;
       let subType = Math.floor(th * 4);
       let doorVertical = !1;
+      let isPreservedRoom = !1;
 
       if (isComplete) {
         // Construção 100% completa: topo da parede inteiro (0) e sem rachaduras de ruína
@@ -1548,6 +1549,12 @@
         const northWallY = -H;
         const isOuterWall = Math.abs(rx) === W || ry === northWallY || ry === southWallY;
 
+        isPreservedRoom = !1;
+        const inSWQuadrant = rx <= -2 && ry >= 2 && ry <= southWallY;
+        if (inSWQuadrant && (isHall || isComplete || activeBld.index === 0 || activeBld.index === 1)) {
+          isPreservedRoom = !0;
+        }
+
         // Portas / Entradas na parede externa (Sul, Leste, Oeste)
         const isSouthMainDoor = ry === southWallY && Math.abs(rx) <= 1;
         const isSideCorridorDoor = Math.abs(rx) === W && ry === 0;
@@ -1578,16 +1585,18 @@
           (Math.abs(ry) === 2 && Math.abs(rx) === roomDoorX) ||
           (!isHall && ry === southWallY && rx === 0);
 
-        if (isRoomDoorTile && (isComplete || th < 0.72)) {
+        if (isRoomDoorTile && (isComplete || isPreservedRoom || th < 0.72)) {
           role = "door";
           doorVertical = Math.abs(rx) === 2;
-          roomName = isHall ? "Porta do Salão Helênico" : "Porta da Casa Grega";
+          roomName = (rx === -2 && ry === roomDoorYSouth && isPreservedRoom)
+            ? "Porta da Biblioteca Preservada"
+            : (isHall ? "Porta do Salão Helênico" : "Porta da Casa Grega");
         } else if ((isOuterWall && !isSouthMainDoor && !isSideCorridorDoor) || isVerticalRoomWall || isHorizontalRoomWall) {
           const isCorner =
             (Math.abs(rx) === W && (ry === northWallY || ry === southWallY)) ||
             (Math.abs(rx) === 2 && Math.abs(ry) === 2);
-          // Se a construção for COMPLETA (isComplete), nenhuma parede é quebrada!
-          if (isComplete) {
+          // Se a construção for COMPLETA ou parte da Sala Preservada, nenhuma parede é quebrada!
+          if (isComplete || isPreservedRoom) {
             role = "wall";
             wallHeightState = 0;
           } else if (isUnfinished && (rx + ry) % 3 === 0) {
@@ -1641,15 +1650,58 @@
               role = "column";
             }
           } else if (inSW) {
-            roomName = isHall ? "Câmara Sudoeste (Sala dos Filósofos)" : "3º Cômodo da Casa (Cozinha e Despensa)";
-            if (rx === -midRoomX && ry === midRoomYSouth) {
-              role = "furniture";
-              subType = 1; // Mesa Helênica / Bancada de preparo (sem fogueira natural)
-            } else if (rx === -(midRoomX - 2) && ry === midRoomYSouth) {
-              role = "furniture";
-              subType = 2; // Bancos / Assentos
-            } else if (rx === -(midRoomX + 1) && ry === midRoomYSouth - 1) {
-              role = "vase";
+            const isPreservedLibrary = isHall || isComplete || activeBld.index === 0 || activeBld.index === 1;
+            if (isPreservedLibrary) {
+              isPreservedRoom = !0;
+              roomName = isHall
+                ? "Biblioteca Preservada dos Filósofos (Arquivo de Manuscritos)"
+                : "Biblioteca e Estudo Preservado da Casa Helênica";
+
+              if (isHall) {
+                // Sala espaçosa do Salão Monumental (rx in [-8, -3], ry in [3, 7]):
+                // Estantes de livros alinhadas na parede norte da sala (ry === 3):
+                if (ry === 3 && (rx === -7 || rx === -6 || rx === -4 || rx === -3)) {
+                  role = "bookshelf";
+                  subType = rx === -7 ? 0 : rx === -6 ? 1 : rx === -4 ? 2 : 3;
+                }
+                // Mesas e suportes de pergaminhos na área de estudo (ry === 5 e 6):
+                else if (ry === 5 && rx === -6) {
+                  role = "scroll_stand";
+                  subType = 0; // Mesa de estudos com pergaminho aberto
+                } else if (ry === 5 && rx === -4) {
+                  role = "scroll_stand";
+                  subType = 1; // Suporte de rolos de papiro / capsa
+                } else if (ry === 6 && rx === -7) {
+                  role = "scroll_stand";
+                  subType = 2; // Escrivaninha de cartografia e mapas
+                } else if (ry === 6 && rx === -3) {
+                  role = "vase";
+                  subType = 0; // Ânfora antiga
+                }
+              } else {
+                // Casa de 4 cômodos (rx in [-6, -3], ry in [3, 5]):
+                if (ry === 3 && (rx === -5 || rx === -4)) {
+                  role = "bookshelf";
+                  subType = rx === -5 ? 0 : 1;
+                } else if (ry === 5 && rx === -5) {
+                  role = "scroll_stand";
+                  subType = 0;
+                } else if (ry === 5 && rx === -3) {
+                  role = "scroll_stand";
+                  subType = 1;
+                }
+              }
+            } else {
+              roomName = "3º Cômodo da Casa (Cozinha e Despensa)";
+              if (rx === -midRoomX && ry === midRoomYSouth) {
+                role = "furniture";
+                subType = 1; // Mesa Helênica / Bancada de preparo (sem fogueira natural)
+              } else if (rx === -(midRoomX - 2) && ry === midRoomYSouth) {
+                role = "furniture";
+                subType = 2; // Bancos / Assentos
+              } else if (rx === -(midRoomX + 1) && ry === midRoomYSouth - 1) {
+                role = "vase";
+              }
             }
           } else if (inSE) {
             roomName = isHall ? "Câmara Sudeste (Assembleia e Guarda)" : "4º Cômodo da Casa (Sala de Ofícios)";
@@ -1677,10 +1729,10 @@
         role,
         roomName,
         subType,
-        wallHeightState: isComplete ? 0 : wallHeightState,
+        wallHeightState: isPreservedRoom ? 0 : (isComplete ? 0 : wallHeightState),
         doorVertical,
         isComplete,
-        floorFailed: isComplete ? !1 : (isFloorFailed || isUnfinished),
+        floorFailed: isPreservedRoom ? !1 : (isComplete ? !1 : (isFloorFailed || isUnfinished)),
       };
     }
     _getMountain25DBounds(t, l) {
@@ -2095,6 +2147,49 @@
                   "Jarro e pote de cerâmica clássica preservado nas ruínas. Pressione [F] para coletar para seu inventário!",
               };
             }
+          } else if (greekRuin.role === "bookshelf") {
+            const isCol = !!intState.collected;
+            const bNames = [
+              "Estante de Tomos de Filosofia",
+              "Estante de Astronomia e Mecânica",
+              "Estante de Botânica e Ciências",
+              "Estante de Manuscritos e Poesia Helênica",
+            ];
+            const bType = greekRuin.subType ?? (Math.abs(t * 3 + l) % 4);
+            se.prop = {
+              kind: "greek_bookshelf",
+              subType: bType,
+              offsetX: 0,
+              offsetY: -3,
+              scale: 1.15,
+              interactive: !0,
+              collected: isCol,
+              namePt: isCol ? `${bNames[bType % bNames.length]} (Vasculhada)` : bNames[bType % bNames.length],
+              descriptionPt: isCol
+                ? "Os tomos e manuscritos mais raros desta estante já foram recolhidos para o seu inventário."
+                : `Estante nobre de madeira entalhada repleta de tomos antigos encadernados em: ${greekRuin.roomName}. Pressione [F] para coletar os livros!`,
+            };
+          } else if (greekRuin.role === "scroll_stand") {
+            const isCol = !!intState.collected;
+            const sNames = [
+              "Mesa de Estudos com Pergaminhos Abertos",
+              "Suporte de Papiro e Rolos de Pergaminho",
+              "Escrivaninha de Cartografia e Mapas Helênicos",
+            ];
+            const sType = greekRuin.subType ?? (Math.abs(t * 5 + l) % 3);
+            se.prop = {
+              kind: "greek_scroll_stand",
+              subType: sType,
+              offsetX: 0,
+              offsetY: -2,
+              scale: 1.12,
+              interactive: !0,
+              collected: isCol,
+              namePt: isCol ? `${sNames[sType % sNames.length]} (Vasculhado)` : sNames[sType % sNames.length],
+              descriptionPt: isCol
+                ? "Os pergaminhos deste suporte já foram recolhidos para o seu inventário."
+                : `Rolos autênticos de papiro e pergaminhos antigos com inscrições clássicas. Pressione [F] para coletar os pergaminhos!`,
+            };
           } else if (greekRuin.role === "furniture") {
             const fType = greekRuin.subType ?? (Math.abs(t + l * 7) % 4);
             const fNames = [
@@ -4473,6 +4568,159 @@
           reward: `${itemData.name} (+55 XP)`,
         };
       }
+      if (o.prop.kind === "greek_bookshelf") {
+        if (m.collected) {
+          return {
+            success: !1,
+            message: "Você já recolheu os tomos e manuscritos desta estante antiga.",
+          };
+        }
+        const bType = o.prop.subType || 0;
+        let bookItem;
+        if (bType === 0) {
+          bookItem = {
+            id: `item_livro_filosofia_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            name: "Tomo de Filosofia de Atenas",
+            categoryType: "consumable",
+            isEquippable: !1,
+            rarity: "raro",
+            value: 120,
+            stackCount: 1,
+            maxStack: 1,
+            isStackable: !1,
+            icon: "📖",
+            color: "#818cf8",
+            description: "Tomo clássico encadernado em couro preservado na biblioteca das ruínas. Contém diálogos sobre ética, sabedoria e a virtude da pólis. Não empilhável. [Usar] para ler.",
+          };
+        } else if (bType === 1) {
+          bookItem = {
+            id: `item_livro_astronomia_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            name: "Tratado de Astronomia e Mecânica",
+            categoryType: "consumable",
+            isEquippable: !1,
+            rarity: "raro",
+            value: 130,
+            stackCount: 1,
+            maxStack: 1,
+            isStackable: !1,
+            icon: "📘",
+            color: "#38bdf8",
+            description: "Volume helênico preservado com diagramas celestes, esferas de cálculo e geometria dos astros. Não empilhável. [Usar] para ler.",
+          };
+        } else if (bType === 2) {
+          bookItem = {
+            id: `item_livro_botanica_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            name: "Compêndio de Botânica e Ervas",
+            categoryType: "consumable",
+            isEquippable: !1,
+            rarity: "incomum",
+            value: 95,
+            stackCount: 1,
+            maxStack: 1,
+            isStackable: !1,
+            icon: "📗",
+            color: "#4ade80",
+            description: "Livro antigo preservado com ilustrações detalhadas de raízes, plantas medicinais e fungos da natureza. Não empilhável. [Usar] para ler.",
+          };
+        } else {
+          bookItem = {
+            id: `item_livro_estrategia_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            name: "Manuscrito de Estratégia e Táticas",
+            categoryType: "consumable",
+            isEquippable: !1,
+            rarity: "incomum",
+            value: 110,
+            stackCount: 1,
+            maxStack: 1,
+            isStackable: !1,
+            icon: "📕",
+            color: "#f87171",
+            description: "Manuscrito clássico preservado descrevendo fortificações, navegação marítima e táticas de falange. Não empilhável. [Usar] para ler.",
+          };
+        }
+
+        const pKey = this.isUnderground ? `underground_${t},${l}` : `${t},${l}`;
+        const prev = this.interactedProps.get(pKey) || {};
+        this.interactedProps.set(pKey, { ...prev, collected: !0 });
+        this.invalidateTile(t, l);
+
+        return {
+          success: !0,
+          action: "collect_bookshelf",
+          item: bookItem,
+          message: `📖 Você coletou: ${bookItem.name}! O livro foi guardado em sua mochila (item não empilhável).`,
+          reward: `${bookItem.name} (+80 XP)`,
+        };
+      }
+      if (o.prop.kind === "greek_scroll_stand") {
+        if (m.collected) {
+          return {
+            success: !1,
+            message: "Você já recolheu os pergaminhos deste suporte de estudos.",
+          };
+        }
+        const sType = o.prop.subType || 0;
+        let scrollItem;
+        if (sType === 0) {
+          scrollItem = {
+            id: `item_pergaminho_cartografia_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            name: "Pergaminho de Cartografia do Mundo",
+            categoryType: "consumable",
+            isEquippable: !1,
+            rarity: "raro",
+            value: 115,
+            stackCount: 1,
+            maxStack: 1,
+            isStackable: !1,
+            icon: "📜",
+            color: "#facc15",
+            description: "Rolo de pergaminho de papiro desenhado à mão com a topografia de ilhas, montanhas e florestas do mundo. Não empilhável. [Usar] para ler.",
+          };
+        } else if (sType === 1) {
+          scrollItem = {
+            id: `item_pergaminho_forja_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            name: "Pergaminho de Segredos da Forja",
+            categoryType: "consumable",
+            isEquippable: !1,
+            rarity: "raro",
+            value: 140,
+            stackCount: 1,
+            maxStack: 1,
+            isStackable: !1,
+            icon: "📜",
+            color: "#fb923c",
+            description: "Pergaminho antigo revelando segredos de têmpera de metais, minérios puros e fusão de ligas resistentes. Não empilhável. [Usar] para ler.",
+          };
+        } else {
+          scrollItem = {
+            id: `item_pergaminho_alquimia_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            name: "Pergaminho Arcano de Alquimia",
+            categoryType: "consumable",
+            isEquippable: !1,
+            rarity: "raro",
+            value: 125,
+            stackCount: 1,
+            maxStack: 1,
+            isStackable: !1,
+            icon: "📜",
+            color: "#c084fc",
+            description: "Pergaminho preservado com fórmulas ancestrais para extração de essências puras e poções de vigor. Não empilhável. [Usar] para ler.",
+          };
+        }
+
+        const pKey = this.isUnderground ? `underground_${t},${l}` : `${t},${l}`;
+        const prev = this.interactedProps.get(pKey) || {};
+        this.interactedProps.set(pKey, { ...prev, collected: !0 });
+        this.invalidateTile(t, l);
+
+        return {
+          success: !0,
+          action: "collect_scroll_stand",
+          item: scrollItem,
+          message: `📜 Você coletou: ${scrollItem.name}! O pergaminho foi guardado em sua mochila (item não empilhável).`,
+          reward: `${scrollItem.name} (+80 XP)`,
+        };
+      }
       if (o.prop.kind === "greek_furniture") {
         return {
           success: !0,
@@ -4514,7 +4762,8 @@
           o.prop.kind === "dungeon_latrine_pit" ||
           o.prop.kind === "jailer_table" ||
           o.prop.kind === "weapon_rack" ||
-          o.prop.kind === "bone_pile")
+          o.prop.kind === "bone_pile" ||
+          o.prop.kind === "greek_bookshelf")
       )
         return !1;
       // Permite subir e andar livremente em cima de todo o paredão (isCliffWall)!

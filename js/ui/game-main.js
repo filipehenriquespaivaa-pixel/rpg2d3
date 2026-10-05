@@ -507,7 +507,10 @@
           let Q = !1;
           return (
             ra((q) => {
-              const F = q.findIndex((ie) => ie.name === E.name);
+              const canStack = (E.maxStack === undefined || E.maxStack > 1) && E.isStackable !== !1;
+              const F = canStack
+                ? q.findIndex((ie) => ie.name === E.name && (ie.stackCount || 1) < (ie.maxStack || 20))
+                : -1;
               if (F >= 0) {
                 // Anti-dupe: respeitar o limite de pilha do item (impede loot infinito ao re-clique)
                 const mx = E.maxStack || q[F].maxStack || 20;
@@ -702,6 +705,36 @@
               ve(
                 "🔥 Forno de Barro instalado no solo! Ele mantém brasas ativas para assar peixes e descansar.",
               ));
+            return;
+          }
+          if (
+            D.includes("tomo") ||
+            D.includes("tratado") ||
+            D.includes("compêndio") ||
+            D.includes("compendio") ||
+            D.includes("manuscrito") ||
+            D.includes("pergaminho")
+          ) {
+            m.current.playChestChime && m.current.playChestChime();
+            const xpGained = D.includes("tratado") || D.includes("segredos") ? 100 : 75;
+            _t((xp) => xp + xpGained);
+            let quote = "";
+            if (D.includes("filosofia")) {
+              quote = '📖 Leitura do Tomo: "Conhece-te a ti mesmo. A sabedoria floresce na reflexão e na moderação."';
+            } else if (D.includes("astronomia")) {
+              quote = '📘 Leitura do Tratado: "Os astros e constelações traçam círculos perfeitos na esfera celeste."';
+            } else if (D.includes("botânica") || D.includes("botanica")) {
+              quote = '📗 Leitura do Compêndio: "A essência das ervas silvestres e cogumelos cura o corpo e renova o vigor."';
+            } else if (D.includes("estratégia") || D.includes("estrategia")) {
+              quote = '📕 Leitura do Manuscrito: "A muralha mais forte é a coragem e a disciplina dos defensores."';
+            } else if (D.includes("cartografia")) {
+              quote = '📜 Leitura do Pergaminho: "O mapa revela terras férteis, serras escarpadas e santuários arcanos."';
+            } else if (D.includes("forja")) {
+              quote = '📜 Leitura do Pergaminho: "O fogo brando purifica o ferro; a têmpera rápida confere a rigidez da lâmina."';
+            } else {
+              quote = '📜 Leitura do Pergaminho: "Os antigos sábios registraram fórmulas e mistérios neste papiro sagrado."';
+            }
+            ve(`${quote} (+${xpGained} XP)!`);
             return;
           }
           if (D.includes("com água") || D.includes("com agua")) {
@@ -2529,6 +2562,25 @@
               }
               _t((xp) => xp + 55);
               ve(Ke.message || `🏺 Você recolheu: ${item ? item.name : "Jarro Antigo"}!`);
+              return;
+            } else if (Ke.action === "collect_bookshelf" || Ke.action === "collect_scroll_stand") {
+              const maxSlots = ot(Da.current.mochila);
+              if (Ve.length >= maxSlots) {
+                const pKey = E.isUnderground ? `underground_${Ye.tx},${Ye.ty}` : `${Ye.tx},${Ye.ty}`;
+                const prev = E.interactedProps.get(pKey) || {};
+                E.interactedProps.set(pKey, { ...prev, collected: !1 });
+                E.invalidateTile(Ye.tx, Ye.ty);
+                m.current.playPunchWhoosh && m.current.playPunchWhoosh();
+                ve(`⚠️ Inventário cheio (máximo ${maxSlots} itens)! Libere espaço para coletar o livro/pergaminho.`);
+                return;
+              }
+              m.current.playItemPickup && m.current.playItemPickup();
+              const item = Ke.item;
+              if (item) {
+                ra((prev) => [...prev, item]);
+              }
+              _t((xp) => xp + 80);
+              ve(Ke.message || `📖 Você recolheu: ${item ? item.name : "Livro / Pergaminho"}!`);
               return;
             } else if (Ke.action === "locked_cell") {
               const hasKey = Ve.some(

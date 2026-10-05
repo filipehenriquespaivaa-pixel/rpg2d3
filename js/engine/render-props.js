@@ -4869,3 +4869,256 @@
 
     e.restore();
   }
+
+  function drawBookshelf(e, t = 1, subType = 0, isCollected = !1) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
+    e.save();
+
+    // 1. Sombra projetada no piso de mosaico
+    e.fillStyle = "rgba(15, 23, 42, 0.45)";
+    e.beginPath();
+    e.ellipse(0, 5 * t, 15 * t, 4.5 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // 2. Estrutura de madeira nobre de cedro (fundo da estante)
+    const w = 26 * t;
+    const h = 32 * t;
+    const x0 = -w / 2;
+    const y0 = -h + 4 * t;
+
+    // Fundo escuro do móvel
+    e.fillStyle = "#3b1604";
+    e.fillRect(x0 + 2 * t, y0 + 2 * t, w - 4 * t, h - 3 * t);
+
+    // Laterais de madeira de cedro
+    e.fillStyle = "#78350f";
+    e.fillRect(x0, y0, 3 * t, h);
+    e.fillRect(x0 + w - 3 * t, y0, 3 * t, h);
+
+    // Detalhe entalhado nas laterais (caneluras clássicas)
+    e.fillStyle = "#b45309";
+    e.fillRect(x0 + 1 * t, y0 + 4 * t, 1 * t, h - 8 * t);
+    e.fillRect(x0 + w - 2 * t, y0 + 4 * t, 1 * t, h - 8 * t);
+
+    // Topo com cornija / frontão clássico esculpido
+    e.fillStyle = "#92400e";
+    e.fillRect(x0 - 1.5 * t, y0 - 3 * t, w + 3 * t, 4 * t);
+    e.fillStyle = "#d97706";
+    e.fillRect(x0 - 0.5 * t, y0 - 1.5 * t, w + 1 * t, 1.2 * t);
+
+    // Base sólida reforçada
+    e.fillStyle = "#5c2509";
+    e.fillRect(x0 - 1 * t, y0 + h - 2 * t, w + 2 * t, 4 * t);
+
+    // 3 Prateleiras horizontais de apoio
+    const shelvesY = [
+      y0 + h * 0.32,
+      y0 + h * 0.64,
+      y0 + h - 2 * t,
+    ];
+
+    for (const sy of shelvesY) {
+      e.fillStyle = "#92400e";
+      e.fillRect(x0 + 2 * t, sy, w - 4 * t, 2.2 * t);
+      e.fillStyle = "#b45309";
+      e.fillRect(x0 + 2 * t, sy + 0.5 * t, w - 4 * t, 0.8 * t);
+    }
+
+    // 3. Livros, Tomos e Manuscritos nas prateleiras
+    const bookColors = ["#991b1b", "#1e3a8a", "#14532d", "#581c87", "#78350f", "#b45309"];
+    const accentColors = ["#fbbf24", "#fef08a", "#f8fafc", "#fde047"];
+
+    // Nível Superior: Tomos de Filosofia e Astronomia
+    let curX = x0 + 4 * t;
+    const numTopBooks = isCollected ? 4 : 8;
+    for (let i = 0; i < numTopBooks; i++) {
+      const bw = (2.2 + (i % 2) * 0.4) * t;
+      const bh = (7 + ((i * 3) % 4)) * t;
+      const bColor = bookColors[(i + subType) % bookColors.length];
+      const by = shelvesY[0] - bh;
+
+      e.fillStyle = bColor;
+      e.fillRect(curX, by, bw, bh);
+      if (i % 2 === 0) {
+        e.fillStyle = accentColors[i % accentColors.length];
+        e.fillRect(curX + 0.3 * t, by + 1.5 * t, bw - 0.6 * t, 0.8 * t);
+        e.fillRect(curX + 0.3 * t, by + bh - 2 * t, bw - 0.6 * t, 0.8 * t);
+      }
+      curX += bw + 0.6 * t;
+    }
+    if (!isCollected) {
+      e.fillStyle = "#fef9c3";
+      e.fillRect(x0 + w - 8 * t, shelvesY[0] - 2.5 * t, 5 * t, 2.2 * t);
+      e.fillStyle = "#dc2626";
+      e.fillRect(x0 + w - 6 * t, shelvesY[0] - 2.5 * t, 1 * t, 2.2 * t);
+    }
+
+    // Nível Médio: Compêndios e Manuscritos
+    curX = x0 + 4 * t;
+    const numMidBooks = isCollected ? 3 : 7;
+    for (let i = 0; i < numMidBooks; i++) {
+      const bw = (2.4 + ((i * 2) % 3) * 0.3) * t;
+      const bh = (6.5 + (i % 3)) * t;
+      const bColor = bookColors[(i * 2 + 1 + subType) % bookColors.length];
+      const by = shelvesY[1] - bh;
+
+      if (i === 3) {
+        e.save();
+        e.translate(curX + bw / 2, shelvesY[1]);
+        e.rotate(0.18);
+        e.fillStyle = bColor;
+        e.fillRect(-bw / 2, -bh, bw, bh);
+        e.restore();
+      } else {
+        e.fillStyle = bColor;
+        e.fillRect(curX, by, bw, bh);
+        e.fillStyle = accentColors[(i + 1) % accentColors.length];
+        e.fillRect(curX + 0.4 * t, by + 2 * t, bw - 0.8 * t, 0.7 * t);
+      }
+      curX += bw + 0.7 * t;
+    }
+    if (!isCollected) {
+      e.fillStyle = "#fef3c7";
+      e.fillRect(x0 + w - 9 * t, shelvesY[1] - 4.5 * t, 6 * t, 2 * t);
+      e.fillRect(x0 + w - 8.5 * t, shelvesY[1] - 2.2 * t, 5.5 * t, 2 * t);
+      e.fillStyle = "#7c3aed";
+      e.fillRect(x0 + w - 6.5 * t, shelvesY[1] - 4.5 * t, 0.9 * t, 2 * t);
+    }
+
+    // Nível Inferior: Grandes Volumes de História e Leis
+    curX = x0 + 4 * t;
+    const numBotBooks = isCollected ? 4 : 8;
+    for (let i = 0; i < numBotBooks; i++) {
+      const bw = (2.3 + (i % 3) * 0.4) * t;
+      const bh = (7.5 + (i % 2) * 1.5) * t;
+      const bColor = bookColors[(i + 3) % bookColors.length];
+      const by = shelvesY[2] - bh;
+
+      e.fillStyle = bColor;
+      e.fillRect(curX, by, bw, bh);
+      e.fillStyle = "#fbbf24";
+      e.fillRect(curX + 0.4 * t, by + 1.2 * t, bw - 0.8 * t, 0.8 * t);
+      e.fillRect(curX + 0.4 * t, by + 3.2 * t, bw - 0.8 * t, 0.8 * t);
+      curX += bw + 0.6 * t;
+    }
+
+    e.strokeStyle = "#451a03";
+    e.lineWidth = 1 * t;
+    e.strokeRect(x0, y0, w, h);
+
+    e.restore();
+  }
+
+  function drawScrollStand(e, t = 1, subType = 0, isCollected = !1) {
+    t = (typeof t === "number" && isFinite(t) && t > 0) ? t : 1;
+    e.save();
+
+    // 1. Sombra da mesa/escrivaninha
+    e.fillStyle = "rgba(15, 23, 42, 0.42)";
+    e.beginPath();
+    e.ellipse(0, 5 * t, 14 * t, 6 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    // 2. Mesa helênica de madeira polida (Trapeza de estudo)
+    e.fillStyle = "#5c2509";
+    e.fillRect(-10 * t, -2 * t, 2.5 * t, 7 * t);
+    e.fillRect(8 * t, -2 * t, 2.5 * t, 7 * t);
+    e.fillRect(-1 * t, -1 * t, 2.2 * t, 6 * t);
+
+    // Tampo inclinado da escrivaninha de escriba
+    e.fillStyle = "#854d0e";
+    e.beginPath();
+    e.moveTo(-12 * t, -1 * t);
+    e.lineTo(-11 * t, -10 * t);
+    e.lineTo(11 * t, -10 * t);
+    e.lineTo(12 * t, -1 * t);
+    e.closePath();
+    e.fill();
+    e.strokeStyle = "#713f12";
+    e.lineWidth = 1 * t;
+    e.stroke();
+
+    // Friso de madeira no topo e na base do tampo
+    e.fillStyle = "#a16207";
+    e.fillRect(-12.5 * t, -1 * t, 25 * t, 2 * t);
+    e.fillRect(-11.5 * t, -10.5 * t, 23 * t, 1.5 * t);
+
+    // 3. Pergaminho aberto sobre o tampo
+    if (!isCollected) {
+      e.fillStyle = "#fef3c7";
+      e.fillRect(-8 * t, -8.5 * t, 14 * t, 7 * t);
+      e.strokeStyle = "#d97706";
+      e.lineWidth = 0.8 * t;
+      e.strokeRect(-8 * t, -8.5 * t, 14 * t, 7 * t);
+
+      e.fillStyle = "#78350f";
+      e.fillRect(-8.8 * t, -9 * t, 1.2 * t, 8 * t);
+      e.fillRect(5.6 * t, -9 * t, 1.2 * t, 8 * t);
+      e.fillStyle = "#f59e0b";
+      e.fillRect(-9 * t, -9.5 * t, 1.6 * t, 1 * t);
+      e.fillRect(5.4 * t, -9.5 * t, 1.6 * t, 1 * t);
+      e.fillRect(-9 * t, -1.2 * t, 1.6 * t, 1 * t);
+      e.fillRect(5.4 * t, -1.2 * t, 1.6 * t, 1 * t);
+
+      e.strokeStyle = "#78350f";
+      e.lineWidth = 0.6 * t;
+      for (let r = 0; r < 4; r++) {
+        const lineY = (-7 + r * 1.5) * t;
+        e.beginPath();
+        e.moveTo(-6 * t, lineY);
+        e.lineTo(4 * t, lineY);
+        e.stroke();
+      }
+      if (subType === 0) {
+        e.strokeStyle = "#92400e";
+        e.beginPath();
+        e.arc(1.5 * t, -4 * t, 1.8 * t, 0, Math.PI * 2);
+        e.stroke();
+      }
+    } else {
+      e.fillStyle = "rgba(254, 243, 199, 0.4)";
+      e.fillRect(-6 * t, -7 * t, 10 * t, 5 * t);
+    }
+
+    // 4. Capsa (cesta cilíndrica de bronze) com rolos de papiro em pé
+    const capsaX = 8 * t;
+    const capsaY = 1 * t;
+
+    e.fillStyle = "rgba(15, 23, 42, 0.35)";
+    e.beginPath();
+    e.ellipse(capsaX, capsaY + 3 * t, 4 * t, 2 * t, 0, 0, Math.PI * 2);
+    e.fill();
+
+    if (!isCollected || subType === 1) {
+      const scrollTints = ["#fef08a", "#fef9c3", "#e2e8f0"];
+      for (let s = -1; s <= 1; s++) {
+        const sx = capsaX + s * 1.6 * t;
+        e.fillStyle = scrollTints[(s + 2) % 3];
+        e.fillRect(sx - 0.9 * t, capsaY - 8 * t + Math.abs(s) * 1.5 * t, 1.8 * t, 7 * t);
+        e.fillStyle = "#b91c1c";
+        e.fillRect(sx - 0.9 * t, capsaY - 5 * t, 1.8 * t, 0.8 * t);
+      }
+    }
+
+    e.fillStyle = "#b45309";
+    e.fillRect(capsaX - 3.5 * t, capsaY - 3 * t, 7 * t, 6.5 * t);
+    e.fillStyle = "#d97706";
+    e.fillRect(capsaX - 3.5 * t, capsaY - 3 * t, 7 * t, 1.5 * t);
+    e.strokeStyle = "#78350f";
+    e.lineWidth = 0.8 * t;
+    e.strokeRect(capsaX - 3.5 * t, capsaY - 3 * t, 7 * t, 6.5 * t);
+
+    // 5. Tinteiro de cerâmica escura com cálamo
+    e.fillStyle = "#1e293b";
+    e.beginPath();
+    e.arc(-9.5 * t, -8.5 * t, 1.5 * t, 0, Math.PI * 2);
+    e.fill();
+    e.strokeStyle = "#f8fafc";
+    e.lineWidth = 0.8 * t;
+    e.beginPath();
+    e.moveTo(-9.5 * t, -8.5 * t);
+    e.lineTo(-12 * t, -13 * t);
+    e.stroke();
+
+    e.restore();
+  }

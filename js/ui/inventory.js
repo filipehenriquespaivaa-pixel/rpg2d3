@@ -797,6 +797,7 @@
       });
     },
     DevItemSidebar = ({
+      isTab = false,
       onAddItem,
       onEquipItem,
       onAddGold,
@@ -807,6 +808,7 @@
       onCloseModal,
       backpackCount,
       backpackMax,
+      onSwitchToNormalInventory = null,
     }) => {
       const [searchTerm, setSearchTerm] = J.useState(""),
         [selectedCategory, setSelectedCategory] = J.useState("todos"),
@@ -872,7 +874,7 @@
       return h.jsxs("aside", {
         id: "dev-inventory-sidebar",
         className:
-          "w-full lg:w-84 xl:w-96 flex flex-col bg-slate-950/95 border-t lg:border-t-0 lg:border-l border-amber-500/30 text-slate-100 h-full max-h-[85vh] lg:max-h-full overflow-hidden shadow-2xl shrink-0",
+          `w-full ${isTab ? "flex-1 rounded-2xl border border-amber-500/20 bg-slate-950/70 p-2 sm:p-2.5 max-h-[580px]" : "lg:w-84 xl:w-96 border-t lg:border-t-0 lg:border-l border-amber-500/30 max-h-[85vh] lg:max-h-full"} flex flex-col text-slate-100 overflow-hidden shadow-2xl shrink-0`,
         children: [
           // Header da Sidebar
           h.jsxs("div", {
@@ -912,6 +914,23 @@
                   h.jsxs("div", {
                     className: "flex items-center gap-1.5",
                     children: [
+                      onSwitchToNormalInventory &&
+                        h.jsxs("button", {
+                          type: "button",
+                          onClick: onSwitchToNormalInventory,
+                          className:
+                            "px-2.5 py-1 rounded-lg bg-indigo-950/90 hover:bg-indigo-900 text-indigo-200 hover:text-white transition border border-indigo-500/50 cursor-pointer flex items-center gap-1.5 text-xs font-bold shadow-sm",
+                          title: "Mudar para a aba do Inventário Normal do Player",
+                          children: [
+                            h.jsx("span", { children: "🎒" }),
+                            h.jsx("span", { children: "Aba Normal" }),
+                            backpackCount !== undefined &&
+                              h.jsxs("span", {
+                                className: "text-[10px] opacity-80 font-mono",
+                                children: ["(", backpackCount, "/", backpackMax, ")"],
+                              }),
+                          ],
+                        }),
                       h.jsx("span", {
                         className:
                           "text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 font-bold uppercase shadow-sm",
@@ -1384,7 +1403,7 @@
             (typeof localStorage !== "undefined" &&
               localStorage.getItem("rpg2d_dev_mode") === "1"))
       );
-      const [devSidebarOpen, setDevSidebarOpen] = J.useState(true);
+      const [devSidebarOpen, setDevSidebarOpen] = J.useState(false);
 
       const handleDevAddItem = (item, count = 1) => {
         if (onDevAddItem) {
@@ -1448,8 +1467,8 @@
 
       const [P, A] = J.useState(null),
         [x, M] = J.useState("all"),
-        [$, z] = J.useState("itens"),
-        [K, V] = J.useState("itens"),
+        [$, z] = J.useState(isDev ? "catalogo" : "itens"),
+        [K, V] = J.useState(isDev ? "catalogo" : "itens"),
         [O, _] = J.useState(null),
         [se, ue] = J.useState(null),
         [N, Ee] = J.useState(null),
@@ -2054,6 +2073,17 @@
                   className: `flex-1 py-2 text-xs font-bold flex items-center justify-center gap-1.5 border-b-2 transition ${K === "forja" ? "border-amber-400 text-amber-300 bg-slate-900/50" : "border-transparent text-slate-400 hover:text-slate-200"}`,
                   children: [h.jsx(ui, { className: "h-3.5 w-3.5" }), "Forja"],
                 }),
+                isDev &&
+                  h.jsxs("button", {
+                    onClick: () => {
+                      (V("catalogo"), z("catalogo"));
+                    },
+                    className: `flex-1 py-2 text-xs font-bold flex items-center justify-center gap-1.5 border-b-2 transition ${K === "catalogo" ? "border-amber-400 text-amber-300 bg-slate-900/50" : "border-transparent text-slate-400 hover:text-slate-200"}`,
+                    children: [
+                      h.jsx("span", { children: "🛠️" }),
+                      "Catálogo",
+                    ],
+                  }),
               ],
             }),
             h.jsxs("div", {
@@ -2189,6 +2219,18 @@
                               }),
                           ],
                         }),
+                        isDev &&
+                          h.jsxs("button", {
+                            id: "tab-btn-catalogo",
+                            onClick: () => {
+                              (z("catalogo"), V("catalogo"));
+                            },
+                            className: `flex-1 py-2 px-3 rounded-xl text-xs font-bold font-serif flex items-center justify-center gap-1.5 transition cursor-pointer ${$ === "catalogo" ? "bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 text-white shadow-lg shadow-amber-950/50 border border-amber-300/40 scale-[1.01]" : "text-slate-400 hover:text-amber-200 hover:bg-slate-900/80 border border-transparent"}`,
+                            children: [
+                              h.jsx("span", { children: "🛠️" }),
+                              h.jsx("span", { children: "Catálogo Dev" }),
+                            ],
+                          }),
                       ],
                     }),
                     $ === "forja" &&
@@ -3120,6 +3162,24 @@
                       onCookingPot: Aa,
                       onOpenCookingModal: Ra,
                     }),
+                    isDev &&
+                      $ === "catalogo" &&
+                      h.jsx(DevItemSidebar, {
+                        isTab: true,
+                        onAddItem: handleDevAddItem,
+                        onEquipItem: handleDevEquipItem,
+                        onAddGold: handleDevAddGold,
+                        onClearBackpack: handleDevClearBackpack,
+                        onEquipBackpack: handleDevEquipBackpack,
+                        onTeleportToBiome: onTeleportToBiome,
+                        currentBiome: currentBiome,
+                        onCloseModal: t,
+                        backpackCount: o.length,
+                        backpackMax: I,
+                        onSwitchToNormalInventory: () => {
+                          (z("itens"), V("itens"));
+                        },
+                      }),
                   ],
                 }),
               ],
@@ -3172,6 +3232,9 @@
             onCloseModal: t,
             backpackCount: o.length,
             backpackMax: I,
+            onSwitchToNormalInventory: () => {
+              (z("itens"), V("itens"));
+            },
           }),
       ],
     }),
