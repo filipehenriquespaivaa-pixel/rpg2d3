@@ -206,10 +206,37 @@
     }
     _isBluePlantPeak(t, l, tile) {
       if (!tile || tile.biome.id !== BiomeId.MOUNTAIN_25D || tile.isCliffWall) return false;
-      const info = this._getMountain25DInfo(t, l);
       const bounds = this._getMountain25DBounds(t, l);
-      const topTier = bounds.floors && bounds.floors.length ? bounds.floors[bounds.floors.length - 1].tier : 1;
-      return info.tier === topTier && Math.abs(t - Math.round(bounds.centerX)) <= 1 && Math.abs(l - Math.round(bounds.centerY)) <= 1;
+      const centerX = Math.round(bounds.centerX),
+        centerY = Math.round(bounds.centerY),
+        offsets = [
+          [0, 0], [1, 0], [-1, 0], [0, 1], [0, -1],
+          [2, 0], [-2, 0], [0, 2], [0, -2], [1, 1], [-1, 1], [1, -1], [-1, -1],
+          [3, 0], [-3, 0], [0, 3], [0, -3], [2, 1], [-2, 1], [2, -1], [-2, -1],
+          [1, 2], [-1, 2], [1, -2], [-1, -2],
+        ];
+      let topTier = 0;
+      for (const [dx, dy] of offsets) {
+        topTier = Math.max(topTier, this._getMountain25DInfo(centerX + dx, centerY + dy).tier);
+      }
+      if (!topTier) return false;
+      for (const [dx, dy] of offsets) {
+        const px = centerX + dx,
+          py = centerY + dy,
+          candidate = this._getMountain25DInfo(px, py);
+        if (candidate.tier !== topTier) continue;
+        let clearTop = true;
+        for (let oy = -4; oy <= 4 && clearTop; oy++) {
+          for (let ox = -4; ox <= 4; ox++) {
+            if (this._getMountain25DInfo(px + ox, py + oy).tier < topTier) {
+              clearTop = false;
+              break;
+            }
+          }
+        }
+        if (clearTop) return t === px && l === py;
+      }
+      return false;
     }
     _syncBluePlantProp(t, l, tile) {
       if (this.isUnderground || !this._isBluePlantPeak(t, l, tile)) return tile;
